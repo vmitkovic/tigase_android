@@ -105,7 +105,7 @@ public class RtpStreamReceiver extends Thread {
 	public int speaker(int mode) {
 		int old = speakermode;
 
-		if (Call.headset > 0 && mode == AudioManager.MODE_NORMAL)
+		if (callback.getHeadset() > 0 && mode == AudioManager.MODE_NORMAL)
 			return old;
 		saveVolume();
 		setMode(speakermode = mode);
@@ -143,11 +143,10 @@ public class RtpStreamReceiver extends Thread {
 		smin = sm * r + smin * (1 - r);
 	}
 
-	static void setStreamVolume(final int stream, final int vol, final int flags) {
+	void setStreamVolume(final int stream, final int vol, final int flags) {
 		(new Thread() {
 			public void run() {
-				AudioManager am = (AudioManager) Call.mContext.getSystemService(Context.AUDIO_SERVICE);
-				am.setStreamVolume(stream, vol, flags);
+				callback.setStreamVolume(stream, vol, flags);
 				if (stream == AudioManager.STREAM_MUSIC)
 					restored = true;
 			}
@@ -177,42 +176,42 @@ public class RtpStreamReceiver extends Thread {
 			track.setStereoVolume(AudioTrack.getMaxVolume(), AudioTrack.getMaxVolume());
 			break;
 		}
-		setStreamVolume(
-				AudioManager.STREAM_MUSIC,
-				PreferenceManager.getDefaultSharedPreferences(Call.mContext).getInt(
-						"volume" + speakermode,
-						am.getStreamMaxVolume(AudioManager.STREAM_MUSIC) * (speakermode == AudioManager.MODE_NORMAL ? 4 : 3)
-								/ 4), 0);
+		setStreamVolume(AudioManager.STREAM_MUSIC, callback.getVolume(speakermode), 0);
 	}
 
 	void saveVolume() {
 		if (restored) {
-			Editor edit = PreferenceManager.getDefaultSharedPreferences(Call.mContext).edit();
-			edit.putInt("volume" + speakermode, am.getStreamVolume(AudioManager.STREAM_MUSIC));
-			edit.commit();
+			callback.setVolume(speakermode, am.getStreamVolume(AudioManager.STREAM_MUSIC));
 		}
 	}
 
 	void saveSettings() {
-		if (!PreferenceManager.getDefaultSharedPreferences(Call.mContext).getBoolean("oldvalid", false)) {
-			int oldvibrate = am.getVibrateSetting(AudioManager.VIBRATE_TYPE_RINGER);
-			int oldvibrate2 = am.getVibrateSetting(AudioManager.VIBRATE_TYPE_NOTIFICATION);
-			if (!PreferenceManager.getDefaultSharedPreferences(Call.mContext).contains("oldvibrate2"))
-				oldvibrate2 = AudioManager.VIBRATE_SETTING_ON;
-			Editor edit = PreferenceManager.getDefaultSharedPreferences(Call.mContext).edit();
-			edit.putInt("oldvibrate", oldvibrate);
-			edit.putInt("oldvibrate2", oldvibrate2);
-			edit.putInt("oldring", am.getStreamVolume(AudioManager.STREAM_RING));
-			edit.putBoolean("oldvalid", true);
-			edit.commit();
-		}
+		// XXX
+		// if
+		// (!PreferenceManager.getDefaultSharedPreferences(Call.mContext).getBoolean("oldvalid",
+		// false)) {
+		// int oldvibrate =
+		// am.getVibrateSetting(AudioManager.VIBRATE_TYPE_RINGER);
+		// int oldvibrate2 =
+		// am.getVibrateSetting(AudioManager.VIBRATE_TYPE_NOTIFICATION);
+		// if
+		// (!PreferenceManager.getDefaultSharedPreferences(Call.mContext).contains("oldvibrate2"))
+		// oldvibrate2 = AudioManager.VIBRATE_SETTING_ON;
+		// Editor edit =
+		// PreferenceManager.getDefaultSharedPreferences(Call.mContext).edit();
+		// edit.putInt("oldvibrate", oldvibrate);
+		// edit.putInt("oldvibrate2", oldvibrate2);
+		// edit.putInt("oldring", am.getStreamVolume(AudioManager.STREAM_RING));
+		// edit.putBoolean("oldvalid", true);
+		// edit.commit();
+		// }
 	}
 
-	public static void setMode(int mode) {
+	public void setMode(int mode) {
 		Editor edit = PreferenceManager.getDefaultSharedPreferences(Call.mContext).edit();
 		edit.putBoolean("setmode", mode != AudioManager.MODE_NORMAL);
 		edit.commit();
-		AudioManager am = (AudioManager) Call.mContext.getSystemService(Context.AUDIO_SERVICE);
+		AudioManager am = callback.getAudioManager();
 		am.setMode(mode);
 	}
 

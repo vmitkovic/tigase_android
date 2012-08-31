@@ -1,6 +1,7 @@
 package org.sipdroid.media;
 
 import android.content.Context;
+import android.media.AudioManager;
 import android.telephony.TelephonyManager;
 
 public interface StreamCallback {
@@ -19,5 +20,15 @@ public interface StreamCallback {
 	int getCallState();
 
 	Context getContext();
+
+	int getHeadset();
+
+	void setStreamVolume(int stream, int vol, int flags);
+
+	int getVolume(int speakermode);
+
+	void setVolume(int speakermode, int streamVolume);
+
+	AudioManager getAudioManager();
 
 }
