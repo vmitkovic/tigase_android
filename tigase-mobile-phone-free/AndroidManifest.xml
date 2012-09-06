@@ -169,7 +169,9 @@
         </service>
         <service android:name="org.tigase.mobile.service.JaxmppService" >
         </service>
-
+        <service android:name="org.tigase.mobile.jingle.JingleService" >
+        </service>
+        
         <receiver
             android:name="org.tigase.mobile.BootUpReceiver"
             android:enabled="true"

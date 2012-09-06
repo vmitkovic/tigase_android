@@ -146,6 +146,9 @@
         <service android:name=".service.JaxmppService" >
         </service>
 
+        <service android:name=".jingle.JingleService" >
+        </service>
+
         <receiver
             android:name=".BootUpReceiver"
             android:enabled="true"
