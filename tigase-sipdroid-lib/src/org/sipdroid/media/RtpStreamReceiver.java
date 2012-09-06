@@ -29,17 +29,10 @@ import org.sipdroid.net.RtpSocket;
 import org.sipdroid.net.SipdroidSocket;
 import org.sipdroid.pjlib.Codec;
 
-import android.content.Context;
-import android.content.SharedPreferences.Editor;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.media.ToneGenerator;
-import android.os.RemoteException;
-import android.preference.PreferenceManager;
-
-import com.beem.project.beem.jingle.JingleService;
-import com.beem.project.beem.ui.Call;
 
 /**
  * RtpStreamReceiver is a generic stream receiver. It receives packets from RTP
@@ -68,7 +61,6 @@ public class RtpStreamReceiver extends Thread {
 	private boolean running;
 	private AudioManager am;
 	public static int speakermode;
-	private JingleService mJingle;
 
 	private final StreamCallback callback;
 
@@ -208,32 +200,42 @@ public class RtpStreamReceiver extends Thread {
 	}
 
 	public void setMode(int mode) {
-		Editor edit = PreferenceManager.getDefaultSharedPreferences(Call.mContext).edit();
-		edit.putBoolean("setmode", mode != AudioManager.MODE_NORMAL);
-		edit.commit();
+		callback.setMode(mode != AudioManager.MODE_NORMAL);
 		AudioManager am = callback.getAudioManager();
 		am.setMode(mode);
 	}
 
-	public static void restoreMode() {
-		if (PreferenceManager.getDefaultSharedPreferences(Call.mContext).getBoolean("setmode", true)) {
-			setMode(AudioManager.MODE_NORMAL);
+	public void restoreMode() {
+		if (callback.isMode()) {
+			AudioManager am = callback.getAudioManager();
+			am.setMode(AudioManager.MODE_NORMAL);
 		}
 	}
 
-	public static void restoreSettings() {
-		if (PreferenceManager.getDefaultSharedPreferences(Call.mContext).getBoolean("oldvalid", true)) {
-			AudioManager am = (AudioManager) Call.mContext.getSystemService(Context.AUDIO_SERVICE);
-			int oldvibrate = PreferenceManager.getDefaultSharedPreferences(Call.mContext).getInt("oldvibrate", 0);
-			int oldvibrate2 = PreferenceManager.getDefaultSharedPreferences(Call.mContext).getInt("oldvibrate2", 0);
-			am.setVibrateSetting(AudioManager.VIBRATE_TYPE_RINGER, oldvibrate);
-			am.setVibrateSetting(AudioManager.VIBRATE_TYPE_NOTIFICATION, oldvibrate2);
-			setStreamVolume(AudioManager.STREAM_RING,
-					PreferenceManager.getDefaultSharedPreferences(Call.mContext).getInt("oldring", 0), 0);
-			Editor edit = PreferenceManager.getDefaultSharedPreferences(Call.mContext).edit();
-			edit.putBoolean("oldvalid", false);
-			edit.commit();
-		}
+	public void restoreSettings() {
+		// XXX
+		// if
+		// (PreferenceManager.getDefaultSharedPreferences(Call.mContext).getBoolean("oldvalid",
+		// true)) {
+		// AudioManager am = (AudioManager)
+		// Call.mContext.getSystemService(Context.AUDIO_SERVICE);
+		// int oldvibrate =
+		// PreferenceManager.getDefaultSharedPreferences(Call.mContext).getInt("oldvibrate",
+		// 0);
+		// int oldvibrate2 =
+		// PreferenceManager.getDefaultSharedPreferences(Call.mContext).getInt("oldvibrate2",
+		// 0);
+		// am.setVibrateSetting(AudioManager.VIBRATE_TYPE_RINGER, oldvibrate);
+		// am.setVibrateSetting(AudioManager.VIBRATE_TYPE_NOTIFICATION,
+		// oldvibrate2);
+		// setStreamVolume(AudioManager.STREAM_RING,
+		// PreferenceManager.getDefaultSharedPreferences(Call.mContext).getInt("oldring",
+		// 0), 0);
+		// Editor edit =
+		// PreferenceManager.getDefaultSharedPreferences(Call.mContext).edit();
+		// edit.putBoolean("oldvalid", false);
+		// edit.commit();
+		// }
 		restoreMode();
 	}
 
@@ -261,7 +263,7 @@ public class RtpStreamReceiver extends Thread {
 
 	/** Runs it in a new Thread. */
 	public void run() {
-		boolean nodata = PreferenceManager.getDefaultSharedPreferences(Call.mContext).getBoolean("nodata", false);
+		boolean nodata = callback.isNoData();
 
 		if (rtp_socket == null) {
 			if (DEBUG)
@@ -278,12 +280,12 @@ public class RtpStreamReceiver extends Thread {
 			println("Reading blocks of max " + buffer.length + " bytes");
 
 		running = true;
-		speakermode = Call.docked > 0 ? AudioManager.MODE_NORMAL : AudioManager.MODE_IN_CALL;
+		speakermode = callback.getDocked() > 0 ? AudioManager.MODE_NORMAL : AudioManager.MODE_IN_CALL;
 		restored = false;
 
 		android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO);
-		am = (AudioManager) Call.mContext.getSystemService(Context.AUDIO_SERVICE);
-		Call.mContext.getContentResolver();
+		am = callback.getAudioManager();
+		// Call.mContext.getContentResolver();
 		saveSettings();
 		am.setVibrateSetting(AudioManager.VIBRATE_TYPE_RINGER, AudioManager.VIBRATE_SETTING_OFF);
 		am.setVibrateSetting(AudioManager.VIBRATE_TYPE_NOTIFICATION, AudioManager.VIBRATE_SETTING_OFF);
@@ -310,7 +312,7 @@ public class RtpStreamReceiver extends Thread {
 		}
 		ToneGenerator tg = new ToneGenerator(AudioManager.STREAM_MUSIC, (int) (ToneGenerator.MAX_VOLUME * 2 * 0.95));
 		track.play();
-		if (Call.headset > 0 && Call.oRingtone != null) {
+		if (callback.getHeadset() > 0 && callback.getORingtone() != null) {
 			ToneGenerator tg2 = new ToneGenerator(AudioManager.STREAM_RING, (int) (ToneGenerator.MAX_VOLUME * 2 * 0.95));
 			tg2.startTone(ToneGenerator.TONE_SUP_RINGTONE);
 			System.gc();
@@ -318,10 +320,10 @@ public class RtpStreamReceiver extends Thread {
 		} else
 			System.gc();
 		while (running) {
-			if (Call.call_state == Call.UA_STATE_HOLD) {
+			if (callback.getCallState() == StreamCallback.UA_STATE_HOLD) {
 				tg.stopTone();
 				track.pause();
-				while (running && Call.call_state == Call.UA_STATE_HOLD) {
+				while (running && callback.getCallState() == StreamCallback.UA_STATE_HOLD) {
 					try {
 						sleep(1000);
 					} catch (InterruptedException e1) {
@@ -352,8 +354,8 @@ public class RtpStreamReceiver extends Thread {
 				rtp_socket.getDatagramSocket().disconnect();
 				if (++timeout > 22) {
 					try {
-						mJingle.closeCall();
-					} catch (RemoteException e1) {
+						callback.closeCall();
+					} catch (Exception e1) {
 						e1.printStackTrace();
 					}
 					break;
@@ -418,7 +420,7 @@ public class RtpStreamReceiver extends Thread {
 
 				seq = gseq;
 
-				if (user >= luser + 8000 && Call.call_state == Call.UA_STATE_INCALL) {
+				if (user >= luser + 8000 && callback.getCallState() == StreamCallback.UA_STATE_INCALL) {
 					if (luser == -8000 || am.getMode() != speakermode) {
 						saveVolume();
 						setMode(speakermode);
