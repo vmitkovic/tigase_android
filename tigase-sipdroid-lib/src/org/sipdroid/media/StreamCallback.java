@@ -31,4 +31,17 @@ public interface StreamCallback {
 
 	AudioManager getAudioManager();
 
+	// default: false
+	boolean isNoData();
+
+	int getDocked();
+
+	void closeCall();
+
+	Object getORingtone();
+
+	void setMode(boolean b);
+
+	boolean isMode();
+
 }
