@@ -40,6 +40,7 @@ import org.tigase.mobile.filetransfer.FileTransferModule;
 import org.tigase.mobile.filetransfer.FileTransferProgressEvent;
 import org.tigase.mobile.filetransfer.FileTransferRequestEvent;
 import org.tigase.mobile.filetransfer.StreamhostsEvent;
+import org.tigase.mobile.jingle.JingleService;
 import org.tigase.mobile.net.SocketThread;
 import org.tigase.mobile.sync.SyncAdapter;
 import org.tigase.mobile.ui.NotificationHelper;
@@ -69,6 +70,7 @@ import tigase.jaxmpp.core.client.xmpp.modules.capabilities.CapabilitiesModule;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageModule;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageModule.MessageEvent;
 import tigase.jaxmpp.core.client.xmpp.modules.disco.DiscoInfoModule;
+import tigase.jaxmpp.core.client.xmpp.modules.jingle.JingleModule;
 import tigase.jaxmpp.core.client.xmpp.modules.muc.MucModule;
 import tigase.jaxmpp.core.client.xmpp.modules.muc.MucModule.MucEvent;
 import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceModule;
@@ -107,7 +109,6 @@ import android.net.NetworkInfo;
 import android.net.SSLCertificateSocketFactory;
 import android.net.SSLSessionCache;
 import android.net.Uri;
-import android.os.Build;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
@@ -310,13 +311,13 @@ public class JaxmppService extends Service {
 				// sessionObject.setUserProperty(Connector.DISABLE_SOCKET_TIMEOUT_KEY,
 				// true);
 
-				//if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
+				// if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
 				// Android from API v8 contains optimized SSLSocketFactory
 				// which reduces network usage for handshake
 				SSLSessionCache sslSessionCache = new SSLSessionCache(context);
 				SSLSocketFactory sslSocketFactory = SSLCertificateSocketFactory.getDefault(0, sslSessionCache);
 				sessionObject.setUserProperty(SocketConnector.SSL_SOCKET_FACTORY_KEY, sslSocketFactory);
-				//}
+				// }
 
 				sessionObject.setUserProperty(SessionObject.USER_BARE_JID, jid);
 				sessionObject.setUserProperty(SessionObject.PASSWORD, password);
@@ -338,6 +339,7 @@ public class JaxmppService extends Service {
 					public void modulesInit() {
 						super.modulesInit();
 						getModulesManager().register(new FileTransferModule(observable, sessionObject, writer));
+						getModulesManager().register(new JingleModule(observable, sessionObject, writer));
 					}
 				};
 				jaxmpp.setExecutor(executor);
@@ -1119,6 +1121,8 @@ public class JaxmppService extends Service {
 
 	@Override
 	public void onDestroy() {
+		stopService(new Intent(this, JingleService.class));
+
 		serviceActive = false;
 		timer.cancel();
 
@@ -1288,6 +1292,7 @@ public class JaxmppService extends Service {
 		super.onStart(intent, startId);
 		if (DEBUG)
 			Log.i(TAG, "onStart()");
+
 	}
 
 	// added to fix Eclipse error
@@ -1295,6 +1300,10 @@ public class JaxmppService extends Service {
 	public int onStartCommand(final Intent intent, final int flags, final int startId) {
 		if (DEBUG)
 			Log.i(TAG, "onStartCommand()");
+
+		Intent jinlgeServiceIntent = new Intent(this, JingleService.class);
+		jinlgeServiceIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		startService(jinlgeServiceIntent);
 
 		if (intent != null && intent.getAction() != null) {
 			if (intent.getAction().equals(ACTION_KEEPALIVE)) {
