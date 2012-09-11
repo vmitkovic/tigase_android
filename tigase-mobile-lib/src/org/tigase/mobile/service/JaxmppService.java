@@ -343,7 +343,7 @@ public class JaxmppService extends Service {
 					}
 				};
 				jaxmpp.setExecutor(executor);
-				CapabilitiesModule capabilitiesModule = jaxmpp.getModulesManager().getModule(CapabilitiesModule.class);
+				CapabilitiesModule capabilitiesModule = jaxmpp.getModule(CapabilitiesModule.class);
 				if (capabilitiesModule != null) {
 					capabilitiesModule.setCache(new CapabilitiesDBCache(context));
 				}
@@ -699,8 +699,7 @@ public class JaxmppService extends Service {
 			public void handleEvent(FileTransferRequestEvent be) throws JaxmppException {
 				// if there is no stream-method supported by us we return error
 				if (be.getStreamMethods() == null || !be.getStreamMethods().contains(Features.BYTESTREAMS)) {
-					FileTransferModule ftModule = getMulti().get(be.getSessionObject()).getModulesManager().getModule(
-							FileTransferModule.class);
+					FileTransferModule ftModule = getMulti().get(be.getSessionObject()).getModule(FileTransferModule.class);
 					ftModule.sendNoValidStreams(be);
 					return;
 				}
@@ -1356,7 +1355,7 @@ public class JaxmppService extends Service {
 			new Thread() {
 				@Override
 				public void run() {
-					FileTransferModule ftModule = jaxmpp.getModulesManager().getModule(FileTransferModule.class);
+					FileTransferModule ftModule = jaxmpp.getModule(FileTransferModule.class);
 					try {
 						ftModule.rejectStreamInitiation(sender, id);
 					} catch (JaxmppException e) {
@@ -1379,7 +1378,7 @@ public class JaxmppService extends Service {
 			new Thread() {
 				@Override
 				public void run() {
-					FileTransferModule ftModule = jaxmpp.getModulesManager().getModule(FileTransferModule.class);
+					FileTransferModule ftModule = jaxmpp.getModule(FileTransferModule.class);
 					try {
 						ft.setSid(sid);
 						AndroidFileTransferUtility.registerFileTransferForStreamhost(sid, ft);
@@ -1434,7 +1433,7 @@ public class JaxmppService extends Service {
 			if (jaxmpp == null)
 				return;
 			final RosterItem rosterItem = jaxmpp.getRoster().get(jid);
-			jaxmpp.getModulesManager().getModule(VCardModule.class).retrieveVCard(JID.jidInstance(jid), (long) 3 * 60 * 1000,
+			jaxmpp.getModule(VCardModule.class).retrieveVCard(JID.jidInstance(jid), (long) 3 * 60 * 1000,
 					new VCardAsyncCallback() {
 
 						@Override
@@ -1487,7 +1486,7 @@ public class JaxmppService extends Service {
 					autoPresenceTask = null;
 					try {
 						for (JaxmppCore jaxmpp : getMulti().get()) {
-							final PresenceModule presenceModule = jaxmpp.getModulesManager().getModule(PresenceModule.class);
+							final PresenceModule presenceModule = jaxmpp.getModule(PresenceModule.class);
 							if (jaxmpp.getSessionObject().getProperty(Connector.CONNECTOR_STAGE_KEY) == Connector.State.connected)
 								presenceModule.setPresence(show, status, priority);
 						}
@@ -1503,7 +1502,7 @@ public class JaxmppService extends Service {
 				public void run() {
 					try {
 						for (JaxmppCore jaxmpp : getMulti().get()) {
-							final PresenceModule presenceModule = jaxmpp.getModulesManager().getModule(PresenceModule.class);
+							final PresenceModule presenceModule = jaxmpp.getModule(PresenceModule.class);
 							if (jaxmpp.getSessionObject().getProperty(Connector.CONNECTOR_STAGE_KEY) == Connector.State.connected)
 								presenceModule.setPresence(show, status, priority);
 						}
