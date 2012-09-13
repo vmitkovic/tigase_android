@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.ui.externaltools.ProgramBuilderLaunchConfigurationType">
+<stringAttribute key="org.eclipse.debug.core.ATTR_REFRESH_SCOPE" value="${working_set:&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&#10;&lt;resources&gt;&#10;&lt;item path=&quot;/tigase-mobile/res/values/strings.xml&quot; type=&quot;1&quot;/&gt;&#10;&lt;/resources&gt;}"/>
+<mapAttribute key="org.eclipse.debug.core.environmentVariables">
+<mapEntry key="APP_ICON_93312" value="../Resources/Eclipse.icns"/>
+<mapEntry key="APP_ICON_9498" value="../Resources/Eclipse.icns"/>
+<mapEntry key="Apple_PubSub_Socket_Render" value="/tmp/launch-hJ0UGl/Render"/>
+<mapEntry key="Apple_Ubiquity_Message" value="/tmp/launch-1umYei/Apple_Ubiquity_Message"/>
+<mapEntry key="COMMAND_MODE" value="unix2003"/>
+<mapEntry key="DISPLAY" value="/tmp/launch-J3Z51T/org.x:0"/>
+<mapEntry key="HOME" value="/Users/bmalkow"/>
+<mapEntry key="JAVA_STARTED_ON_FIRST_THREAD_9498" value="1"/>
+<mapEntry key="LOGNAME" value="bmalkow"/>
+<mapEntry key="PATH" value="/usr/bin:/bin:/usr/sbin:/sbin"/>
+<mapEntry key="SHELL" value="/bin/bash"/>
+<mapEntry key="SSH_AUTH_SOCK" value="/tmp/launch-Ju4Sad/Listeners"/>
+<mapEntry key="TMPDIR" value="/var/folders/qh/01ngd6g57j5bl65pkdqq48gm0000gn/T/"/>
+<mapEntry key="USER" value="bmalkow"/>
+<mapEntry key="__CF_USER_TEXT_ENCODING" value="0x1F5:29:42"/>
+<mapEntry key="com.apple.java.jvmMode" value="client"/>
+<mapEntry key="com.apple.java.jvmTask" value="JNI"/>
+</mapAttribute>
+<booleanAttribute key="org.eclipse.debug.ui.ATTR_LAUNCH_IN_BACKGROUND" value="false"/>
+<booleanAttribute key="org.eclipse.ui.externaltools.ATTR_BUILDER_ENABLED" value="false"/>
+<stringAttribute key="org.eclipse.ui.externaltools.ATTR_LOCATION" value="${workspace_loc:/tigase-mobile/buildNumberUpdate.py}"/>
+<stringAttribute key="org.eclipse.ui.externaltools.ATTR_RUN_BUILD_KINDS" value="full,incremental,auto,"/>
+<booleanAttribute key="org.eclipse.ui.externaltools.ATTR_TRIGGERS_CONFIGURED" value="true"/>
+<stringAttribute key="org.eclipse.ui.externaltools.ATTR_WORKING_DIRECTORY" value="${workspace_loc:/tigase-mobile}"/>
+</launchConfiguration>
