@@ -5,11 +5,13 @@
     android:id="@+id/roster_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <android.support.v4.view.ViewPager
-        android:id="@+id/viewSwitcher"
-        android:layout_width="fill_parent"
+    <fragment
+        android:name="org.tigase.mobile.roster.RosterFragment"
+        android:id="@+id/roster_fragment"
+        android:layout_weight="1"
+        android:layout_width="0dp"
         android:layout_height="wrap_content" >
-    </android.support.v4.view.ViewPager>
+    </fragment>
     <ListView android:id="@+id/main_left_drawer"
         android:layout_width="240dp"
         android:layout_height="match_parent"

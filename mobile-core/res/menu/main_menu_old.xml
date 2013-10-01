@@ -31,6 +31,10 @@
         android:title="Show offline">
     </item>
     <item
+        android:id="@+id/accountsList"
+        android:title="@string/accounts">
+    </item>
+    <item
         android:id="@+id/propertiesButton"
         android:icon="@android:drawable/ic_menu_preferences"
         android:title="@string/propertiesButton">

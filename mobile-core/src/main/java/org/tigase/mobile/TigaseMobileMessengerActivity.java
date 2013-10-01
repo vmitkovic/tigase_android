@@ -22,21 +22,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.tigase.mobile.MultiJaxmpp.ChatWrapper;
-import org.tigase.mobile.accountstatus.AccountsStatusFragment;
+import org.tigase.mobile.accountstatus.AccountsStatusActivity;
 import org.tigase.mobile.authenticator.AuthenticatorActivity;
 import org.tigase.mobile.bookmarks.BookmarksActivity;
 import org.tigase.mobile.chat.ChatHistoryFragment;
 import org.tigase.mobile.chatlist.ChatListActivity;
-import org.tigase.mobile.db.ChatTableMetaData;
 import org.tigase.mobile.db.RosterTableMetaData;
-import org.tigase.mobile.db.providers.ChatHistoryProvider;
 import org.tigase.mobile.db.providers.RosterProvider;
-import org.tigase.mobile.filetransfer.FileTransferUtility;
 import org.tigase.mobile.muc.JoinMucDialog;
 import org.tigase.mobile.muc.MucRoomFragment;
 import org.tigase.mobile.preferences.MessengerPreferenceActivity;
-import org.tigase.mobile.roster.AccountSelectorDialogFragment;
-import org.tigase.mobile.roster.ContactEditActivity;
 import org.tigase.mobile.roster.RosterFragment;
 import org.tigase.mobile.security.SecureTrustManagerFactory.DataCertificateException;
 import org.tigase.mobile.service.JaxmppService;
@@ -47,10 +42,7 @@ import tigase.jaxmpp.core.client.JaxmppCore;
 import tigase.jaxmpp.core.client.exceptions.JaxmppException;
 import tigase.jaxmpp.core.client.observer.BaseEvent;
 import tigase.jaxmpp.core.client.observer.Listener;
-import tigase.jaxmpp.core.client.xmpp.modules.chat.Chat;
-import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageModule;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageModule.AbstractMessageEvent;
-import tigase.jaxmpp.core.client.xmpp.modules.muc.MucModule;
 import tigase.jaxmpp.core.client.xmpp.modules.muc.Room;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterItem;
 import tigase.jaxmpp.j2se.Jaxmpp;
@@ -62,35 +54,24 @@ import android.app.AlertDialog.Builder;
 import android.app.Dialog;
 import android.content.BroadcastReceiver;
 import android.content.ContentUris;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
-import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActionBarDrawerToggle;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentPagerAdapter;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.view.ViewPager;
-import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.support.v4.widget.DrawerLayout;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -240,8 +221,6 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 		return RosterFragment.newInstance(string);
 	}
 
-	private MyFragmentPageAdapter adapter;
-
 	private final Listener<BaseEvent> chatListener;
 
 	protected DrawerLayout drawerLayout;
@@ -256,18 +235,12 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 
 	private final BroadcastReceiver mucErrorReceiver;
 
-	private final OnSharedPreferenceChangeListener prefChangeListener;;
+	// private final OnSharedPreferenceChangeListener prefChangeListener;;
 
 	private final RosterClickReceiver rosterClickReceiver = new RosterClickReceiver();
 
-	public ViewPager viewPager;
-
-	private ViewPager viewRoster;
-
-	private int XcurrentPage = -1;
-
 	public TigaseMobileMessengerActivity() {
-		helper = TigaseMobileMessengerActivityHelper.createInstance(this);
+		helper = TigaseMobileMessengerActivityHelper.createInstance();
 
 		this.mucErrorReceiver = new BroadcastReceiver() {
 
@@ -285,93 +258,22 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 					onMessageEvent((AbstractMessageEvent) be);
 			}
 		};
-		this.prefChangeListener = new OnSharedPreferenceChangeListener() {
 
-			@Override
-			public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-				if (Preferences.ROSTER_LAYOUT_KEY.equals(key) || Preferences.ROSTER_SORTING_KEY.equals(key)) {
-					((MyFragmentPageAdapter) viewPager.getAdapter()).setRefreshRoster(true);
-					viewPager.getAdapter().notifyDataSetChanged();
-				}
-			}
-		};
 	}
 
-	protected Integer findChat(final long chatId) {
-		List<ChatWrapper> l = getChatList();
-		for (int i = 0; i < l.size(); i++) {
-			ChatWrapper c = l.get(i);
-			if (c.isChat() && c.getChat().getId() == chatId)
-				return i;
-		}
-		return null;
-	}
-
-	protected Integer findChat(final RosterItem rosterItem) {
+	protected ChatWrapper findChatWrapper(final RosterItem rosterItem) {
 		List<ChatWrapper> l = getChatList();
 		for (int i = 0; i < l.size(); i++) {
 			ChatWrapper c = l.get(i);
 			if (c.isChat() && c.getChat().getSessionObject() == rosterItem.getSessionObject()
 					&& c.getChat().getJid().getBareJid().equals(rosterItem.getJid()))
-				return i;
+				return c;
 		}
 		return null;
 	}
-
-	private int findChatPage(Bundle incomingExtras) {
-		if (incomingExtras != null) {
-			long chatId = incomingExtras.getLong("chatId", -1);
-			long roomId = incomingExtras.getLong("roomId", -1);
-			incomingExtras = null;
-			if (DEBUG)
-				Log.d(TAG, "Intent with data? chatId=" + chatId);
-			if (roomId != -1) {
-				final Integer idx = findRoom(roomId);
-				if (idx != null) {
-					int currentPage = idx + (helper.isXLarge() ? 1 : 2);
-					if (DEBUG)
-						Log.d(TAG, "Set current page " + currentPage);
-					return currentPage;
-				}
-			} else if (chatId != -1) {
-				final Integer idx = findChat(chatId);
-				if (idx != null) {
-					int currentPage = idx + (helper.isXLarge() ? 1 : 2);
-					if (DEBUG)
-						Log.d(TAG, "Set current page " + currentPage);
-					return currentPage;
-				}
-			}
-		}
-		return -1;
-	}
-
-	protected Integer findRoom(final long chatId) {
-		List<ChatWrapper> l = getChatList();
-		for (int i = 0; i < l.size(); i++) {
-			ChatWrapper c = l.get(i);
-			if (c.isRoom() && c.getRoom().getId() == chatId)
-				return i;
-		}
-		return null;
-	}
-
-	public ChatWrapper getChatByPageIndex(int page) {
-		int x = page - (helper.isXLarge() ? 1 : 2);
-		if (x < 0)
-			return null;
-		List<ChatWrapper> chats = getChatList();
-		if (x >= chats.size())
-			return null;
-		return chats.get(x);
-	};
 
 	protected List<ChatWrapper> getChatList() {
 		return ((MessengerApplication) getApplicationContext()).getMultiJaxmpp().getChats();
-	}
-
-	public int getCurrentPage() {
-		return XcurrentPage;
 	}
 
 	private void notifyPageChange(int msg) {
@@ -379,25 +281,7 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 		intent.setAction(CLIENT_FOCUS_MSG);
 		intent.putExtra("page", msg);
 
-		if (msg > 1) {
-			final ChatWrapper chat = getChatByPageIndex(msg);
-			if (chat != null && chat.isChat()) {
-				Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/"
-						+ Uri.encode(chat.getChat().getJid().getBareJid().toString()));
-				ContentValues values = new ContentValues();
-				values.put(ChatTableMetaData.FIELD_AUTHOR_JID, chat.getChat().getJid().getBareJid().toString());
-				values.put(ChatTableMetaData.FIELD_STATE, ChatTableMetaData.STATE_INCOMING);
-				getContentResolver().update(uri, values, null, null);
-
-				intent.putExtra("chatId", chat.getChat().getId());
-			} else if (chat != null && chat.isRoom())
-				intent.putExtra("roomId", chat.getRoom().getId());
-		}
-
 		sendBroadcast(intent);
-
-		helper.updateActionBar();
-		helper.invalidateOptionsMenu();
 	}
 
 	@Override
@@ -405,37 +289,10 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 		if (DEBUG)
 			Log.d(TAG, "onActivityResult()");
 		if (requestCode == REQUEST_CHAT && resultCode == Activity.RESULT_OK) {
-			setCurrentPage(findChatPage(data.getExtras()));
-			// Moved to ChatHistoryFragment
-		} else if (requestCode == SELECT_FOR_SHARE && resultCode == Activity.RESULT_OK) {
-			Uri selected = data.getData();
-			String mimetype = data.getType();
-			final int p = getCurrentPage();
-			ChatWrapper chatW = getChatByPageIndex(p);
-			Chat chat = chatW.getChat();
-			if (chat == null)
-				return;
-			RosterItem ri = chat.getSessionObject().getRoster().get(chat.getJid().getBareJid());
-			JID jid = chat.getJid();
-			final Jaxmpp jaxmpp = ((MessengerApplication) TigaseMobileMessengerActivity.this.getApplicationContext()).getMultiJaxmpp().get(
-					ri.getSessionObject());
-			if (jid.getResource() == null) {
-				jid = FileTransferUtility.getBestJidForFeatures(jaxmpp, jid.getBareJid(), FileTransferUtility.FEATURES);
-			}
-			if (jid != null) {
-				FileTransferUtility.startFileTransfer(this, jaxmpp, chat.getJid(), selected, mimetype);
-			}
+			openChat(data.getExtras());
 		} else {
 			super.onActivityResult(requestCode, resultCode, data);
 		}
-	}
-
-	@Override
-	public void onBackPressed() {
-		if (getCurrentPage() == 0 || !helper.isXLarge() && getCurrentPage() > 1) {
-			setVisiblePage(1);
-		} else
-			super.onBackPressed();
 	}
 
 	@Override
@@ -454,8 +311,11 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 		registerReceiver(mucErrorReceiver, filter);
 
 		super.onCreate(savedInstanceState);
+
+		helper.updateIsXLarge((getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) == 4);
+
 		this.mPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-		this.mPreferences.registerOnSharedPreferenceChangeListener(prefChangeListener);
+		// this.mPreferences.registerOnSharedPreferenceChangeListener(prefChangeListener);
 
 		boolean autostart = mPreferences.getBoolean(Preferences.AUTOSTART_KEY, true);
 		autostart &= mPreferences.getBoolean(Preferences.SERVICE_ACTIVATED, true);
@@ -477,20 +337,9 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 			// finish();
 		}
 
-		if (savedInstanceState != null && getCurrentPage() == -1) {
-			// currentPage = savedInstanceState.getInt(STATE_CURRENT_PAGE_KEY,
-			// -1);
-			if (getChatByPageIndex(getCurrentPage()) == null)
-				setCurrentPage(-1);
-		}
-
-		if (getCurrentPage() == -1) {
-			// this should not happened as there is not valid position
-			setCurrentPage(helper.isXLarge() ? 0 : 1);
-		}
-
 		if (helper.isXLarge()) {
 			setContentView(R.layout.all);
+			((RosterFragment) getSupportFragmentManager().findFragmentById(R.id.roster_fragment)).setActivateOnItemClick(true);
 		} else {
 			setContentView(R.layout.roster_main);
 		}
@@ -500,6 +349,7 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 
 		// creating list of items available in drawer menu
 		final List<DrawerMenuItem> drawerMenuItems = new ArrayList<DrawerMenuItem>();
+		drawerMenuItems.add(new DrawerMenuItem(R.id.accountsList, R.string.accounts, android.R.drawable.ic_menu_more));
 		drawerMenuItems.add(new DrawerMenuItem(R.id.joinMucRoom, R.string.join_muc_room, R.drawable.group_chat, true));
 		drawerMenuItems.add(new DrawerMenuItem(R.id.bookmarksShow, R.string.bookmarks_show, android.R.drawable.star_off, true));
 		drawerMenuItems.add(new DrawerMenuItem(R.id.propertiesButton, R.string.propertiesButton,
@@ -523,139 +373,6 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 				}
 			}
 		});
-
-		this.viewRoster = (ViewPager) findViewById(R.id.viewRoster);
-		this.viewPager = (ViewPager) findViewById(R.id.viewSwitcher);
-		this.viewPager.setOnPageChangeListener(new OnPageChangeListener() {
-
-			@Override
-			public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-			}
-
-			@Override
-			public void onPageScrollStateChanged(int state) {
-				if (DEBUG)
-					Log.i(TigaseMobileMessengerActivity.TAG, "PageScrollStateChanged: " + state);
-			}
-
-			@Override
-			public void onPageSelected(int position) {
-				if (DEBUG)
-					Log.i(TigaseMobileMessengerActivity.TAG, "PageSelected: " + position);
-
-				setCurrentPage(position);
-				notifyPageChange(position);
-			}
-		});
-
-		if (viewRoster != null) {
-			viewRoster.setAdapter(new FragmentPagerAdapter(getSupportFragmentManager()) {
-				@Override
-				public int getCount() {
-					// TODO Auto-generated method stub
-					return 1;
-				}
-
-				@Override
-				public Fragment getItem(int i) {
-					return createRosterFragment(mPreferences.getString(Preferences.ROSTER_LAYOUT_KEY, "flat"));
-				}
-			});
-		}
-
-		this.adapter = new MyFragmentPageAdapter(getSupportFragmentManager()) {
-
-			@Override
-			public int getCount() {
-				if (helper.isXLarge())
-					return 1 + getChatList().size();
-				int n = 2 + getChatList().size();
-				return n;
-			}
-
-			@Override
-			public Fragment getItem(int i) {
-				if (DEBUG)
-					Log.i(TAG, "FragmentPagerAdapter.getItem(" + i + ")");
-				if (i == 0) {
-					return AccountsStatusFragment.newInstance();
-				} else if (!helper.isXLarge() && i == 1) {
-					Fragment f = createRosterFragment(mPreferences.getString(Preferences.ROSTER_LAYOUT_KEY, "flat"));
-					if (DEBUG)
-						Log.d(TAG, "Created roster with FragmentManager " + f.getFragmentManager());
-					return f;
-
-				} else {
-					int idx = i - (!helper.isXLarge() ? 2 : 1);
-					final ChatWrapper wrapper = getChatList().get(idx);
-					if (wrapper.isChat()) {
-						return ChatHistoryFragment.newInstance(
-								wrapper.getChat().getSessionObject().getUserBareJid().toString(), wrapper.getChat().getId());
-					} else {
-						Room room = wrapper.getRoom();
-						Fragment fr = MucRoomFragment.newInstance(room.getSessionObject().getUserBareJid().toString(),
-								room.getId());
-						return fr;
-					}
-				}
-			}
-
-			@Override
-			public int getItemPosition(Object object) {
-				if (object instanceof AccountsStatusFragment) {
-					return 0;
-				} else if (refreshRoster && object instanceof RosterFragment) {
-					return POSITION_NONE;
-				} else if (object instanceof RosterFragment) {
-					return 1;
-				} else if (object instanceof MucRoomFragment) {
-					Log.v(TAG, "got chat history fragment");
-					Room room = ((MucRoomFragment) object).getRoom();
-					if (room != null) {
-						Integer position = findRoom(room.getId());
-						if (position != null) {
-							if (helper.isXLarge())
-								return 1 + position;
-							return 2 + position;
-						}
-					}
-					return POSITION_NONE;
-				} else if (object instanceof ChatHistoryFragment) {
-					Log.v(TAG, "got chat history fragment");
-					Chat chat = ((ChatHistoryFragment) object).getChat();
-					if (chat != null) {
-						Integer position = findChat(chat.getId());
-						if (position != null) {
-							if (helper.isXLarge())
-								return 1 + position;
-							return 2 + position;
-						}
-					}
-					return POSITION_NONE;
-				} else {
-					return POSITION_NONE;
-				}
-			}
-
-			@Override
-			protected String makeFragmentName(int viewId, int index) {
-				if (index == 0) {
-					return "accounts";
-				} else if (!helper.isXLarge() && index == 1) {
-					return "roster";
-				} else {
-					int pos = index - (helper.isXLarge() ? 1 : 2);
-					if (pos < getChatList().size() && pos > -1) {
-						return getChatList().get(pos).toString();
-					} else {
-						return null;
-					}
-				}
-			}
-
-		};
-
-		viewPager.setAdapter(this.adapter);
 
 		if (getIntent().getData() instanceof Uri) {
 			Uri uri = getIntent().getData();
@@ -736,45 +453,10 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 		}
 	}
 
-	// @Override
-	// protected void onActivityResult(int requestCode, int resultCode, Intent
-	// data) {
-	// super.onActivityResult(requestCode, resultCode, data);
-	//
-	// if(DEBUG)Log.i(TAG, "Sprawdzamy extrasy...");
-	// if (getIntent() != null && getIntent().getExtras() != null) {
-	// if(DEBUG)Log.i(TAG, "Mamy extrasy");
-	// if (getIntent().getExtras().containsKey("chatId")) {
-	// long chatId = getIntent().getLongExtra("chatId", -1);
-	// getIntent().removeExtra("chatId");
-	//
-	// List<Chat> l = getChatList();
-	// for (int i = 0; i < l.size(); i++) {
-	// Chat chh = l.get(i);
-	// if (chh.getId() == chatId) {
-	// final int x = i + 1;
-	// viewSwitcher.post(new Runnable() {
-	//
-	// @Override
-	// public void run() {
-	// if(DEBUG)Log.i(TAG, "Switch chats to " + x);
-	//
-	// viewSwitcher.setCurrentItem(x);
-	// }
-	// });
-	//
-	// }
-	// }
-	// }
-	//
-	// }
-	// }
-
 	@Override
 	protected void onDestroy() {
 		unregisterReceiver(mucErrorReceiver);
 
-		this.mPreferences.unregisterOnSharedPreferenceChangeListener(prefChangeListener);
 		super.onDestroy();
 	}
 
@@ -786,20 +468,6 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 	}
 
 	protected void onMessageEvent(final AbstractMessageEvent be) {
-		/*
-		 * Runnable action = new Runnable() {
-		 * 
-		 * @Override public void run() {
-		 */
-		if (be.getType() == MessageModule.ChatCreated) {
-			viewPager.getAdapter().notifyDataSetChanged();
-		} else if (be.getType() == MessageModule.ChatClosed) {
-			viewPager.getAdapter().notifyDataSetChanged();
-		} else if (be.getType() == MucModule.RoomClosed) {
-			viewPager.getAdapter().notifyDataSetChanged();
-		} else if (be.getType() == MucModule.JoinRequested) {
-			viewPager.getAdapter().notifyDataSetChanged();
-		}
 		try {
 			// NPE - why be.getMessage() is null here?
 			if (be.getMessage() == null || be.getMessage().getFrom() == null)
@@ -813,11 +481,6 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 		} catch (Exception ex) {
 			Log.e(TAG, ex.getMessage(), ex);
 		}
-		/*
-		 * } };
-		 * 
-		 * viewPager.post(action);
-		 */
 	}
 
 	@Override
@@ -841,16 +504,10 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 				protected Void doInBackground(Room... params) {
 					final long roomId = params[0].getId();
 
-					viewPager.post(new Runnable() {
-
-						@Override
-						public void run() {
-							final Integer idx = findRoom(roomId);
-							// this should be done on receiving RoomJoined event
-							viewPager.getAdapter().notifyDataSetChanged();
-							setVisiblePage(idx + (helper.isXLarge() ? 1 : 2));
-						}
-					});
+					Intent intent = new Intent(TigaseMobileMessengerActivity.this, TigaseMobileMessengerActivity.class);
+					intent.setAction(TigaseMobileMessengerActivity.MUC_MESSAGE_ACTION);
+					intent.putExtra("roomId", roomId);
+					TigaseMobileMessengerActivity.this.startActivity(intent);
 					return null;
 				}
 			};
@@ -858,40 +515,8 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 			newFragment.show(getSupportFragmentManager(), "dialog");
 			return true;
 		} else if (id == android.R.id.home) {
-			setVisiblePage(1);
+			// setVisiblePage(1);
 			return true;
-		} else if (id == R.id.showHideOffline) {
-			boolean x = mPreferences.getBoolean(Preferences.SHOW_OFFLINE, Boolean.TRUE);
-			Editor editor = mPreferences.edit();
-			editor.putBoolean(Preferences.SHOW_OFFLINE, !x);
-			editor.commit();
-			Uri insertedItem = Uri.parse(RosterProvider.CONTENT_URI);
-			getApplicationContext().getContentResolver().notifyChange(insertedItem, null);
-			return true;
-			// insertedItem =
-			// Uri.parse("content://org.tigase.mobile.db.providers.RosterProvider");
-			// getApplicationContext().getContentResolver().notifyChange(insertedItem,
-			// null);
-		} else if (id == R.id.contactAdd) {
-			AccountManager accountManager = AccountManager.get(this);
-			final Account[] accounts = accountManager.getAccountsByType(Constants.ACCOUNT_TYPE);
-
-			if (accounts != null && accounts.length > 1) {
-				FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-				Fragment prev = getSupportFragmentManager().findFragmentByTag("account:select:dialog");
-				if (prev != null) {
-					ft.remove(prev);
-				}
-				ft.addToBackStack(null);
-				AccountSelectorDialogFragment newFragment = AccountSelectorDialogFragment.newInstance();
-				newFragment.show(ft, "account:select:dialog");
-				return true;
-			} else if (accounts != null && accounts.length == 1) {
-				Intent intent = new Intent(this, ContactEditActivity.class);
-				intent.putExtra("account", accounts[0].name);
-				startActivityForResult(intent, 0);
-				return true;
-			}
 		} else if (id == R.id.aboutButton) {
 			showDialog(ABOUT_DIALOG);
 			return true;
@@ -914,16 +539,22 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 			Intent intent = new Intent(TigaseMobileMessengerActivity.this, BookmarksActivity.class);
 			startActivityForResult(intent, REQUEST_CHAT);
 			return true;
+		} else if (id == R.id.accountsList) {
+			Intent intent = new Intent(TigaseMobileMessengerActivity.this, AccountsStatusActivity.class);
+			startActivity(intent);
 		}
 		return false;
 	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		if ((getCurrentPage() == 1 || helper.isXLarge()) && drawerToggle.onOptionsItemSelected(item)) {
+		if (drawerToggle.onOptionsItemSelected(item)) {
 			return true;
 		}
-		return onOptionsItemSelected(item.getItemId());
+		boolean result = onOptionsItemSelected(item.getItemId());
+		if (result)
+			return result;
+		return super.onOptionsItemSelected(item);
 	}
 
 	@Override
@@ -946,50 +577,6 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 	}
 
 	@Override
-	public boolean onPrepareOptionsMenu(Menu menu) {
-		if (getCurrentPage() == 0 || getCurrentPage() == 1 || helper.isXLarge()) {
-			MenuInflater inflater = getMenuInflater();
-			Log.v(TAG, "current page " + getCurrentPage());
-			Log.v(TAG, "xlarge = " + helper.isXLarge());
-			final boolean serviceActive = JaxmppService.isServiceActive();
-
-			menu.clear();
-			if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-				inflater.inflate(R.menu.main_menu_old, menu);
-			} else {
-				inflater.inflate(R.menu.main_menu, menu);
-			}
-
-			MenuItem con = menu.findItem(R.id.connectButton);
-			con.setVisible(!serviceActive);
-
-			MenuItem dcon = menu.findItem(R.id.disconnectButton);
-			dcon.setVisible(serviceActive);
-
-			MenuItem showOffline = menu.findItem(R.id.showHideOffline);
-			showOffline.setCheckable(true);
-			showOffline.setChecked(mPreferences.getBoolean(Preferences.SHOW_OFFLINE, Boolean.TRUE));
-
-			MenuItem add = menu.findItem(R.id.contactAdd);
-			helper.setShowAsAction(add, MenuItem.SHOW_AS_ACTION_IF_ROOM);
-			add.setVisible(serviceActive);
-
-			MenuItem bookmarks = menu.findItem(R.id.bookmarksShow);
-			if (bookmarks != null) {
-				bookmarks.setVisible(serviceActive);
-			}
-		}
-
-		return super.onPrepareOptionsMenu(menu);
-	}
-
-	@Override
-	protected void onRestoreInstanceState(Bundle savedInstanceState) {
-		super.onRestoreInstanceState(savedInstanceState);
-		setCurrentPage(savedInstanceState.getInt(STATE_CURRENT_PAGE, -1));
-	}
-
-	@Override
 	protected void onResume() {
 		super.onResume();
 		if (DEBUG)
@@ -997,29 +584,10 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 
 		registerReceiver(rosterClickReceiver, new IntentFilter(ROSTER_CLICK_MSG));
 
-		viewPager.getAdapter().notifyDataSetChanged();
-
 		final MultiJaxmpp multi = ((MessengerApplication) getApplicationContext()).getMultiJaxmpp();
 
 		multi.addListener(this.chatListener);
 
-		viewPager.post(new Runnable() {
-
-			@Override
-			public void run() {
-				if (DEBUG)
-					Log.d(TAG, "Focus on page " + getCurrentPage());
-				setVisiblePage(getCurrentPage());
-				notifyPageChange(getCurrentPage());
-			}
-		});
-
-	}
-
-	@Override
-	protected void onSaveInstanceState(Bundle outState) {
-		outState.putInt(STATE_CURRENT_PAGE, getCurrentPage());
-		super.onSaveInstanceState(outState);
 	}
 
 	@Override
@@ -1029,6 +597,30 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 			Log.d(TAG, "onStop()");
 	}
 
+	private void openChat(Bundle extra) {
+		if (extra == null)
+			return;
+
+		String account = extra.getString("account");
+		long chatId = extra.getLong("chatId", 0);
+		long roomId = extra.getLong("roomId", 0);
+
+		Intent intent = null;
+		if (chatId != 0) {
+			intent = new Intent(this, TigaseMobileMessengerActivity.class);
+			intent.setAction(TigaseMobileMessengerActivity.NEW_CHAT_MESSAGE_ACTION);
+			intent.putExtra("chatId", chatId);
+		} else if (roomId != 0) {
+			intent = new Intent(this, TigaseMobileMessengerActivity.class);
+			intent.setAction(TigaseMobileMessengerActivity.MUC_MESSAGE_ACTION);
+			intent.putExtra("roomId", roomId);
+		}
+		if (intent != null) {
+			intent.putExtra("account", account);
+			startActivity(intent);
+		}
+	}
+
 	protected void openChatWith(final RosterItem rosterItem, final String resource) {
 		Runnable r = new Runnable() {
 
@@ -1036,23 +628,19 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 			public void run() {
 
 				try {
-					Integer idx = findChat(rosterItem);
+					ChatWrapper wrapper = findChatWrapper(rosterItem);
 
-					if (DEBUG)
-						Log.i(TAG, "Opening new chat with " + rosterItem + ". idx=" + idx);
-
-					if (idx == null) {
+					if (wrapper == null) {
 						final Jaxmpp jaxmpp = ((MessengerApplication) TigaseMobileMessengerActivity.this.getApplicationContext()).getMultiJaxmpp().get(
 								rosterItem.getSessionObject());
 						jaxmpp.createChat(JID.jidInstance(rosterItem.getJid(), resource));
-						final int i = getChatList().size() + (helper.isXLarge() ? 1 : 2);
-						// this will be done when we receive ChatCreated event
-						// viewPager.getAdapter().notifyDataSetChanged();
-						setVisiblePage(i);
+						wrapper = findChatWrapper(rosterItem);
 
-					} else {
-						setVisiblePage(idx + (helper.isXLarge() ? 1 : 2));
 					}
+
+					ChatHistoryFragment.openChat(TigaseMobileMessengerActivity.this,
+							wrapper.getChat().getSessionObject().getUserBareJid().toString(), wrapper.getChat().getId(),
+							helper.isXLarge());
 
 				} catch (JaxmppException e) {
 					throw new RuntimeException(e);
@@ -1060,7 +648,7 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 
 			}
 		};
-		viewPager.postDelayed(r, 750);
+		drawerList.postDelayed(r, 750);
 	}
 
 	private void processingNotificationIntent(final Intent intent) {
@@ -1071,19 +659,23 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 			Log.d(TAG, "processingNotificationIntent() action=" + intent.getAction());
 		// this.currentPage = findChatPage(intent.getExtras());
 
-		helper.updateActionBar();
+		helper.updateActionBar(this, null);
 
 		final Bundle bundle = intent.getExtras();
-		viewPager.post(new Runnable() {
+		drawerList.post(new Runnable() {
 			@Override
 			public void run() {
 				if (DEBUG)
 					Log.d(TAG, "processing posted new intent. action=" + intent.getAction());
 
 				if (intent.getAction() != null && MUC_MESSAGE_ACTION.equals(intent.getAction())) {
-					setCurrentPage(findChatPage(intent.getExtras()));
+					// setCurrentPage(findChatPage(intent.getExtras()));
+					MucRoomFragment.openRoom(TigaseMobileMessengerActivity.this, intent.getStringExtra("account"),
+							intent.getLongExtra("roomId", 0), helper.isXLarge());
 				} else if (intent.getAction() != null && NEW_CHAT_MESSAGE_ACTION.equals(intent.getAction())) {
-					setCurrentPage(findChatPage(intent.getExtras()));
+					// setCurrentPage(findChatPage(intent.getExtras()));
+					ChatHistoryFragment.openChat(TigaseMobileMessengerActivity.this, intent.getStringExtra("account"),
+							intent.getLongExtra("chatId", 0), helper.isXLarge());
 				} else if (intent.getAction() != null && CERT_UNTRUSTED_ACTION.equals(intent.getAction())) {
 					DataCertificateException cause = (DataCertificateException) bundle.getSerializable("cause");
 					String account = bundle.getString("account");
@@ -1108,18 +700,6 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 			}
 		});
 
-	}
-
-	private void setCurrentPage(int page) {
-		this.XcurrentPage = page;
-	}
-
-	private void setVisiblePage(int i) {
-		if (DEBUG)
-			Log.d(TAG, "Set visible page to " + i);
-		if (viewPager.getChildCount() != i)
-			viewPager.getAdapter().notifyDataSetChanged();
-		viewPager.setCurrentItem(i);
 	}
 
 	private void showMucError(final Bundle bundle) {

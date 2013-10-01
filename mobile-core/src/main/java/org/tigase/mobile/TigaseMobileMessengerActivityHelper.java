@@ -17,42 +17,43 @@
  */
 package org.tigase.mobile;
 
+import org.tigase.mobile.MultiJaxmpp.ChatWrapper;
+
+import android.app.Activity;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.view.MenuItem;
 
 public class TigaseMobileMessengerActivityHelper {
 
-	public static TigaseMobileMessengerActivityHelper createInstance(TigaseMobileMessengerActivity activity) {
+	private static boolean xlarge = false;
+	
+	public static TigaseMobileMessengerActivityHelper createInstance() {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-			return new TigaseMobileMessengerActivityHelperHoneycomb(activity);
+			return new TigaseMobileMessengerActivityHelperHoneycomb();
 		} else {
-			return new TigaseMobileMessengerActivityHelper(activity);
+			return new TigaseMobileMessengerActivityHelper();
 		}
 	}
 
-	protected final TigaseMobileMessengerActivity activity;
-
-	protected TigaseMobileMessengerActivityHelper(TigaseMobileMessengerActivity activity) {
-		this.activity = activity;
+	protected TigaseMobileMessengerActivityHelper() {
 	}
 
-	public void invalidateOptionsMenu() {
+	public void invalidateOptionsMenu(Activity activity) {
 	}
 
+	public void updateIsXLarge(boolean isXLarge) {
+		xlarge = isXLarge;
+	}
+	
 	public boolean isXLarge() {
-		return (activity.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) == 4;
-		// return getResources().getConfiguration().screenLayout >= 0x04 &&
-		// Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB;
+		return xlarge;
 	};
 
 	public void setShowAsAction(MenuItem item, int value) {
 	};
 
-	public void updateActionBar() {
+	public void updateActionBar(Activity activity, final ChatWrapper c) {
 	}
-
-	public void updateActionBar(int itemHashCode) {
-	}
-
+	
 }

@@ -24,6 +24,7 @@ import org.tigase.mobile.MultiJaxmpp.ChatWrapper;
 import org.tigase.mobile.Preferences;
 import org.tigase.mobile.R;
 import org.tigase.mobile.TigaseMobileMessengerActivity;
+import org.tigase.mobile.TigaseMobileMessengerActivityHelper;
 import org.tigase.mobile.chat.ChatHistoryFragment;
 import org.tigase.mobile.chatlist.ChatListActivity;
 import org.tigase.mobile.db.providers.ChatHistoryProvider;
@@ -50,10 +51,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
-import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -93,9 +94,29 @@ public class MucRoomFragment extends FragmentWithUID implements LoaderCallbacks<
 		return f;
 	}
 
+	public static void openRoom(FragmentActivity activity, String account, long roomId, boolean xlarge) {
+		if (xlarge) {
+			Bundle arguments = new Bundle();
+			arguments.putLong("roomId", roomId);
+			arguments.putString("account", account);
+			MucRoomFragment fragment = new MucRoomFragment();
+			fragment.setArguments(arguments);
+			activity.getSupportFragmentManager().beginTransaction().replace(R.id.main_detail_container, fragment).commit();
+		} else {
+			Intent newIntent = new Intent(activity, MucActivity.class);
+			newIntent.putExtra("roomId", roomId);
+			newIntent.putExtra("account", account);
+			activity.startActivity(newIntent);
+		}
+	}
+
+	private ChatWrapper chatWrapper;
+
 	private Listener<ConnectorEvent> connectionListener;
 
 	private EditText ed;
+
+	private TigaseMobileMessengerActivityHelper helper;
 
 	private JaxmppCore jaxmpp;
 
@@ -183,7 +204,8 @@ public class MucRoomFragment extends FragmentWithUID implements LoaderCallbacks<
 			if (ch == null) {
 				String msg = ChatHistoryFragment.prepareAdditionalDebug(multi);
 				Log.v(TAG, "ChatWrapper is null with id = " + id + '\n' + msg);
-				((TigaseMobileMessengerActivity) getActivity()).viewPager.getAdapter().notifyDataSetChanged();
+				// ((TigaseMobileMessengerActivity)
+				// getActivity()).viewPager.getAdapter().notifyDataSetChanged();
 			} else {
 				if (ch.getRoom() == null) {
 					throw new NullPointerException("ChatWrapper.getRoom() is null with id = " + id);
@@ -193,8 +215,14 @@ public class MucRoomFragment extends FragmentWithUID implements LoaderCallbacks<
 				}
 
 				this.room = ch.getRoom();
+				this.chatWrapper = ch;
 				this.jaxmpp = multi.get(ch.getRoom().getSessionObject());
 
+				Intent intent = new Intent();
+				intent.setAction(TigaseMobileMessengerActivity.CLIENT_FOCUS_MSG);
+				intent.putExtra("page", 1);
+				intent.putExtra("roomId", room.getId());
+				getActivity().sendBroadcast(intent);
 			}
 		}
 
@@ -259,12 +287,18 @@ public class MucRoomFragment extends FragmentWithUID implements LoaderCallbacks<
 
 	@Override
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-		menu.clear();
 		inflater.inflate(R.menu.muc_main_menu, menu);
+
+		MenuItem showChats = menu.findItem(R.id.showChatsButton);
+		if (showChats != null) {
+			showChats.setVisible(getActivity() instanceof MucActivity);
+		}
 	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+		this.helper = TigaseMobileMessengerActivityHelper.createInstance();
+
 		this.view = inflater.inflate(R.layout.muc_conversation, container, false);
 
 		this.stateImage = (ImageView) view.findViewById(R.id.user_presence);
@@ -356,12 +390,13 @@ public class MucRoomFragment extends FragmentWithUID implements LoaderCallbacks<
 		} else if (item.getItemId() == R.id.closeChatButton) {
 			cancelEdit();
 
-			final ViewPager viewPager = ((TigaseMobileMessengerActivity) this.getActivity()).viewPager;
+			// final ViewPager viewPager = ((TigaseMobileMessengerActivity)
+			// this.getActivity()).viewPager;
 			final Jaxmpp jaxmpp = ((MessengerApplication) getActivity().getApplicationContext()).getMultiJaxmpp().get(
 					room.getSessionObject());
 			final MucModule cm = jaxmpp.getModule(MucModule.class);
 
-			viewPager.setCurrentItem(1);
+			// viewPager.setCurrentItem(1);
 			AsyncTask<Void, Void, Void> t = new AsyncTask<Void, Void, Void>() {
 
 				@Override
@@ -376,10 +411,12 @@ public class MucRoomFragment extends FragmentWithUID implements LoaderCallbacks<
 
 				@Override
 				protected void onPostExecute(Void param) {
-					// this will be done by TigaseMessengerActivity after
-					// receiving RoomClosed event
-					// viewPager.getAdapter().notifyDataSetChanged();
-					viewPager.setCurrentItem(1);
+					if (getActivity() instanceof MucActivity) {
+						getActivity().finish();
+					} else {
+						getActivity().getSupportFragmentManager().beginTransaction().remove(MucRoomFragment.this).commit();
+						helper.updateActionBar(getActivity(), null);
+					}
 				}
 			};
 
@@ -496,10 +533,7 @@ public class MucRoomFragment extends FragmentWithUID implements LoaderCallbacks<
 						});
 					}
 
-					TigaseMobileMessengerActivity activity = ((TigaseMobileMessengerActivity) getActivity());
-					if (activity != null && activity.helper != null && room != null) {
-						activity.helper.updateActionBar(room.hashCode());
-					}
+					helper.updateActionBar(getActivity(), chatWrapper);
 				}
 			};
 			view.post(r);

@@ -22,15 +22,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.tigase.mobile.Constants;
 import org.tigase.mobile.MessengerApplication;
 import org.tigase.mobile.MultiJaxmpp;
+import org.tigase.mobile.Preferences;
 import org.tigase.mobile.R;
 import org.tigase.mobile.RosterDisplayTools;
 import org.tigase.mobile.TigaseMobileMessengerActivity;
+import org.tigase.mobile.TigaseMobileMessengerActivityHelper;
 import org.tigase.mobile.db.GeolocationTableMetaData;
 import org.tigase.mobile.db.RosterTableMetaData;
 import org.tigase.mobile.db.providers.RosterProvider;
 import org.tigase.mobile.pubsub.GeolocationModule;
+import org.tigase.mobile.service.JaxmppService;
 import org.tigase.mobile.vcard.VCardViewActivity;
 
 import tigase.jaxmpp.core.client.BareJID;
@@ -49,13 +53,20 @@ import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceModule;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterItem;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Presence;
 import tigase.jaxmpp.j2se.Jaxmpp;
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -163,6 +174,8 @@ public class RosterFragment extends Fragment {
 	private final Listener<ConnectorEvent> connectorListener;
 
 	private long[] expandedIds;
+
+	private TigaseMobileMessengerActivityHelper helper = TigaseMobileMessengerActivityHelper.createInstance();
 
 	private ContextMenuInfo lastMenuInfo;
 
@@ -272,12 +285,12 @@ public class RosterFragment extends Fragment {
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+		this.setHasOptionsMenu(true);
 		super.onCreate(savedInstanceState);
 
 		if (getArguments() != null) {
 			this.rosterLayout = getArguments().getString("layout");
 		}
-
 	}
 
 	@Override
@@ -360,12 +373,31 @@ public class RosterFragment extends Fragment {
 	}
 
 	@Override
+	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+			inflater.inflate(R.menu.main_menu_old, menu);
+		} else {
+			inflater.inflate(R.menu.main_menu, menu);
+		}
+
+		MenuItem showOffline = menu.findItem(R.id.showHideOffline);
+		showOffline.setCheckable(true);
+		showOffline.setChecked(PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getBoolean(
+				Preferences.SHOW_OFFLINE, Boolean.TRUE));
+
+		super.onCreateOptionsMenu(menu, inflater);
+	}
+
+	@Override
 	public View onCreateView(final LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		if (DEBUG)
 			Log.d(TAG + "_rf", "onCreateView()");
 
 		if (getArguments() != null) {
 			this.rosterLayout = getArguments().getString("layout");
+		} else {
+			this.rosterLayout = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString(
+					Preferences.ROSTER_LAYOUT_KEY, "flat");
 		}
 
 		View layout;
@@ -468,6 +500,68 @@ public class RosterFragment extends Fragment {
 		super.onDestroyView();
 		if (DEBUG)
 			Log.d(TAG + "_rf", "onDestroyView()");
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		if (id == R.id.showHideOffline) {
+			SharedPreferences mPreferences = PreferenceManager.getDefaultSharedPreferences(this.getActivity());
+			boolean x = mPreferences.getBoolean(Preferences.SHOW_OFFLINE, Boolean.TRUE);
+			Editor editor = mPreferences.edit();
+			editor.putBoolean(Preferences.SHOW_OFFLINE, !x);
+			editor.commit();
+			Uri insertedItem = Uri.parse(RosterProvider.CONTENT_URI);
+			getActivity().getApplicationContext().getContentResolver().notifyChange(insertedItem, null);
+			return true;
+			// insertedItem =
+			// Uri.parse("content://org.tigase.mobile.db.providers.RosterProvider");
+			// getApplicationContext().getContentResolver().notifyChange(insertedItem,
+			// null);
+		} else if (id == R.id.contactAdd) {
+			AccountManager accountManager = AccountManager.get(getActivity());
+			final Account[] accounts = accountManager.getAccountsByType(Constants.ACCOUNT_TYPE);
+
+			if (accounts != null && accounts.length > 1) {
+				FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+				Fragment prev = getActivity().getSupportFragmentManager().findFragmentByTag("account:select:dialog");
+				if (prev != null) {
+					ft.remove(prev);
+				}
+				ft.addToBackStack(null);
+				AccountSelectorDialogFragment newFragment = AccountSelectorDialogFragment.newInstance();
+				newFragment.show(ft, "account:select:dialog");
+				return true;
+			} else if (accounts != null && accounts.length == 1) {
+				Intent intent = new Intent(getActivity(), ContactEditActivity.class);
+				intent.putExtra("account", accounts[0].name);
+				startActivityForResult(intent, 0);
+				return true;
+			}
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+	@Override
+	public void onPrepareOptionsMenu(Menu menu) {
+		final boolean serviceActive = JaxmppService.isServiceActive();
+
+		MenuItem con = menu.findItem(R.id.connectButton);
+		con.setVisible(!serviceActive);
+
+		MenuItem dcon = menu.findItem(R.id.disconnectButton);
+		dcon.setVisible(serviceActive);
+
+		MenuItem add = menu.findItem(R.id.contactAdd);
+		helper.setShowAsAction(add, MenuItem.SHOW_AS_ACTION_IF_ROOM);
+		add.setVisible(serviceActive);
+
+		MenuItem bookmarks = menu.findItem(R.id.bookmarksShow);
+		if (bookmarks != null) {
+			bookmarks.setVisible(serviceActive);
+		}
+
+		super.onPrepareOptionsMenu(menu);
 	}
 
 	@Override
@@ -648,6 +742,16 @@ public class RosterFragment extends Fragment {
 		String txt = String.format(getActivity().getString(R.string.auth_resent), name, jid.getBareJid().toString());
 		Toast.makeText(getActivity().getApplicationContext(), txt, Toast.LENGTH_LONG).show();
 
+	}
+
+	/**
+	 * Turns on activate-on-click mode. When this mode is on, list items will be
+	 * given the 'activated' state when touched.
+	 */
+	public void setActivateOnItemClick(boolean activateOnItemClick) {
+		// When setting CHOICE_MODE_SINGLE, ListView will automatically
+		// give items the 'activated' state when touched.
+		listView.setChoiceMode(activateOnItemClick ? AbsListView.CHOICE_MODE_SINGLE : AbsListView.CHOICE_MODE_NONE);
 	}
 
 	private void updateConnectionStatus() {
