@@ -312,8 +312,6 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 
 		super.onCreate(savedInstanceState);
 
-		helper.updateIsXLarge((getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) == 4);
-
 		this.mPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 		// this.mPreferences.registerOnSharedPreferenceChangeListener(prefChangeListener);
 
@@ -336,12 +334,16 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 			startActivity(intent);
 			// finish();
 		}
+		
+		setContentView(R.layout.roster_main);
+
+		helper.updateIsXLarge(findViewById(R.id.main_detail_container) != null);
 
 		if (helper.isXLarge()) {
-			setContentView(R.layout.all);
+//			setContentView(R.layout.main_layout);
 			((RosterFragment) getSupportFragmentManager().findFragmentById(R.id.roster_fragment)).setActivateOnItemClick(true);
 		} else {
-			setContentView(R.layout.roster_main);
+//			setContentView(R.layout.roster_main);
 		}
 
 		this.drawerList = (ListView) findViewById(R.id.main_left_drawer);

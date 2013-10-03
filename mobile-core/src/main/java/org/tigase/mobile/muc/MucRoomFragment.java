@@ -219,9 +219,17 @@ public class MucRoomFragment extends FragmentWithUID implements LoaderCallbacks<
 				this.chatWrapper = ch;
 				this.jaxmpp = multi.get(ch.getRoom().getSessionObject());
 
+				if (view.findViewById(R.id.muc_occupants_container) != null) {
+					Bundle arguments = new Bundle();
+					arguments.putLong("roomId", id);
+					OccupantsListFragment fragment = new OccupantsListFragment();
+					fragment.setArguments(arguments);
+					getChildFragmentManager().beginTransaction()
+							.add(R.id.muc_occupants_container, fragment).commit();			
+				}
 			}
 		}
-
+		
 		this.mucAdapter = new MucAdapter(getActivity(), R.layout.muc_chat_item, room, nickameClickListener);
 		getLoaderManager().initLoader(fragmentUID, null, this);
 		mucAdapter.registerDataSetObserver(new DataSetObserver() {
