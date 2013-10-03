@@ -12,7 +12,13 @@ import org.tigase.mobile.muc.MucActivity;
 import org.tigase.mobile.roster.CPresence;
 import org.tigase.mobile.utils.AvatarHelper;
 
+import tigase.jaxmpp.core.client.exceptions.JaxmppException;
+import tigase.jaxmpp.core.client.observer.BaseEvent;
+import tigase.jaxmpp.core.client.observer.Listener;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.Chat;
+import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageModule;
+import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageModule.AbstractMessageEvent;
+import tigase.jaxmpp.core.client.xmpp.modules.muc.MucModule;
 import tigase.jaxmpp.core.client.xmpp.modules.muc.Room;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterItem;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterStore;
@@ -37,6 +43,8 @@ public class ChatListFragment extends Fragment {
 
 		private final ArrayList<ChatWrapper> chats = new ArrayList<ChatWrapper>();
 
+		private Listener<BaseEvent> listener;
+		
 		private Context mContext;
 
 		private LayoutInflater mInflater;
@@ -48,8 +56,30 @@ public class ChatListFragment extends Fragment {
 			this.chats.addAll(multi.getChats());
 			mContext = c;
 			mInflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			
+			listener = new Listener<BaseEvent>() {
+
+				@Override
+				public void handleEvent(BaseEvent be) throws JaxmppException {
+					if (be instanceof AbstractMessageEvent) {
+						if (be.getType() == MessageModule.ChatCreated || be.getType() == MucModule.JoinRequested
+								|| be.getType() == MessageModule.ChatClosed || be.getType() == MucModule.RoomClosed) {
+							chats.clear();
+							chats.addAll(multi.getChats());
+							ImageAdapter.this.notifyDataSetChanged();
+						}
+					}					
+				}
+				
+			};
+			
+			multi.addListener(listener);
 		}
 
+		public void destroy() {
+			multi.removeListener(listener);
+		}
+		
 		@Override
 		public int getCount() {
 			return chats.size();
@@ -157,6 +187,7 @@ public class ChatListFragment extends Fragment {
 		}
 	}	
 	
+	private ImageAdapter adapter;
 	private View layout;
 	
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -196,9 +227,20 @@ public class ChatListFragment extends Fragment {
 			}
 		});
 
-		g.setAdapter(new ImageAdapter(this.getActivity()));		
+		adapter = new ImageAdapter(this.getActivity());
+		
+		g.setAdapter(adapter);		
 		
 		return layout;
+	}
+	
+	@Override
+	public void onDestroyView() {
+		if (adapter != null) {
+			adapter.destroy();
+		}
+		
+		super.onDestroyView();
 	}
 	
 }
