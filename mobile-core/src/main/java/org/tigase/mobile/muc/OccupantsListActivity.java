@@ -24,7 +24,9 @@ import org.tigase.mobile.R;
 import org.tigase.mobile.RosterDisplayTools;
 import org.tigase.mobile.TigaseMobileMessengerActivity;
 import org.tigase.mobile.roster.CPresence;
+import org.tigase.mobile.utils.AvatarHelper;
 
+import tigase.jaxmpp.core.client.JID;
 import tigase.jaxmpp.core.client.exceptions.JaxmppException;
 import tigase.jaxmpp.core.client.observer.Listener;
 import tigase.jaxmpp.core.client.xml.XMLException;
@@ -32,6 +34,7 @@ import tigase.jaxmpp.core.client.xmpp.modules.muc.MucModule;
 import tigase.jaxmpp.core.client.xmpp.modules.muc.MucModule.MucEvent;
 import tigase.jaxmpp.core.client.xmpp.modules.muc.Occupant;
 import tigase.jaxmpp.core.client.xmpp.modules.muc.Room;
+import tigase.jaxmpp.core.client.xmpp.modules.muc.XMucUserElement;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -94,12 +97,13 @@ public class OccupantsListActivity extends Activity {
 			}
 
 			final Occupant occupant = (Occupant) getItem(position);
-
+			
 			final TextView nicknameTextView = (TextView) view.findViewById(R.id.occupant_nickname);
 			final TextView statusTextView = (TextView) view.findViewById(R.id.occupant_status_description);
 			final ImageView occupantIcon = (ImageView) view.findViewById(R.id.occupant_icon);
 			final ImageView occupantPresence = (ImageView) view.findViewById(R.id.occupant_presence);
-
+			final ImageView occupantAvatar = (ImageView) view.findViewById(R.id.occupant_avatar);
+			
 			try {
 				nicknameTextView.setText(occupant.getNickname());
 				int colorRes = MucAdapter.getOccupantColor(occupant.getNickname());
@@ -153,6 +157,18 @@ public class OccupantsListActivity extends Activity {
 					break;
 				}
 
+				XMucUserElement xMucUser = XMucUserElement.extract(occupant.getPresence());
+				JID userJid = null;
+				if (xMucUser != null) {
+					userJid = xMucUser.getJID();
+				}
+				if (userJid != null) {
+					AvatarHelper.setAvatarToImageView(userJid.getBareJid(), occupantAvatar);
+				}
+				else {
+					occupantAvatar.setImageResource(R.drawable.user_avatar);
+				}
+				
 			} catch (XMLException e) {
 				Log.e(TAG, "Can't show occupant", e);
 			}
