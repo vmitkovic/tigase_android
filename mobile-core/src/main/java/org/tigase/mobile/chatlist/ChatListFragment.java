@@ -191,6 +191,7 @@ public class ChatListFragment extends Fragment {
 				}
 				else {
 					getActivity().startActivity(result);
+					getActivity().overridePendingTransition(0, 0);
 				}
 			}
 		});
