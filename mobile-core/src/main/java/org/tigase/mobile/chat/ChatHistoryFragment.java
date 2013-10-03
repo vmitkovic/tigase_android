@@ -65,6 +65,7 @@ import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.view.ViewPager;
+import android.support.v4.widget.SlidingPaneLayout;
 import android.text.ClipboardManager;
 import android.text.format.DateFormat;
 import android.util.Log;
@@ -400,8 +401,15 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		if (item.getItemId() == R.id.showChatsButton) {
-			Intent chatListActivity = new Intent(getActivity(), ChatListActivity.class);
-			this.getActivity().startActivityForResult(chatListActivity, TigaseMobileMessengerActivity.REQUEST_CHAT);
+//			Intent chatListActivity = new Intent(getActivity(), ChatListActivity.class);
+//			this.getActivity().startActivityForResult(chatListActivity, TigaseMobileMessengerActivity.REQUEST_CHAT);
+			SlidingPaneLayout slidingPaneLayout = (SlidingPaneLayout) getActivity().findViewById(R.id.chat_sliding_pane_layout);
+			if (slidingPaneLayout.isOpen()) {
+				slidingPaneLayout.closePane();
+			}
+			else {
+				slidingPaneLayout.openPane();
+			}
 		} else if (item.getItemId() == R.id.closeChatButton) {
 			layout.cancelEdit();
 			final Jaxmpp jaxmpp = ((MessengerApplication) getActivity().getApplicationContext()).getMultiJaxmpp().get(

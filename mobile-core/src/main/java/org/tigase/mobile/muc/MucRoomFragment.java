@@ -55,6 +55,7 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.support.v4.widget.SlidingPaneLayout;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -385,8 +386,15 @@ public class MucRoomFragment extends FragmentWithUID implements LoaderCallbacks<
 
 			this.startActivityForResult(chatListActivity, TigaseMobileMessengerActivity.SHOW_OCCUPANTS);
 		} else if (item.getItemId() == R.id.showChatsButton) {
-			Intent chatListActivity = new Intent(getActivity(), ChatListActivity.class);
-			this.getActivity().startActivityForResult(chatListActivity, TigaseMobileMessengerActivity.REQUEST_CHAT);
+//			Intent chatListActivity = new Intent(getActivity(), ChatListActivity.class);
+//			this.getActivity().startActivityForResult(chatListActivity, TigaseMobileMessengerActivity.REQUEST_CHAT);
+			SlidingPaneLayout slidingPaneLayout = (SlidingPaneLayout) getActivity().findViewById(R.id.chat_sliding_pane_layout);
+			if (slidingPaneLayout.isOpen()) {
+				slidingPaneLayout.closePane();
+			}
+			else {
+				slidingPaneLayout.openPane();
+			}			
 		} else if (item.getItemId() == R.id.closeChatButton) {
 			cancelEdit();
 
