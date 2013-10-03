@@ -219,11 +219,6 @@ public class MucRoomFragment extends FragmentWithUID implements LoaderCallbacks<
 				this.chatWrapper = ch;
 				this.jaxmpp = multi.get(ch.getRoom().getSessionObject());
 
-				Intent intent = new Intent();
-				intent.setAction(TigaseMobileMessengerActivity.CLIENT_FOCUS_MSG);
-				intent.putExtra("page", 1);
-				intent.putExtra("roomId", room.getId());
-				getActivity().sendBroadcast(intent);
 			}
 		}
 
@@ -434,6 +429,15 @@ public class MucRoomFragment extends FragmentWithUID implements LoaderCallbacks<
 	}
 
 	@Override
+	public void onPause() {
+		Intent intent = new Intent();
+		intent.setAction(TigaseMobileMessengerActivity.CLIENT_FOCUS_MSG);
+		intent.putExtra("page", 0);		
+		getActivity().sendBroadcast(intent);
+		super.onPause();
+	}
+	
+	@Override
 	public void onPrepareOptionsMenu(Menu menu) {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB
 				&& Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
@@ -448,6 +452,12 @@ public class MucRoomFragment extends FragmentWithUID implements LoaderCallbacks<
 	public void onResume() {
 		super.onResume();
 		updatePresenceImage();
+
+		Intent intent = new Intent();
+		intent.setAction(TigaseMobileMessengerActivity.CLIENT_FOCUS_MSG);
+		intent.putExtra("page", 1);
+		intent.putExtra("roomId", room.getId());
+		getActivity().sendBroadcast(intent);	
 	}
 
 	protected void sendMessage() {

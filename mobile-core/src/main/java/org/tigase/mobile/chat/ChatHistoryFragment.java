@@ -451,6 +451,15 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 	}
 
 	@Override
+	public void onPause() {
+		Intent intent = new Intent();
+		intent.setAction(TigaseMobileMessengerActivity.CLIENT_FOCUS_MSG);
+		intent.putExtra("page", 0);		
+		getActivity().sendBroadcast(intent);
+		super.onPause();		
+	}
+	
+	@Override
 	public void onPrepareOptionsMenu(Menu menu) {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB
 				&& Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
@@ -471,6 +480,12 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 
 		updatePresence();
 		layout.updateClientIndicator();
+		
+		Intent intent = new Intent();
+		intent.setAction(TigaseMobileMessengerActivity.CLIENT_FOCUS_MSG);
+		intent.putExtra("page", 1);		
+		intent.putExtra("chatId", chat.getId());
+		getActivity().sendBroadcast(intent);
 	}
 
 	@Override
@@ -521,9 +536,6 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 		if (chatWrapper != null) {
 			chat = chatWrapper.getChat();
 			
-			Intent intent = new Intent();
-			intent.setAction(TigaseMobileMessengerActivity.CLIENT_FOCUS_MSG);
-			intent.putExtra("page", 1);
 			Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/"
 					+ Uri.encode(chat.getJid().getBareJid().toString()));
 			ContentValues values = new ContentValues();
@@ -531,8 +543,6 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 			values.put(ChatTableMetaData.FIELD_STATE, ChatTableMetaData.STATE_INCOMING);
 			getActivity().getContentResolver().update(uri, values, null, null);
 
-			intent.putExtra("chatId", chat.getId());
-			getActivity().sendBroadcast(intent);
 			return;
 		}
 		
