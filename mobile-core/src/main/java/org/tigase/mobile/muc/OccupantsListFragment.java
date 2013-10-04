@@ -29,6 +29,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -176,7 +177,7 @@ public class OccupantsListFragment extends Fragment {
 	private View layout;
 	private final Listener<MucEvent> mucListener;
 	private MucModule mucModule;
-	private ListView occupantsList;
+	private GridView occupantsList;
 	private Room room;
 
 	public OccupantsListFragment() {
@@ -201,7 +202,7 @@ public class OccupantsListFragment extends Fragment {
 					MucModule.class);
 			mucModule.addListener(mucListener);
 
-			occupantsList = (ListView) layout.findViewById(R.id.occupants_list);
+			occupantsList = (GridView) layout.findViewById(R.id.occupants_list);
 			occupantsList.setOnItemClickListener(new OnItemClickListener() {
 
 				@Override
