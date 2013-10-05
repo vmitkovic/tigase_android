@@ -70,7 +70,9 @@ public class VCardViewActivity extends Activity {
 			final JID jid, final VCard vcard, final RosterItem rosterItem) {
 		((TextView) activity.findViewById(R.id.vcard_fn)).setText(vcard.getFullName());
 		((TextView) activity.findViewById(R.id.vcard_title)).setText(vcard.getTitle());
+		((TextView) activity.findViewById(R.id.vcard_title)).setVisibility((vcard.getTitle() == null || vcard.getTitle().length() == 0) ? View.GONE : View.VISIBLE);
 		((TextView) activity.findViewById(R.id.vcard_org)).setText(vcard.getOrgName());
+		((TextView) activity.findViewById(R.id.vcard_org)).setVisibility((vcard.getTitle() == null || vcard.getTitle().length() == 0) ? View.GONE : View.VISIBLE);		
 		((TextView) activity.findViewById(R.id.vcard_bday)).setText(vcard.getBday());
 		((TextView) activity.findViewById(R.id.vcard_home_mail)).setText(vcard.getHomeEmail());
 		((TextView) activity.findViewById(R.id.vcard_home_tel_voice)).setText(vcard.getHomeTelVoice());
@@ -149,8 +151,6 @@ public class VCardViewActivity extends Activity {
 		} finally {
 			cursor.close();
 		}
-		((TextView) findViewById(R.id.vcard_fn)).setText(jid.toString());
-		((TextView) findViewById(R.id.vcard_jid)).setText(jid.toString());
 
 		final Jaxmpp jaxmpp = ((MessengerApplication) getApplicationContext()).getMultiJaxmpp().get(account);
 		final RosterItem rosterItem = jaxmpp.getRoster().get(jid.getBareJid());
@@ -159,8 +159,13 @@ public class VCardViewActivity extends Activity {
 				: View.VISIBLE);
 		if (rosterItem != null) {
 			((TextView) findViewById(R.id.vcard_subscription_status)).setText(rosterItem.getSubscription().name());
+			fullName.setText(rosterItem.getName());
 		}
-
+		else {
+			fullName.setText(jid.toString());
+		}
+		((TextView) findViewById(R.id.vcard_jid)).setText(jid.toString());
+		
 		final VCardModule module = jaxmpp.getModule(VCardModule.class);
 
 		(new Thread() {
@@ -219,7 +224,7 @@ public class VCardViewActivity extends Activity {
 		}).start();
 
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-			showActionBar();
+			showActionBar(jid, rosterItem);
 		}
 
 		dialog.show();
@@ -267,8 +272,16 @@ public class VCardViewActivity extends Activity {
 	}
 
 	@TargetApi(11)
-	private void showActionBar() {
+	private void showActionBar(JID jid, RosterItem rosterItem) {
 		ActionBar actionBar = getActionBar();
 		actionBar.setDisplayHomeAsUpEnabled(true);
+		String name = rosterItem != null ? rosterItem.getName() : jid.getBareJid().toString();
+		if (name == null || name.length() == 0) {
+			actionBar.setTitle(jid.getBareJid().toString());
+		}
+		else {
+			actionBar.setTitle(name);
+			actionBar.setSubtitle(jid.getBareJid().toString());
+		}
 	}
 }

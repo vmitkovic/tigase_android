@@ -105,7 +105,7 @@
     <string name="vcard_homepage">Homepage</string>
     <string name="vcard_phone">Phone</string>
     <string name="vcard_subscription">Subscription</string>
-    <string name="vcard_jabberid">Refresh</string>
+    <string name="vcard_jabberid">XMPP ID</string>
     <string name="vcard_editor_refresh">Refresh</string>
     <string name="vcard_editor_publish">Publish</string>
     <string name="vcard_published_toast">Informations published</string>
