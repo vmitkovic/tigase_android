@@ -55,6 +55,7 @@ import org.tigase.mobile.db.providers.RosterProvider;
 import org.tigase.mobile.security.SecureTrustManagerFactory;
 import org.tigase.mobile.sync.SyncAdapter;
 import org.tigase.mobile.ui.NotificationHelper;
+import org.tigase.mobile.utils.AvatarHelper;
 
 import tigase.jaxmpp.android.Jaxmpp;
 import tigase.jaxmpp.core.client.AsyncCallback;
@@ -1675,6 +1676,11 @@ public class JaxmppService extends Service {
 			getContentResolver().insert(uri, values);
 
 		}
+	}
+	
+	@Override
+	public void onTrimMemory(int level) {
+		AvatarHelper.onTrimMemory(level);
 	}
 
 	protected synchronized void updateRosterItem(final PresenceEvent be) throws XMLException {

@@ -18,14 +18,14 @@
 package org.tigase.mobile.utils;
 
 import java.io.InputStream;
-
 import org.tigase.mobile.R;
 import org.tigase.mobile.db.VCardsCacheTableMetaData;
 import org.tigase.mobile.db.providers.RosterProvider;
 import org.tigase.mobile.sync.SyncAdapter;
-
 import tigase.jaxmpp.core.client.BareJID;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.content.ComponentCallbacks2;
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -152,7 +152,13 @@ public class AvatarHelper {
 				};
 			}
 
-			mPlaceHolderBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.user_avatar);
+			BitmapFactory.Options options = new BitmapFactory.Options();
+			options.inJustDecodeBounds = true;
+			BitmapFactory.decodeResource(context.getResources(), R.drawable.user_avatar, options);
+			options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+			options.inSampleSize = calculateSize(options, defaultAvatarSize, defaultAvatarSize);
+			options.inJustDecodeBounds = false;
+			mPlaceHolderBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.user_avatar, options);
 		}
 	}
 
@@ -258,4 +264,21 @@ public class AvatarHelper {
 		}
 	}
 
+	@SuppressLint("NewApi")
+	public static void onTrimMemory(int level) {
+		int count = 0;
+		if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+			count = 10;
+			if (level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
+				count = 0;
+			}
+		}
+		else 
+			return;
+		
+		int trimSize = count * mPlaceHolderBitmap.getByteCount();
+		Log.v(TAG, "trim avatar cache from " + avatarCache.size() + " to " + trimSize + " to reduce memory usage, max size " + avatarCache.maxSize());
+		avatarCache.trimToSize(trimSize);
+	}
+	
 }
