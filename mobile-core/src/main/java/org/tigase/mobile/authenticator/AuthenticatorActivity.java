@@ -26,6 +26,7 @@ import org.tigase.mobile.R;
 import org.tigase.mobile.TrustCertDialog;
 import org.tigase.mobile.db.AccountsTableMetaData;
 import org.tigase.mobile.preferences.AccountAdvancedPreferencesActivity;
+import org.tigase.mobile.preferences.AccountAdvancedPreferencesFragment;
 import org.tigase.mobile.security.SecureTrustManagerFactory;
 import org.tigase.mobile.security.SecureTrustManagerFactory.DataCertificateException;
 
@@ -315,11 +316,11 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 
 	public static void processJaxmppForFeatures(JaxmppCore contact, Map<String, String> data) {
 		String mobile = null;
-		boolean mobileV1 = AccountAdvancedPreferencesActivity.isMobileAvailable(contact, Features.MOBILE_V1);
+		boolean mobileV1 = AccountAdvancedPreferencesFragment.isMobileAvailable(contact, Features.MOBILE_V1);
 		if (mobileV1) {
 			mobile = Features.MOBILE_V1;
 		}
-		boolean mobileV2 = AccountAdvancedPreferencesActivity.isMobileAvailable(contact, Features.MOBILE_V2);
+		boolean mobileV2 = AccountAdvancedPreferencesFragment.isMobileAvailable(contact, Features.MOBILE_V2);
 		if (mobileV2) {
 			mobile = Features.MOBILE_V2;
 		}

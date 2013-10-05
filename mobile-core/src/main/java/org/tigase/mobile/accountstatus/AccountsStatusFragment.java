@@ -23,6 +23,7 @@ import org.tigase.mobile.R;
 import org.tigase.mobile.service.JaxmppService;
 import org.tigase.mobile.utils.AvatarHelper;
 
+import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.Connector;
 import tigase.jaxmpp.core.client.Connector.ConnectorEvent;
 import tigase.jaxmpp.core.client.Connector.State;
@@ -42,10 +43,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.ListFragment;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -65,7 +67,11 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class AccountsStatusFragment extends Fragment {
+public class AccountsStatusFragment extends ListFragment {
+
+	public static interface AccountSelectionListener {
+		void accountSelected(String jid);
+	}
 
 	public static final String TAG = "AccountStatusFragment";
 
@@ -90,6 +96,8 @@ public class AccountsStatusFragment extends Fragment {
 				});
 		}
 	};
+
+	private AccountSelectionListener accountSelectionListener;
 
 	private ArrayAdapter<Jaxmpp> adapter;
 
@@ -128,9 +136,25 @@ public class AccountsStatusFragment extends Fragment {
 		}
 	};
 
+	private BareJID selected;
+
+	private int selectedColor = Color.parseColor("#ADD8E6");
+
 	private View view;
 
 	public AccountsStatusFragment() {
+	}
+
+	public void createOptionsMenu(Menu menu, Jaxmpp jaxmpp) {
+		if (jaxmpp == null || jaxmpp.isConnected()) {
+			menu.add(0, R.string.logoutButton, 0, R.string.logoutButton);
+			menu.add(0, R.string.accountVCard, 0, R.string.accountVCard);
+			menu.add(0, R.string.pingServer, 0, R.string.pingServer);
+			menu.add(0, R.string.account_advanced_preferences, 0, R.string.account_advanced_preferences);
+		}
+		if (jaxmpp == null || !jaxmpp.isConnected()) {
+			menu.add(0, R.string.loginButton, 0, R.string.loginButton);
+		}
 	}
 
 	private int extractPosition(ContextMenuInfo menuInfo) {
@@ -141,11 +165,33 @@ public class AccountsStatusFragment extends Fragment {
 		}
 	}
 
+	public Jaxmpp getSelectedJaxmpp(MenuItem item) {
+		Jaxmpp jaxmpp = null;
+		if (item != null && item.getMenuInfo() instanceof AdapterContextMenuInfo) {
+			int position = ((AdapterContextMenuInfo) item.getMenuInfo()).position;
+			if (position >= 0 && position < adapter.getCount()) {
+				jaxmpp = adapter.getItem(position);
+			}
+		}
+		if (jaxmpp == null && selected != null) {
+			jaxmpp = ((MessengerApplication) getActivity().getApplication()).getMultiJaxmpp().get(selected);
+		}
+		return jaxmpp;
+	}
+
 	private void loadData() {
 		adapter.clear();
 		for (JaxmppCore jaxmpp : ((MessengerApplication) getActivity().getApplication()).getMultiJaxmpp().get()) {
 			adapter.add((Jaxmpp) jaxmpp);
 		}
+		if (!adapter.isEmpty()) {
+			setAccountSelected(adapter.getItem(0));
+		}
+	}
+
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		return onMenuItemSelected(item);
 	}
 
 	@Override
@@ -163,138 +209,22 @@ public class AccountsStatusFragment extends Fragment {
 		}
 
 		final Jaxmpp jaxmpp = adapter.getItem(position);
-		if (jaxmpp.isConnected()) {
-			menu.add(R.string.logoutButton).setOnMenuItemClickListener(new OnMenuItemClickListener() {
-				@Override
-				public boolean onMenuItemClick(MenuItem item) {
-					new Thread() {
-						@Override
-						public void run() {
-							try {
-								JaxmppService.disable(jaxmpp.getSessionObject(), true);
-								jaxmpp.disconnect();
-								((MessengerApplication) getActivity().getApplication()).clearPresences(
-										jaxmpp.getSessionObject(), false);
-							} catch (JaxmppException ex) {
-								Log.e(TAG, "error manually disconnecting account "
-										+ jaxmpp.getSessionObject().getUserBareJid().toString(), ex);
-							}
-						}
-					}.start();
-					return true;
-				}
-			});
-			menu.add(R.string.accountVCard).setOnMenuItemClickListener(new OnMenuItemClickListener() {
-				@Override
-				public boolean onMenuItemClick(MenuItem item) {
-					Intent intent = new Intent();
-					intent.setAction("org.tigase.mobile.account.personalInfo.EDIT");
-					intent.putExtra("account_jid", jaxmpp.getSessionObject().getUserBareJid().toString());
-					startActivity(intent);
-					return true;
-				}
-			});
-			menu.add(R.string.pingServer).setOnMenuItemClickListener(new OnMenuItemClickListener() {
-				@Override
-				public boolean onMenuItemClick(MenuItem item) {
-					new Thread() {
-						@Override
-						public void run() {
-							try {
-								PingModule.PingAsyncCallback pong = new PingAsyncCallback() {
+		createOptionsMenu(menu, jaxmpp);
+	}
 
-									@Override
-									public void onError(Stanza responseStanza, final ErrorCondition error)
-											throws JaxmppException {
-										FragmentActivity activity = getActivity();
-										if (activity != null)
-											activity.runOnUiThread(new Runnable() {
+	@Override
+	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 
-												@Override
-												public void run() {
-													Toast toast = Toast.makeText(getActivity(), "Ping error: " + error,
-															Toast.LENGTH_LONG);
-													toast.show();
-												}
-											});
-									}
+		createOptionsMenu(menu, null);
 
-									@Override
-									protected void onPong(final long time) {
-										FragmentActivity activity = getActivity();
-										if (activity != null)
-											activity.runOnUiThread(new Runnable() {
-
-												@Override
-												public void run() {
-													Toast toast = Toast.makeText(getActivity(), "Pong: " + time + "ms",
-															Toast.LENGTH_LONG);
-													toast.show();
-												}
-											});
-									}
-
-									@Override
-									public void onTimeout() throws JaxmppException {
-										FragmentActivity activity = getActivity();
-										if (activity != null)
-											activity.runOnUiThread(new Runnable() {
-
-												@Override
-												public void run() {
-													Toast toast = Toast.makeText(getActivity(), "Ping timeout",
-															Toast.LENGTH_LONG);
-													toast.show();
-												}
-											});
-									}
-								};
-								jaxmpp.getModule(PingModule.class).ping(
-										JID.jidInstance(jaxmpp.getSessionObject().getUserBareJid().getDomain()), pong);
-							} catch (Exception ex) {
-								Log.e(TAG, "error pinging server " + jaxmpp.getSessionObject().getUserBareJid().toString(), ex);
-							}
-						}
-					}.start();
-					return true;
-				}
-			});
-			menu.add(R.string.account_advanced_preferences).setOnMenuItemClickListener(new OnMenuItemClickListener() {
-				@Override
-				public boolean onMenuItemClick(MenuItem item) {
-					Intent intent = new Intent();
-					intent.setAction("org.tigase.mobile.account.advancedPreferences.EDIT");
-					intent.putExtra("account_jid", jaxmpp.getSessionObject().getUserBareJid().toString());
-					startActivity(intent);
-					return true;
-				}
-			});
-
-		} else {
-			menu.add(R.string.loginButton).setOnMenuItemClickListener(new OnMenuItemClickListener() {
-				@Override
-				public boolean onMenuItemClick(MenuItem item) {
-					new Thread() {
-						@Override
-						public void run() {
-							try {
-								JaxmppService.disable(jaxmpp.getSessionObject(), false);
-								jaxmpp.login();
-							} catch (JaxmppException ex) {
-								Log.e(TAG, "error manually connecting account "
-										+ jaxmpp.getSessionObject().getUserBareJid().toString(), ex);
-							}
-						}
-					}.start();
-					return true;
-				}
-			});
-		}
+		super.onCreateOptionsMenu(menu, inflater);
 	}
 
 	@Override
 	public View onCreateView(final LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		this.view = inflater.inflate(R.layout.account_status, null);
+		this.setHasOptionsMenu(true);
+		// this.view = inflater.inflate(R.layout.account_status, null);
+		this.view = super.onCreateView(inflater, container, savedInstanceState);
 
 		this.adapter = new ArrayAdapter<Jaxmpp>(getActivity().getApplicationContext(), R.layout.account_status_item) {
 
@@ -347,6 +277,9 @@ public class AccountsStatusFragment extends Fragment {
 					accountStatus.setVisibility(View.GONE);
 					progressBar.setVisibility(View.VISIBLE);
 				}
+
+				boolean visible = (selected != null && selected.equals(jaxmpp.getSessionObject().getUserBareJid()));
+				v.setBackgroundColor(visible ? selectedColor : Color.TRANSPARENT);
 				return v;
 			}
 
@@ -354,11 +287,134 @@ public class AccountsStatusFragment extends Fragment {
 
 		// loadData();
 
-		ListView list = (ListView) view.findViewById(R.id.account_status_list);
-		list.setAdapter(adapter);
-		registerForContextMenu(list);
+		this.setListAdapter(adapter);
 
 		return view;
+	}
+
+	@Override
+	public void onListItemClick(ListView l, View v, int position, long id) {
+		super.onListItemClick(l, v, position, id);
+		Jaxmpp jaxmpp = (Jaxmpp) l.getItemAtPosition(position);
+		setAccountSelected(jaxmpp);
+	}
+
+	public boolean onMenuItemSelected(int id, final Jaxmpp jaxmpp) {
+		if (id == R.string.logoutButton) {
+			new Thread() {
+				@Override
+				public void run() {
+					try {
+						JaxmppService.disable(jaxmpp.getSessionObject(), true);
+						jaxmpp.disconnect();
+						((MessengerApplication) getActivity().getApplication()).clearPresences(jaxmpp.getSessionObject(), false);
+					} catch (JaxmppException ex) {
+						Log.e(TAG, "error manually disconnecting account "
+								+ jaxmpp.getSessionObject().getUserBareJid().toString(), ex);
+					}
+				}
+			}.start();
+			return true;
+		} else if (id == R.string.accountVCard) {
+			Intent intent = new Intent();
+			intent.setAction("org.tigase.mobile.account.personalInfo.EDIT");
+			intent.putExtra("account_jid", jaxmpp.getSessionObject().getUserBareJid().toString());
+			startActivity(intent);
+			return true;
+		} else if (id == R.string.pingServer) {
+			new Thread() {
+				@Override
+				public void run() {
+					try {
+						PingModule.PingAsyncCallback pong = new PingAsyncCallback() {
+
+							@Override
+							public void onError(Stanza responseStanza, final ErrorCondition error) throws JaxmppException {
+								FragmentActivity activity = getActivity();
+								if (activity != null)
+									activity.runOnUiThread(new Runnable() {
+
+										@Override
+										public void run() {
+											Toast toast = Toast.makeText(getActivity(), "Ping error: " + error,
+													Toast.LENGTH_LONG);
+											toast.show();
+										}
+									});
+							}
+
+							@Override
+							protected void onPong(final long time) {
+								FragmentActivity activity = getActivity();
+								if (activity != null)
+									activity.runOnUiThread(new Runnable() {
+
+										@Override
+										public void run() {
+											Toast toast = Toast.makeText(getActivity(), "Pong: " + time + "ms",
+													Toast.LENGTH_LONG);
+											toast.show();
+										}
+									});
+							}
+
+							@Override
+							public void onTimeout() throws JaxmppException {
+								FragmentActivity activity = getActivity();
+								if (activity != null)
+									activity.runOnUiThread(new Runnable() {
+
+										@Override
+										public void run() {
+											Toast toast = Toast.makeText(getActivity(), "Ping timeout", Toast.LENGTH_LONG);
+											toast.show();
+										}
+									});
+							}
+						};
+						jaxmpp.getModule(PingModule.class).ping(
+								JID.jidInstance(jaxmpp.getSessionObject().getUserBareJid().getDomain()), pong);
+					} catch (Exception ex) {
+						Log.e(TAG, "error pinging server " + jaxmpp.getSessionObject().getUserBareJid().toString(), ex);
+					}
+				}
+			}.start();
+			return true;
+		} else if (id == R.string.account_advanced_preferences) {
+			Intent intent = new Intent();
+			intent.setAction("org.tigase.mobile.account.advancedPreferences.EDIT");
+			intent.putExtra("account_jid", jaxmpp.getSessionObject().getUserBareJid().toString());
+			startActivity(intent);
+			return true;			
+		} else if (id == R.string.loginButton) {
+			new Thread() {
+				@Override
+				public void run() {
+					try {
+						JaxmppService.disable(jaxmpp.getSessionObject(), false);
+						jaxmpp.login();
+					} catch (JaxmppException ex) {
+						Log.e(TAG,
+								"error manually connecting account " + jaxmpp.getSessionObject().getUserBareJid().toString(),
+								ex);
+					}
+				}
+			}.start();
+			return true;
+		}
+		return false;
+	}
+
+	public boolean onMenuItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		Jaxmpp jaxmpp = getSelectedJaxmpp(item);
+
+		return onMenuItemSelected(id, jaxmpp);
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		return onMenuItemSelected(item);
 	}
 
 	@Override
@@ -368,6 +424,14 @@ public class AccountsStatusFragment extends Fragment {
 			MenuInflater inflater = new MenuInflater(this.getActivity().getApplicationContext());
 			onCreateOptionsMenu(menu, inflater);
 		}
+
+		Jaxmpp jaxmpp = getSelectedJaxmpp(null);
+
+		menu.findItem(R.string.loginButton).setVisible(jaxmpp != null && !jaxmpp.isConnected());
+		menu.findItem(R.string.logoutButton).setVisible(jaxmpp != null && jaxmpp.isConnected());
+		menu.findItem(R.string.accountVCard).setVisible(jaxmpp != null && jaxmpp.isConnected());
+		menu.findItem(R.string.pingServer).setVisible(jaxmpp != null && jaxmpp.isConnected());
+		menu.findItem(R.string.account_advanced_preferences).setVisible(jaxmpp != null && accountSelectionListener == null && jaxmpp.isConnected());
 
 		super.onPrepareOptionsMenu(menu);
 	}
@@ -384,6 +448,7 @@ public class AccountsStatusFragment extends Fragment {
 				new IntentFilter(AccountManager.LOGIN_ACCOUNTS_CHANGED_ACTION));
 
 		loadData();
+		registerForContextMenu(getListView());
 	}
 
 	@Override
@@ -396,4 +461,16 @@ public class AccountsStatusFragment extends Fragment {
 
 		super.onStop();
 	}
+
+	protected void setAccountSelected(Jaxmpp jaxmpp) {
+		if (accountSelectionListener != null) {
+			accountSelectionListener.accountSelected(jaxmpp.getSessionObject().getUserBareJid().toString());
+		}
+		selected = jaxmpp.getSessionObject().getUserBareJid();
+		adapter.notifyDataSetChanged();
+	}
+
+	public void setAccountSelectedListener(AccountSelectionListener accountSelectionListener) {
+		this.accountSelectionListener = accountSelectionListener;
+	};
 }
