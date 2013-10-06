@@ -50,6 +50,8 @@ import android.preference.PreferenceManager;
 
 public class GeolocationFeature {
 
+	public static final String GEOLOCATION_QUEUED = "geolocation#location_queued";
+	
 	public static final String GEOLOCATION_LISTEN_ENABLED = "geolocation#listen_enabled";
 
 	public static final String GEOLOCATION_PUBLISH_ENABLED = "geolocation#publish_enabled";
@@ -153,13 +155,27 @@ public class GeolocationFeature {
 			}
 		}.start();
 	}
-
+	
 	public static void updateLocation(final JaxmppCore jaxmpp, Location location, Context context) throws JaxmppException {
 		if (!jaxmpp.isConnected())
 			return;
 		Boolean enabled = (Boolean) jaxmpp.getSessionObject().getProperty(GEOLOCATION_PUBLISH_ENABLED);
 		if (enabled == null || !enabled.booleanValue())
-			return;
+			return;		
+		
+		List<Address> addresses = null;
+		if (location != null) {
+			try {
+				Geocoder geocoder = new Geocoder(context);
+				addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+			} catch (IOException ex) {
+				ex.printStackTrace();			
+			}
+		}
+		updateLocation(jaxmpp, location, addresses);
+	}
+	
+	public static void updateLocation(final JaxmppCore jaxmpp, Location location, List<Address> addresses) throws JaxmppException {
 
 		int precision = (Integer) jaxmpp.getSessionObject().getProperty(GEOLOCATION_PUBLISH_PRECISION);
 
@@ -190,11 +206,7 @@ public class GeolocationFeature {
 				geoloc.addChild(alt);
 			}
 
-			if (context != null) {
-				try {
-					Geocoder geocoder = new Geocoder(context);
-					List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
-					if (!addresses.isEmpty()) {
+					if (addresses != null && !addresses.isEmpty()) {
 						Address address = addresses.get(0);
 						// precision == 0
 						if (address.getCountryName() != null) {
@@ -228,14 +240,10 @@ public class GeolocationFeature {
 						// nothing to send - exiting
 						return;
 					}
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
 			} else if (precision < 3) {
 				// nothing to send - exiting
 				return;
 			}
-		}
 
 		new Thread() {
 			@Override
@@ -261,6 +269,8 @@ public class GeolocationFeature {
 
 	private final LocationListener locationListener;
 
+	private static Location lastLocation = null;
+	
 	public GeolocationFeature(JaxmppService service) {
 		jaxmppService = service;
 
@@ -268,7 +278,7 @@ public class GeolocationFeature {
 
 			@Override
 			public void onLocationChanged(Location location) {
-				updateLocation(location);
+				queueLocationForUpdate(location);
 			}
 
 			@Override
@@ -319,9 +329,10 @@ public class GeolocationFeature {
 		locationManager.removeUpdates(locationListener);
 	}
 
-	public void updateLocation(Location location) {
+	public void queueLocationForUpdate(Location location) {
 		for (JaxmppCore jaxmpp : jaxmppService.getMulti().get()) {
 			try {
+				jaxmpp.getSessionObject().setProperty(GEOLOCATION_QUEUED, location);
 				updateLocation(jaxmpp, location, jaxmppService);
 			} catch (JaxmppException e) {
 				// TODO Auto-generated catch block
@@ -330,4 +341,17 @@ public class GeolocationFeature {
 		}
 	}
 
+	public static void sendQueuedGeolocation(JaxmppCore jaxmpp, JaxmppService jaxmppService) {
+		Location location = jaxmpp.getSessionObject().getProperty(GEOLOCATION_QUEUED);
+		if (location != null) {
+			jaxmpp.getSessionObject().setProperty(GEOLOCATION_QUEUED, null);
+			try {
+				updateLocation(jaxmpp, location, jaxmppService);
+			} catch (JaxmppException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	
 }
