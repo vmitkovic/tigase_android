@@ -48,6 +48,9 @@ public class AccountsStatusActivity extends FragmentActivity {
 				@Override
 				public void accountSelected(String jid) {
 					detailFragment.setAccount(jid);
+					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+						forceOptionsMenuRefresh();
+					}
 				}
 
 			});
@@ -67,5 +70,10 @@ public class AccountsStatusActivity extends FragmentActivity {
 			return true;
 		}
 		return super.onOptionsItemSelected(item);
+	}
+	
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	private void forceOptionsMenuRefresh() {
+		this.invalidateOptionsMenu();
 	}
 }

@@ -427,6 +427,8 @@ public class AccountsStatusFragment extends ListFragment {
 
 		Jaxmpp jaxmpp = getSelectedJaxmpp(null);
 
+		Log.v(TAG, "preparing options menu for account = " + (jaxmpp == null ? null : jaxmpp.getSessionObject().getUserBareJid().toString()));
+		
 		menu.findItem(R.string.loginButton).setVisible(jaxmpp != null && !jaxmpp.isConnected());
 		menu.findItem(R.string.logoutButton).setVisible(jaxmpp != null && jaxmpp.isConnected());
 		menu.findItem(R.string.accountVCard).setVisible(jaxmpp != null && jaxmpp.isConnected());
@@ -463,11 +465,11 @@ public class AccountsStatusFragment extends ListFragment {
 	}
 
 	protected void setAccountSelected(Jaxmpp jaxmpp) {
+		selected = jaxmpp.getSessionObject().getUserBareJid();		
 		if (accountSelectionListener != null) {
 			accountSelectionListener.accountSelected(jaxmpp.getSessionObject().getUserBareJid().toString());
 		}
-		selected = jaxmpp.getSessionObject().getUserBareJid();
-		adapter.notifyDataSetChanged();
+		adapter.notifyDataSetChanged();		
 	}
 
 	public void setAccountSelectedListener(AccountSelectionListener accountSelectionListener) {
