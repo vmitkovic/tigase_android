@@ -95,6 +95,8 @@ public class VCardEditorActivity extends Activity {
 		((TextView) activity.findViewById(R.id.nickname)).setText(vcard.getNickName());
 		((TextView) activity.findViewById(R.id.birthday)).setText(vcard.getBday());
 		((TextView) activity.findViewById(R.id.email)).setText(vcard.getHomeEmail());
+		((TextView) activity.findViewById(R.id.phone)).setText(vcard.getHomeTelVoice());
+		((TextView) activity.findViewById(R.id.homepage)).setText(vcard.getUrl());
 
 		ImageView avatar = (ImageView) activity.findViewById(R.id.avatarButton);
 		Bitmap bmp;
@@ -356,10 +358,14 @@ public class VCardEditorActivity extends Activity {
 			String nick = ((TextView) findViewById(R.id.nickname)).getText().toString();
 			String bday = ((TextView) findViewById(R.id.birthday)).getText().toString();
 			String email = ((TextView) findViewById(R.id.email)).getText().toString();
+			String phone = ((TextView) findViewById(R.id.phone)).getText().toString();
+			String homepage = ((TextView) findViewById(R.id.homepage)).getText().toString();
 			vcard.setFullName(fullname);
 			vcard.setNickName(nick);
 			vcard.setHomeEmail(email);
 			vcard.setBday(bday);
+			vcard.setHomeTelVoice(phone);
+			vcard.setUrl(homepage);
 
 			byte[] buffer = bitmap == null ? null : bitmapToByteArray(bitmap);
 			if (buffer != null) {

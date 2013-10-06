@@ -94,7 +94,7 @@ public class AccountAdvancedPreferencesActivity extends FragmentActivity {
 			}
 		}
 
-		if (jidStr == null && Build.VERSION_CODES.JELLY_BEAN <= Build.VERSION.SDK_INT) {
+		if ((jidStr == null && Build.VERSION_CODES.JELLY_BEAN <= Build.VERSION.SDK_INT) || account == null) {
 			startChooseAccountIceCream(account);
 		} else {
 			setAccount(account);

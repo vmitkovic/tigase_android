@@ -6,11 +6,9 @@
 
     <ImageButton
         android:id="@+id/avatarButton"
-        style="@style/XTheme.Light"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:layout_margin="3dp"
-        android:background="@color/message_his_text"
+        android:layout_width="fill_parent"
+        android:layout_height="240dp"
+        android:scaleType="fitCenter"
         android:src="@drawable/user_avatar" />
 
     <GridLayout
@@ -18,8 +16,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="fill"
+        android:layout_margin="10dp"
         android:columnCount="2"
-        android:rowCount="4" >
+        android:rowCount="6" >
 
         <TextView
             android:layout_width="100dp"
@@ -103,6 +102,46 @@
             android:layout_row="3"
             android:layout_rowSpan="1"
             android:inputType="date" />
+        
+        <TextView
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_gravity="left"
+            android:layout_row="4"
+            android:layout_rowSpan="1"
+            android:text="@string/vcard_phone"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <EditText
+            android:id="@+id/phone"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_column="1"
+            android:layout_gravity="left"
+            android:layout_row="4"
+            android:layout_rowSpan="1"
+            android:inputType="phone" />
+            
+        <TextView
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_gravity="left"
+            android:layout_row="5"
+            android:layout_rowSpan="1"
+            android:text="@string/vcard_homepage"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <EditText
+            android:id="@+id/homepage"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_column="1"
+            android:layout_gravity="left"
+            android:layout_row="5"
+            android:layout_rowSpan="1"
+            android:inputType="textUri" />           
     </GridLayout>
 
 

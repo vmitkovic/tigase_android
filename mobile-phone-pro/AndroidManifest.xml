@@ -109,8 +109,7 @@
             android:name="org.tigase.mobile.vcard.VCardEditorActivity"
             android:configChanges="orientation"
             android:excludeFromRecents="true"
-            android:label="@string/vcard_editor_activity_title"
-            android:theme="@style/XTheme" >
+            android:label="@string/vcard_editor_activity_title" >
             <intent-filter>
                 <action android:name="org.tigase.mobile.account.personalInfo.EDIT" />
 
@@ -121,8 +120,7 @@
             android:name="org.tigase.mobile.preferences.AccountAdvancedPreferencesActivity"
             android:configChanges="orientation"
             android:excludeFromRecents="true"
-            android:label="@string/account_advanced_preferences"
-            android:theme="@style/XTheme" >
+            android:label="@string/account_advanced_preferences">
             <intent-filter>
                 <action android:name="org.tigase.mobile.account.advancedPreferences.EDIT" />
 
