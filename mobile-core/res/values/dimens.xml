@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="vcard_layout_padding">0dp</dimen>
+    <dimen name="vcard_layout_first_column_width">320dp</dimen>
+    <dimen name="vcard_layout_second_column_width">320dp</dimen>
+    <dimen name="vcard_layout_labels_padding">2dp</dimen>
+</resources>

@@ -7,7 +7,4 @@
       <item name="android:textColor">?android:attr/textColorPrimary</item>
       <item name="android:textStyle">bold</item>
     </style>    
-    <style name="VCardViewActivityLayout">
-      <item name="android:layout_width">fill_parent</item>
-    </style>
 </resources>

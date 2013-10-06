@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:maxWidth="320dp"    
-    style="@style/VCardViewActivityLayout"
+    android:layout_gravity="center_horizontal"
+	android:layout_width="wrap_content"
     android:layout_height="wrap_content" >
 
     <RelativeLayout
         android:id="@+id/relativeLayout1"
-        android:maxWidth="320dp"
-        android:layout_width="fill_parent"
+        android:padding="@dimen/vcard_layout_padding"
+        android:layout_width="@dimen/vcard_layout_first_column_width"
         android:layout_height="wrap_content" >
 
         <ImageView
@@ -55,9 +55,9 @@
     </RelativeLayout>
 
     <TableLayout
-        android:layout_width="fill_parent"
+        android:layout_width="@dimen/vcard_layout_second_column_width"
         android:layout_height="wrap_content"
-        android:padding="10dp"
+        android:padding="@dimen/vcard_layout_padding"        
         android:layout_below="@+id/relativeLayout1" >
 
         <TableRow>
@@ -65,13 +65,13 @@
             <TextView
                 android:layout_column="1"
                 android:gravity="right"
-                android:padding="3dip"
+                android:padding="@dimen/vcard_layout_labels_padding"
                 android:textColor="?android:attr/textColorLink"
                 android:text="@string/vcard_jabberid" />
 
             <TextView
                 android:id="@+id/vcard_jid"
-                android:padding="3dip"
+                android:padding="@dimen/vcard_layout_labels_padding"
                 android:singleLine="true"
                 android:textStyle="bold" />
         </TableRow>
@@ -81,13 +81,13 @@
             <TextView
                 android:layout_column="1"
                 android:gravity="right"
-                android:padding="3dip"
+                android:padding="@dimen/vcard_layout_labels_padding"
                 android:textColor="?android:attr/textColorLink"
                 android:text="@string/vcard_subscription" />
 
             <TextView
                 android:id="@+id/vcard_subscription_status"
-                android:padding="3dip"
+                android:padding="@dimen/vcard_layout_labels_padding"
                 android:singleLine="true"
                 android:textStyle="bold" />
         </TableRow>
@@ -97,14 +97,14 @@
             <TextView
                 android:layout_column="1"
                 android:gravity="right"
-                android:padding="3dip"
+                android:padding="@dimen/vcard_layout_labels_padding"
                 android:text="@string/vcard_nickname"
                 android:textColor="?android:attr/textColorLink"
                 android:textAppearance="?android:attr/textAppearanceMedium" />
 
             <TextView
                 android:id="@+id/vcard_nickname"
-                android:padding="3dip"
+                android:padding="@dimen/vcard_layout_labels_padding"
                 android:singleLine="true"
                 android:textAppearance="?android:attr/textAppearanceMedium"
                 android:textStyle="bold" />
@@ -115,14 +115,14 @@
             <TextView
                 android:layout_column="1"
                 android:gravity="right"
-                android:padding="3dip"
+                android:padding="@dimen/vcard_layout_labels_padding"
                 android:text="Birthday:"
                 android:textColor="?android:attr/textColorLink"
                 android:textAppearance="?android:attr/textAppearanceMedium" />
 
             <TextView
                 android:id="@+id/vcard_bday"
-                android:padding="3dip"
+                android:padding="@dimen/vcard_layout_labels_padding"
                 android:singleLine="true"
                 android:textAppearance="?android:attr/textAppearanceMedium"
                 android:textStyle="bold" />
@@ -133,7 +133,7 @@
             <TextView
                 android:layout_column="1"
                 android:gravity="right"
-                android:padding="3dip"
+                android:padding="@dimen/vcard_layout_labels_padding"
                 android:text="@string/vcard_phone"
                 android:textColor="?android:attr/textColorLink"
                 android:textAppearance="?android:attr/textAppearanceMedium" />
@@ -141,7 +141,7 @@
             <TextView
                 android:id="@+id/vcard_home_tel_voice"
                 android:autoLink="all"
-                android:padding="3dip"
+                android:padding="@dimen/vcard_layout_labels_padding"
                 android:singleLine="true"
                 android:textAppearance="?android:attr/textAppearanceMedium"
                 android:textStyle="bold" />
@@ -152,7 +152,7 @@
             <TextView
                 android:layout_column="1"
                 android:gravity="right"
-                android:padding="3dip"
+                android:padding="@dimen/vcard_layout_labels_padding"
                 android:text="@string/vcard_homepage"
                 android:textColor="?android:attr/textColorLink"
                 android:textAppearance="?android:attr/textAppearanceMedium" />
@@ -160,7 +160,7 @@
             <TextView
                 android:id="@+id/vcard_url"
                 android:autoLink="all"
-                android:padding="3dip"
+                android:padding="@dimen/vcard_layout_labels_padding"
                 android:singleLine="true"
                 android:textAppearance="?android:attr/textAppearanceMedium"
                 android:textStyle="bold" />
@@ -171,7 +171,7 @@
             <TextView
                 android:layout_column="1"
                 android:gravity="right"
-                android:padding="3dip"
+                android:padding="@dimen/vcard_layout_labels_padding"
                 android:text="@string/vcard_email"
                 android:textColor="?android:attr/textColorLink"
                 android:textAppearance="?android:attr/textAppearanceMedium" />
@@ -179,7 +179,7 @@
             <TextView
                 android:id="@+id/vcard_home_mail"
                 android:autoLink="all"
-                android:padding="3dip"
+                android:padding="@dimen/vcard_layout_labels_padding"
                 android:singleLine="true"
                 android:textAppearance="?android:attr/textAppearanceMedium"
                 android:textStyle="bold" />
