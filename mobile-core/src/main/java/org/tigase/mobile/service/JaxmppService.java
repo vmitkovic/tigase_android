@@ -863,7 +863,7 @@ public class JaxmppService extends Service {
 				@Override
 				public void run() {
 					try {
-						GeolocationFeature.updateLocation(j, null, null);
+						GeolocationFeature.updateLocation(j, null, (Context) null);
 						((Jaxmpp) j).disconnect(false);
 						app.clearPresences(j.getSessionObject(), !cleaning);
 					} catch (Exception e) {
@@ -951,6 +951,7 @@ public class JaxmppService extends Service {
 					try {
 						if (jaxmpp.isConnected()) {
 							jaxmpp.getConnector().keepalive();
+							GeolocationFeature.sendQueuedGeolocation(jaxmpp, JaxmppService.this);
 						}
 					} catch (JaxmppException ex) {
 						Log.e(TAG, "error sending keep alive for = " + jaxmpp.getSessionObject().getUserBareJid().toString(),
