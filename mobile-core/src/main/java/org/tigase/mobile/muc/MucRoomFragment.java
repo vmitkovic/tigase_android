@@ -96,19 +96,19 @@ public class MucRoomFragment extends FragmentWithUID implements LoaderCallbacks<
 	}
 
 	public static void openRoom(FragmentActivity activity, String account, long roomId, boolean xlarge) {
-		if (xlarge) {
-			Bundle arguments = new Bundle();
-			arguments.putLong("roomId", roomId);
-			arguments.putString("account", account);
-			MucRoomFragment fragment = new MucRoomFragment();
-			fragment.setArguments(arguments);
-			activity.getSupportFragmentManager().beginTransaction().replace(R.id.main_detail_container, fragment).commit();
-		} else {
+//		if (xlarge) {
+//			Bundle arguments = new Bundle();
+//			arguments.putLong("roomId", roomId);
+//			arguments.putString("account", account);
+//			MucRoomFragment fragment = new MucRoomFragment();
+//			fragment.setArguments(arguments);
+//			activity.getSupportFragmentManager().beginTransaction().replace(R.id.main_detail_container, fragment).commit();
+//		} else {
 			Intent newIntent = new Intent(activity, MucActivity.class);
 			newIntent.putExtra("roomId", roomId);
 			newIntent.putExtra("account", account);
 			activity.startActivity(newIntent);
-		}
+//		}
 	}
 
 	private ChatWrapper chatWrapper;

@@ -63,10 +63,9 @@
 
    <FrameLayout
    	android:id="@+id/muc_occupants_container"
-    android:layout_width="0dp"
+    android:layout_width="260dp"
    	android:layout_height="match_parent"
    	android:layout_alignParentRight="true"
-   	android:visibility="invisible"
    	tools:context=".OccupantsListActivity"
    	tools:ignore="MergeRootFrame" /> 
 

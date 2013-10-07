@@ -8,17 +8,19 @@
         android:id="@+id/user_avatar"
         android:layout_width="50sp"
         android:layout_height="50sp"
+        android:padding="@dimen/chat_item_layout_item_padding"
         android:src="@drawable/user_avatar" >
     </ImageView>
 
     <TextView
         android:id="@+id/chat_item_timestamp"
-        android:textSize="12sp"
+        android:textSize="@dimen/chat_item_layout_item_timestamp_text_size"
         android:text="yesterday, 10:30pm"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
+        android:padding="@dimen/chat_item_layout_item_padding"            
         android:layout_alignRight="@+id/chat_item_body" >
     </TextView>
 
@@ -32,9 +34,10 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chat_item_nickname"
-        android:layout_toRightOf="@+id/user_avatar"
+        android:layout_toRightOf="@+id/user_avatar"        
         android:autoLink="all"
-        android:paddingLeft="5px" >
+        android:textSize="@dimen/chat_item_layout_item_text_size"             
+        android:padding="@dimen/chat_item_layout_item_padding" >
     </TextView>
     
      <TextView
@@ -44,7 +47,8 @@
         android:layout_alignParentTop="true"
         android:layout_toRightOf="@+id/chat_item_nickname"
         android:autoLink="all"
-        android:paddingLeft="5px" >
+        android:textSize="@dimen/chat_item_layout_item_text_size"             
+        android:padding="@dimen/chat_item_layout_item_padding" >
     </TextView>
 
     <TextView
@@ -53,7 +57,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_toRightOf="@+id/user_avatar"
-        android:paddingLeft="5px"
+        android:textSize="@dimen/chat_item_layout_item_text_size"    
+        android:padding="@dimen/chat_item_layout_item_padding"
         android:textStyle="bold" >
     </TextView>
 

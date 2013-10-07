@@ -4,4 +4,8 @@
     <dimen name="vcard_layout_first_column_width">440dp</dimen>
     <dimen name="vcard_layout_second_column_width">440dp</dimen>
     <dimen name="vcard_layout_labels_padding">5dp</dimen>
+    <dimen name="chat_item_layout_item_padding">2dp</dimen>
+    <dimen name="chat_item_layout_item_avatar_size">60dp</dimen>
+    <dimen name="chat_item_layout_item_text_size">16sp</dimen>
+    <dimen name="chat_item_layout_item_timestamp_text_size">14sp</dimen>    
 </resources>

@@ -149,21 +149,21 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 	private final Listener<PresenceEvent> presenceListener;
 
 	public static void openChat(FragmentActivity activity, String account, long chatId, boolean xlarge) {
-		if (xlarge) {
-			Bundle arguments = new Bundle();
-			arguments.putLong("chatId", chatId);
-			arguments.putString("account", account);
-			ChatHistoryFragment fragment = new ChatHistoryFragment();
-			fragment.setArguments(arguments);
-			activity.getSupportFragmentManager().beginTransaction()
-					.replace(R.id.main_detail_container, fragment).commit();						
-		}
-		else {
+//		if (xlarge) {
+//			Bundle arguments = new Bundle();
+//			arguments.putLong("chatId", chatId);
+//			arguments.putString("account", account);
+//			ChatHistoryFragment fragment = new ChatHistoryFragment();
+//			fragment.setArguments(arguments);
+//			activity.getSupportFragmentManager().beginTransaction()
+//					.replace(R.id.main_detail_container, fragment).commit();						
+//		}
+//		else {
 			Intent detailIntent = new Intent(activity, ChatActivity.class);
 			detailIntent.putExtra("chatId", chatId);
 			detailIntent.putExtra("account", account);
 			activity.startActivity(detailIntent);						
-		}		
+//		}		
 	}
 	
 	public ChatHistoryFragment() {
