@@ -120,7 +120,9 @@ public class AvatarHelper {
 			context = context_;
 
 			density = context.getResources().getDisplayMetrics().density;
-			defaultAvatarSize = Math.round(density * 50);
+			int defaultAvatarSizeRoster = Math.round(density * 50);
+			int defaultAvatarSizeForChat = context.getResources().getDimensionPixelSize(R.dimen.chat_item_layout_item_avatar_size);
+			defaultAvatarSize = Math.max(defaultAvatarSizeRoster, defaultAvatarSizeForChat);
 
 			// Get memory class of this device, exceeding this amount will throw
 			// an
