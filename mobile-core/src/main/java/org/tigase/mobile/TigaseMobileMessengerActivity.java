@@ -32,6 +32,8 @@ import org.tigase.mobile.db.providers.RosterProvider;
 import org.tigase.mobile.muc.JoinMucDialog;
 import org.tigase.mobile.muc.MucRoomFragment;
 import org.tigase.mobile.preferences.MessengerPreferenceActivity;
+import org.tigase.mobile.roster.ContactActivity;
+import org.tigase.mobile.roster.ContactFragment;
 import org.tigase.mobile.roster.RosterFragment;
 import org.tigase.mobile.security.SecureTrustManagerFactory.DataCertificateException;
 import org.tigase.mobile.service.JaxmppService;
@@ -66,6 +68,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.widget.DrawerLayout;
 import android.text.Html;
@@ -79,6 +82,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -334,16 +338,16 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 			startActivity(intent);
 			// finish();
 		}
-		
+
 		setContentView(R.layout.roster_main);
 
 		helper.updateIsXLarge(findViewById(R.id.main_detail_container) != null);
 
 		if (helper.isXLarge()) {
-//			setContentView(R.layout.main_layout);
+			// setContentView(R.layout.main_layout);
 			((RosterFragment) getSupportFragmentManager().findFragmentById(R.id.roster_fragment)).setActivateOnItemClick(true);
 		} else {
-//			setContentView(R.layout.roster_main);
+			// setContentView(R.layout.roster_main);
 		}
 
 		this.drawerList = (ListView) findViewById(R.id.main_left_drawer);
@@ -351,7 +355,7 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 
 		// creating list of items available in drawer menu
 		final List<DrawerMenuItem> drawerMenuItems = new ArrayList<DrawerMenuItem>();
-		drawerMenuItems.add(new DrawerMenuItem(R.id.accountsList, R.string.accounts, android.R.drawable.ic_menu_more));
+		drawerMenuItems.add(new DrawerMenuItem(R.id.accountsList, R.string.accounts, R.drawable.ic_menu_account_list));
 		drawerMenuItems.add(new DrawerMenuItem(R.id.joinMucRoom, R.string.join_muc_room, R.drawable.group_chat, true));
 		drawerMenuItems.add(new DrawerMenuItem(R.id.bookmarksShow, R.string.bookmarks_show, android.R.drawable.star_off, true));
 		drawerMenuItems.add(new DrawerMenuItem(R.id.propertiesButton, R.string.propertiesButton,
@@ -590,6 +594,12 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 
 		multi.addListener(this.chatListener);
 
+		if (helper.isXLarge()) {
+			Fragment frag = getSupportFragmentManager().findFragmentById(R.id.main_detail_container);
+			if (frag != null) {
+				getSupportFragmentManager().beginTransaction().remove(frag).commit();
+			}
+		}
 	}
 
 	@Override
@@ -629,25 +639,19 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 			@Override
 			public void run() {
 
-				try {
-					ChatWrapper wrapper = findChatWrapper(rosterItem);
-
-					if (wrapper == null) {
-						final Jaxmpp jaxmpp = ((MessengerApplication) TigaseMobileMessengerActivity.this.getApplicationContext()).getMultiJaxmpp().get(
-								rosterItem.getSessionObject());
-						jaxmpp.createChat(JID.jidInstance(rosterItem.getJid(), resource));
-						wrapper = findChatWrapper(rosterItem);
-
-					}
-
-					ChatHistoryFragment.openChat(TigaseMobileMessengerActivity.this,
-							wrapper.getChat().getSessionObject().getUserBareJid().toString(), wrapper.getChat().getId(),
-							helper.isXLarge());
-
-				} catch (JaxmppException e) {
-					throw new RuntimeException(e);
+				if (helper.isXLarge()) {
+					Bundle arguments = new Bundle();
+					arguments.putString("jid", rosterItem.getJid().toString());
+					arguments.putString("account", rosterItem.getSessionObject().getUserBareJid().toString());
+					ContactFragment fragment = new ContactFragment();
+					fragment.setArguments(arguments);
+					getSupportFragmentManager().beginTransaction().replace(R.id.main_detail_container, fragment).commit();
+				} else {
+					Intent intent = new Intent(TigaseMobileMessengerActivity.this, ContactActivity.class);
+					intent.putExtra("jid", rosterItem.getJid().toString());
+					intent.putExtra("account", rosterItem.getSessionObject().getUserBareJid().toString());
+					TigaseMobileMessengerActivity.this.startActivity(intent);
 				}
-
 			}
 		};
 		drawerList.postDelayed(r, 750);

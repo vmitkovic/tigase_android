@@ -61,6 +61,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.NavUtils;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
@@ -137,11 +138,11 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 	private ChatAdapter chatAdapter;
 
 	private ChatWrapper chatWrapper;
-	
+
 	private final Listener<MessageEvent> chatUpdateListener;
 
 	private TigaseMobileMessengerActivityHelper helper;
-	
+
 	private ChatView layout;
 
 	private ListView lv;
@@ -149,23 +150,12 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 	private final Listener<PresenceEvent> presenceListener;
 
 	public static void openChat(FragmentActivity activity, String account, long chatId, boolean xlarge) {
-//		if (xlarge) {
-//			Bundle arguments = new Bundle();
-//			arguments.putLong("chatId", chatId);
-//			arguments.putString("account", account);
-//			ChatHistoryFragment fragment = new ChatHistoryFragment();
-//			fragment.setArguments(arguments);
-//			activity.getSupportFragmentManager().beginTransaction()
-//					.replace(R.id.main_detail_container, fragment).commit();						
-//		}
-//		else {
-			Intent detailIntent = new Intent(activity, ChatActivity.class);
-			detailIntent.putExtra("chatId", chatId);
-			detailIntent.putExtra("account", account);
-			activity.startActivity(detailIntent);						
-//		}		
+		Intent detailIntent = new Intent(activity, ChatActivity.class);
+		detailIntent.putExtra("chatId", chatId);
+		detailIntent.putExtra("account", account);
+		activity.startActivity(detailIntent);
 	}
-	
+
 	public ChatHistoryFragment() {
 		super();
 		this.presenceListener = new Listener<PresenceModule.PresenceEvent>() {
@@ -231,7 +221,8 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 			if (ch == null) {
 				String msg = prepareAdditionalDebug(multi);
 				Log.v(TAG, "ChatWrapper is null with id = " + id + '\n' + msg);
-				//((TigaseMobileMessengerActivity) getActivity()).viewPager.getAdapter().notifyDataSetChanged();
+				// ((TigaseMobileMessengerActivity)
+				// getActivity()).viewPager.getAdapter().notifyDataSetChanged();
 			} else {
 				if (ch.getChat() == null) {
 					throw new NullPointerException("ChatWrapper.getChat() is null with id = " + id);
@@ -324,7 +315,7 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 
 	@Override
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-//		menu.clear();
+		// menu.clear();
 
 		inflater.inflate(R.menu.chat_main_menu, menu);
 
@@ -332,7 +323,7 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 		if (showChats != null) {
 			showChats.setVisible(getActivity() instanceof ChatActivity);
 		}
-		
+
 		// Share button support
 		MenuItem share = menu.findItem(R.id.shareButton);
 
@@ -374,7 +365,6 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 		if (DEBUG)
 			Log.d(TAG, "Activity: " + getActivity());
 
-
 		this.lv = (ListView) layout.findViewById(R.id.chat_conversation_history);
 		registerForContextMenu(lv);
 
@@ -401,34 +391,20 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		if (item.getItemId() == R.id.showChatsButton) {
-//			Intent chatListActivity = new Intent(getActivity(), ChatListActivity.class);
-//			this.getActivity().startActivityForResult(chatListActivity, TigaseMobileMessengerActivity.REQUEST_CHAT);
 			SlidingPaneLayout slidingPaneLayout = (SlidingPaneLayout) getActivity().findViewById(R.id.chat_sliding_pane_layout);
 			if (slidingPaneLayout.isOpen()) {
 				slidingPaneLayout.closePane();
-			}
-			else {
+			} else {
 				slidingPaneLayout.openPane();
 			}
 		} else if (item.getItemId() == R.id.closeChatButton) {
 			layout.cancelEdit();
 			final Jaxmpp jaxmpp = ((MessengerApplication) getActivity().getApplicationContext()).getMultiJaxmpp().get(
 					chat.getSessionObject());
-			//final ViewPager viewPager = ((TigaseMobileMessengerActivity) this.getActivity()).viewPager;
 			final AbstractChatManager cm = jaxmpp.getModule(MessageModule.class).getChatManager();
 			try {
-				//viewPager.setCurrentItem(1);
 				cm.close(chat);
-				// this will be done by TigaseMessengerActiviy after receiving
-				// ChatOpened event
-				// viewPager.getAdapter().notifyDataSetChanged();
-				//viewPager.setCurrentItem(1);
-				if (getActivity() instanceof ChatActivity){
-				    getActivity().finish(); 
-				}else{ 
-				    getActivity().getSupportFragmentManager().beginTransaction().remove((Fragment) this).commit();
-				    helper.updateActionBar(getActivity(), null);
-				}
+				NavUtils.navigateUpTo(getActivity(), new Intent(getActivity(), TigaseMobileMessengerActivity.class));
 				if (DEBUG)
 					Log.i(TAG, "Chat with " + chat.getJid() + " (" + chat.getId() + ") closed");
 			} catch (JaxmppException e) {
@@ -454,11 +430,11 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 	public void onPause() {
 		Intent intent = new Intent();
 		intent.setAction(TigaseMobileMessengerActivity.CLIENT_FOCUS_MSG);
-		intent.putExtra("page", 0);		
+		intent.putExtra("page", 0);
 		getActivity().sendBroadcast(intent);
-		super.onPause();		
+		super.onPause();
 	}
-	
+
 	@Override
 	public void onPrepareOptionsMenu(Menu menu) {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB
@@ -480,10 +456,10 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 
 		updatePresence();
 		layout.updateClientIndicator();
-		
+
 		Intent intent = new Intent();
 		intent.setAction(TigaseMobileMessengerActivity.CLIENT_FOCUS_MSG);
-		intent.putExtra("page", 1);		
+		intent.putExtra("page", 1);
 		intent.putExtra("chatId", chat.getId());
 		getActivity().sendBroadcast(intent);
 	}
@@ -535,9 +511,8 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 		chatWrapper = multi.getChatById(chatId);
 		if (chatWrapper != null) {
 			chat = chatWrapper.getChat();
-			
-			Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/"
-					+ Uri.encode(chat.getJid().getBareJid().toString()));
+
+			Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/" + Uri.encode(chat.getJid().getBareJid().toString()));
 			ContentValues values = new ContentValues();
 			values.put(ChatTableMetaData.FIELD_AUTHOR_JID, chat.getJid().getBareJid().toString());
 			values.put(ChatTableMetaData.FIELD_STATE, ChatTableMetaData.STATE_INCOMING);
@@ -545,7 +520,7 @@ public class ChatHistoryFragment extends FragmentWithUID implements LoaderCallba
 
 			return;
 		}
-		
+
 		throw new RuntimeException("Chat (id:" + chatId + ", account:" + account + ")  not found!");
 	}
 

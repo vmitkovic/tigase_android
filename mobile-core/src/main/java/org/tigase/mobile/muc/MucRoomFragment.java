@@ -52,6 +52,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.NavUtils;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
@@ -96,19 +97,10 @@ public class MucRoomFragment extends FragmentWithUID implements LoaderCallbacks<
 	}
 
 	public static void openRoom(FragmentActivity activity, String account, long roomId, boolean xlarge) {
-//		if (xlarge) {
-//			Bundle arguments = new Bundle();
-//			arguments.putLong("roomId", roomId);
-//			arguments.putString("account", account);
-//			MucRoomFragment fragment = new MucRoomFragment();
-//			fragment.setArguments(arguments);
-//			activity.getSupportFragmentManager().beginTransaction().replace(R.id.main_detail_container, fragment).commit();
-//		} else {
 			Intent newIntent = new Intent(activity, MucActivity.class);
 			newIntent.putExtra("roomId", roomId);
 			newIntent.putExtra("account", account);
 			activity.startActivity(newIntent);
-//		}
 	}
 
 	private ChatWrapper chatWrapper;
@@ -422,12 +414,8 @@ public class MucRoomFragment extends FragmentWithUID implements LoaderCallbacks<
 
 				@Override
 				protected void onPostExecute(Void param) {
-					if (getActivity() instanceof MucActivity) {
-						getActivity().finish();
-					} else {
-						getActivity().getSupportFragmentManager().beginTransaction().remove(MucRoomFragment.this).commit();
-						helper.updateActionBar(getActivity(), null);
-					}
+					NavUtils.navigateUpTo(getActivity(), new Intent(getActivity(),
+							TigaseMobileMessengerActivity.class));		
 				}
 			};
 

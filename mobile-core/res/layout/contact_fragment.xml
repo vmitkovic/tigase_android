@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal" >
+    
+    <RelativeLayout
+        android:id="@+id/relativeLayout1"
+        android:paddingTop="@dimen/contact_layout_padding"
+        android:paddingBottom="@dimen/contact_layout_padding"
+        android:layout_width="@dimen/contact_layout_width"
+        android:layout_height="wrap_content" >
+
+        <ImageView
+            android:id="@+id/avatar"
+            android:layout_width="fill_parent"
+            android:layout_height="@dimen/contact_avatar_height"
+            android:scaleType="centerCrop"
+            android:src="@drawable/user_avatar" />
+
+        <TextView
+            android:id="@+id/name"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/avatar"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            android:paddingLeft="20dp"
+            android:singleLine="true"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textStyle="bold" 
+            android:textColor="#FFFFFF"
+            android:background="#BF333333"/>
+        
+    </RelativeLayout>
+    
+    <LinearLayout
+        android:id="@+id/buttons_layout"
+        android:layout_width="@dimen/contact_layout_width"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:layout_below="@id/relativeLayout1">
+        
+    <Button
+        android:id="@+id/chat_btn"
+        android:layout_width="160dp"
+        android:layout_height="48dp"
+        android:layout_weight="1"
+        android:drawableLeft="@drawable/ic_menu_start_conversation"
+        android:text="@string/chat" >
+
+	</Button>
+
+    <Button
+        android:id="@+id/share_btn"
+        android:layout_width="160dp"
+        android:layout_height="48dp"
+        android:layout_weight="1"
+        android:drawableLeft="@android:drawable/ic_menu_share"
+        android:text="@string/shareButton" >
+        
+	</Button>
+    </LinearLayout>
+
+<!--     <ListView
+        android:id="@+id/resources_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/buttons_layout" >
+
+    </ListView>
+ -->	
+</RelativeLayout>

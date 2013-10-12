@@ -15,7 +15,7 @@
  * along with this program. Look for COPYING file in the top folder.
  * If not, see http://www.gnu.org/licenses/.
  */
-package org.tigase.mobile.muc;
+package org.tigase.mobile.roster;
 
 import org.tigase.mobile.R;
 import org.tigase.mobile.TigaseMobileMessengerActivity;
@@ -26,22 +26,21 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.NavUtils;
 import android.view.MenuItem;
 
-public class MucActivity extends FragmentActivity {
-
-
+public class ContactActivity extends FragmentActivity {
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.muc_activity);
+		setContentView(R.layout.contact_activity);
+
 
 		if (savedInstanceState == null) {
 			Bundle arguments = new Bundle();
-			arguments.putLong("roomId", getIntent().getLongExtra("roomId",0));
+			arguments.putString("jid", getIntent().getStringExtra("jid"));
 			arguments.putString("account", getIntent().getStringExtra("account"));
-			MucRoomFragment fragment = new MucRoomFragment();
-			fragment.setArguments(arguments);
-			getSupportFragmentManager().beginTransaction()
-					.add(R.id.main_detail_container, fragment).commit();
+			ContactFragment contactFragment = new ContactFragment();
+			contactFragment.setArguments(arguments);
+			getSupportFragmentManager().beginTransaction().add(R.id.main_detail_container, contactFragment).commit();
 		}
 	}
 	
@@ -54,6 +53,6 @@ public class MucActivity extends FragmentActivity {
 			return true;
 		}
 		return super.onOptionsItemSelected(item);
-	}
+	}	
 	
 }

@@ -191,5 +191,5 @@
     <string name="trustcert_subject">Subject: %s</string>
     <string name="trustcert_issuer">Issuer: %s</string>
     <string name="trustcert_accountnotification">Wrong certificate for %s</string>
-
+	<string name="chat">Chat</string>
 </resources>

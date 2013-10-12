@@ -4,4 +4,7 @@
     <dimen name="vcard_layout_first_column_width">360dp</dimen>
     <dimen name="vcard_layout_second_column_width">360dp</dimen>
     <dimen name="vcard_layout_labels_padding">3dp</dimen>
+    <dimen name="contact_layout_width">360dp</dimen>
+    <dimen name="contact_layout_padding">0dp</dimen>
+    <dimen name="contact_avatar_height">220dp</dimen>
 </resources>

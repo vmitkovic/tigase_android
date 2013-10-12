@@ -69,8 +69,8 @@ public class ContactEditActivity extends FragmentActivity {
 		final long id = getIntent().getLongExtra("itemId", -1);
 		final BareJID account;
 
+		JID jid = null;
 		if (id != -1) {
-			JID jid = null;
 			final Cursor cursor = getContentResolver().query(Uri.parse(RosterProvider.CONTENT_URI + "/" + id), null, null,
 					null, null);
 			try {
@@ -80,11 +80,16 @@ public class ContactEditActivity extends FragmentActivity {
 			} finally {
 				cursor.close();
 			}
-			this.jaxmpp = ((MessengerApplication) getApplicationContext()).getMultiJaxmpp().get(account);
-			rosterItem = jaxmpp.getRoster().get(jid.getBareJid());
+			this.jaxmpp = ((MessengerApplication) getApplicationContext()).getMultiJaxmpp().get(account);			
 		} else {
 			account = BareJID.bareJIDInstance(getIntent().getStringExtra("account"));
 			this.jaxmpp = ((MessengerApplication) getApplicationContext()).getMultiJaxmpp().get(account);
+			if (getIntent().hasExtra("jid")) {
+				jid = JID.jidInstance(getIntent().getStringExtra("jid"));
+			}
+		}
+		if (jid != null) {
+			rosterItem = jaxmpp.getRoster().get(jid.getBareJid());
 		}
 
 		this.jabberIdEdit = (EditText) findViewById(R.id.ce_jabberid);

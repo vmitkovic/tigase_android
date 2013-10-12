@@ -44,6 +44,15 @@ public class ContactRemoveDialog extends DialogFragment {
 		return frag;
 	}
 
+	public static ContactRemoveDialog newInstance(final BareJID account, final JID jid) {
+		ContactRemoveDialog frag = new ContactRemoveDialog();
+		Bundle args = new Bundle();
+		args.putString("account", account.toString());
+		args.putString("jid", jid.toString());
+		frag.setArguments(args);
+		return frag;
+	}
+	
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
 		final long id = getArguments().getLong("itemId");
@@ -52,12 +61,19 @@ public class ContactRemoveDialog extends DialogFragment {
 				null, null, null);
 		JID jid = null;
 		BareJID account = null;
-		try {
-			cursor.moveToNext();
-			jid = JID.jidInstance(cursor.getString(cursor.getColumnIndex(RosterTableMetaData.FIELD_JID)));
-			account = BareJID.bareJIDInstance(cursor.getString(cursor.getColumnIndex(RosterTableMetaData.FIELD_ACCOUNT)));
-		} finally {
-			cursor.close();
+		
+		if (getArguments().containsKey("jid")) {
+			account = BareJID.bareJIDInstance(getArguments().getString("account"));
+			jid = JID.jidInstance(getArguments().getString("jid"));
+		}
+		else {
+			try {
+				cursor.moveToNext();
+				jid = JID.jidInstance(cursor.getString(cursor.getColumnIndex(RosterTableMetaData.FIELD_JID)));
+				account = BareJID.bareJIDInstance(cursor.getString(cursor.getColumnIndex(RosterTableMetaData.FIELD_ACCOUNT)));
+			} finally {
+				cursor.close();
+			}
 		}
 		final Jaxmpp jaxmpp = ((MessengerApplication) getActivity().getApplicationContext()).getMultiJaxmpp().get(account);
 		final RosterItem rosterItem = jaxmpp.getRoster().get(jid.getBareJid());

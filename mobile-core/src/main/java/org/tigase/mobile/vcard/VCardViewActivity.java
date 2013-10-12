@@ -137,21 +137,27 @@ public class VCardViewActivity extends Activity {
 
 		long id = getIntent().getLongExtra("itemId", -1);
 
-		final TextView fullName = (TextView) findViewById(R.id.vcard_fn);
-
-		final Cursor cursor = getContentResolver().query(Uri.parse(RosterProvider.CONTENT_URI + "/" + id), null, null, null,
-				null);
 		this.jid = null;
 		this.account = null;
-		try {
-			cursor.moveToNext();
-			this.jid = JID.jidInstance(cursor.getString(cursor.getColumnIndex(RosterTableMetaData.FIELD_JID)));
-			account = BareJID.bareJIDInstance(cursor.getString(cursor.getColumnIndex(RosterTableMetaData.FIELD_ACCOUNT)));
 
-		} finally {
-			cursor.close();
+		if (id != -1) {
+			final Cursor cursor = getContentResolver().query(Uri.parse(RosterProvider.CONTENT_URI + "/" + id), null, null, null,
+					null);
+			try {
+				cursor.moveToNext();
+				this.jid = JID.jidInstance(cursor.getString(cursor.getColumnIndex(RosterTableMetaData.FIELD_JID)));
+				account = BareJID.bareJIDInstance(cursor.getString(cursor.getColumnIndex(RosterTableMetaData.FIELD_ACCOUNT)));
+
+			} finally {
+				cursor.close();
+			}
+		}
+		else {
+			this.jid = JID.jidInstance(getIntent().getStringExtra("jid"));
+			this.account = BareJID.bareJIDInstance(getIntent().getStringExtra("account"));
 		}
 
+		final TextView fullName = (TextView) findViewById(R.id.vcard_fn);
 		final Jaxmpp jaxmpp = ((MessengerApplication) getApplicationContext()).getMultiJaxmpp().get(account);
 		final RosterItem rosterItem = jaxmpp.getRoster().get(jid.getBareJid());
 
