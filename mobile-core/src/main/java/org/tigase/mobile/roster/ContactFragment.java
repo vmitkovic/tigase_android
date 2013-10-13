@@ -297,7 +297,7 @@ public class ContactFragment extends Fragment {
 			public void onClick(View view) {
 //				shareWithResource = (String) view.getTag();
 				Intent pickerIntent = new Intent(Intent.ACTION_PICK);
-				pickerIntent.setType("image/*");
+				pickerIntent.setType("video/*, images/*");
 				pickerIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);				
 				getActivity().startActivityForResult(pickerIntent, TigaseMobileMessengerActivity.SELECT_FOR_SHARE);
 			}
@@ -319,15 +319,15 @@ public class ContactFragment extends Fragment {
 			chat = w.getChat();
 			if (fullJid.getResource() == null) {
 				if (fullJid.getBareJid().equals(chat.getJid().getBareJid()))
-					break;
+					return chat;
 			}
 			else {
 				if (fullJid.equals(chat.getJid())) {
-					break;
+					return chat;
 				}
 			}
 		}
-		return chat;
+		return null;
 	}
 	
 	public void setContact(BareJID account, BareJID _jid) {

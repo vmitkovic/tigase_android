@@ -5,13 +5,12 @@
     android:id="@+id/roster_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <fragment
-        android:name="org.tigase.mobile.roster.RosterFragment"
-        android:id="@+id/roster_fragment"
-        android:layout_weight="1"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content" >
-    </fragment>
+	<FrameLayout
+     	android:id="@+id/roster_fragment"
+       	android:layout_weight="1"
+       	android:layout_width="0dp"
+       	android:layout_height="wrap_content" >
+    </FrameLayout>	
     <ListView android:id="@+id/main_left_drawer"
         android:layout_width="240dp"
         android:layout_height="match_parent"

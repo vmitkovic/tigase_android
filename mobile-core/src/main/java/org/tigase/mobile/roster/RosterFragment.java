@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.tigase.mobile.Constants;
 import org.tigase.mobile.MessengerApplication;
 import org.tigase.mobile.MultiJaxmpp;
@@ -36,7 +35,6 @@ import org.tigase.mobile.db.providers.RosterProvider;
 import org.tigase.mobile.pubsub.GeolocationModule;
 import org.tigase.mobile.service.JaxmppService;
 import org.tigase.mobile.vcard.VCardViewActivity;
-
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.Connector;
 import tigase.jaxmpp.core.client.Connector.ConnectorEvent;
@@ -55,6 +53,7 @@ import tigase.jaxmpp.core.client.xmpp.stanzas.Presence;
 import tigase.jaxmpp.j2se.Jaxmpp;
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.annotation.TargetApi;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -290,7 +289,7 @@ public class RosterFragment extends Fragment {
 
 		if (getArguments() != null) {
 			this.rosterLayout = getArguments().getString("layout");
-		}
+		}		
 	}
 
 	@Override
@@ -397,7 +396,7 @@ public class RosterFragment extends Fragment {
 			this.rosterLayout = getArguments().getString("layout");
 		} else {
 			this.rosterLayout = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString(
-					Preferences.ROSTER_LAYOUT_KEY, "flat");
+					Preferences.ROSTER_LAYOUT_KEY, helper.isXLarge() ? "grid" : "flat");
 		}
 
 		View layout;
@@ -486,6 +485,8 @@ public class RosterFragment extends Fragment {
 		if (expandedIds != null) {
 			restoreExpandedState(expandedIds);
 		}
+
+		if (helper.isXLarge()) this.setActivateOnItemClick(true);
 
 		return layout;
 	}
@@ -748,6 +749,7 @@ public class RosterFragment extends Fragment {
 	 * Turns on activate-on-click mode. When this mode is on, list items will be
 	 * given the 'activated' state when touched.
 	 */
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	public void setActivateOnItemClick(boolean activateOnItemClick) {
 		// When setting CHOICE_MODE_SINGLE, ListView will automatically
 		// give items the 'activated' state when touched.

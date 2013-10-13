@@ -11,13 +11,12 @@
         android:baselineAligned="false"
         android:orientation="horizontal" >
 
-	    <fragment
-    	    android:name="org.tigase.mobile.roster.RosterFragment"
+	    <FrameLayout
         	android:id="@+id/roster_fragment"
         	android:layout_weight="1"
         	android:layout_width="0dp"
         	android:layout_height="wrap_content" >
-    	</fragment>	
+    	</FrameLayout>	
     	
  		<FrameLayout
         	android:id="@+id/main_detail_container"

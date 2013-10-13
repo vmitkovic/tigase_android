@@ -60,6 +60,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.database.Cursor;
@@ -239,10 +240,12 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 
 	private final BroadcastReceiver mucErrorReceiver;
 
-	// private final OnSharedPreferenceChangeListener prefChangeListener;;
+	private final OnSharedPreferenceChangeListener prefChangeListener;
 
 	private final RosterClickReceiver rosterClickReceiver = new RosterClickReceiver();
 
+	private boolean rosterLayoutChanged = false;
+	
 	public TigaseMobileMessengerActivity() {
 		helper = TigaseMobileMessengerActivityHelper.createInstance();
 
@@ -262,7 +265,14 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 					onMessageEvent((AbstractMessageEvent) be);
 			}
 		};
-
+        this.prefChangeListener = new OnSharedPreferenceChangeListener() {
+                @Override
+                public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+                        if (Preferences.ROSTER_LAYOUT_KEY.equals(key) || Preferences.ROSTER_SORTING_KEY.equals(key)) {
+                        	rosterLayoutChanged = true;                       	
+                        }
+                }
+        };
 	}
 
 	protected ChatWrapper findChatWrapper(final RosterItem rosterItem) {
@@ -317,7 +327,7 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 		super.onCreate(savedInstanceState);
 
 		this.mPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-		// this.mPreferences.registerOnSharedPreferenceChangeListener(prefChangeListener);
+		this.mPreferences.registerOnSharedPreferenceChangeListener(prefChangeListener);
 
 		boolean autostart = mPreferences.getBoolean(Preferences.AUTOSTART_KEY, true);
 		autostart &= mPreferences.getBoolean(Preferences.SERVICE_ACTIVATED, true);
@@ -343,12 +353,13 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 
 		helper.updateIsXLarge(findViewById(R.id.main_detail_container) != null);
 
-		if (helper.isXLarge()) {
-			// setContentView(R.layout.main_layout);
-			((RosterFragment) getSupportFragmentManager().findFragmentById(R.id.roster_fragment)).setActivateOnItemClick(true);
-		} else {
-			// setContentView(R.layout.roster_main);
-		}
+		getSupportFragmentManager().beginTransaction().replace(R.id.roster_fragment, new RosterFragment()).commit();
+//		if (helper.isXLarge()) {
+//			// setContentView(R.layout.main_layout);
+//			((RosterFragment) getSupportFragmentManager().findFragmentById(R.id.roster_fragment)).setActivateOnItemClick(true);
+//		} else {
+//			// setContentView(R.layout.roster_main);
+//		}
 
 		this.drawerList = (ListView) findViewById(R.id.main_left_drawer);
 		this.drawerLayout = (DrawerLayout) findViewById(R.id.roster_main);
@@ -594,6 +605,13 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 
 		multi.addListener(this.chatListener);
 
+		if (rosterLayoutChanged) {
+        	Fragment frag = getSupportFragmentManager().findFragmentById(R.id.roster_fragment);
+        	if (frag != null) {
+        		getSupportFragmentManager().beginTransaction().replace(R.id.roster_fragment, new RosterFragment()).commit();
+        	}			
+		}
+		
 		if (helper.isXLarge()) {
 			Fragment frag = getSupportFragmentManager().findFragmentById(R.id.main_detail_container);
 			if (frag != null) {
