@@ -19,9 +19,11 @@ package org.tigase.mobile.db.providers;
 
 import java.security.MessageDigest;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -195,48 +197,53 @@ public class RosterProvider extends ContentProvider {
 		Predicate p = null;
 		switch (uriMatcher.match(uri)) {
 		case ROSTER_URI_INDICATOR:
-			if (selectionArgs != null) {
-				final String g = selectionArgs[0];
-				p = new Predicate() {
+			Boolean showOffline = null;
+			List<String> selections = selection == null ? Collections.EMPTY_LIST : Arrays.asList(selection.split(","));
+			int idx = 0;
+			for (String select : selections) {
+				selection = select;
+				if ("group".equals(selection)) {
+					final Predicate parent = p;
+					final String g = selectionArgs[idx];
+					p = new Predicate() {
 
-					@Override
-					public boolean match(RosterItem item) {
-						if (g.equals("All"))
-							return true;
-						else if (g.equals("default") && item.getGroups().isEmpty())
-							return true;
-						else
-							return item.getGroups().contains(g);
-					}
-				};
-			}
-			if (selection != null && "status".equals(selection)) {
-				final Predicate parent = p;
-				p = new Predicate() {
-					@Override
-					public boolean match(RosterItem item) {
-						try {
+						@Override
+						public boolean match(RosterItem item) {
 							if (parent != null && !parent.match(item))
 								return false;
-							SessionObject session = item.getSessionObject();
-							if (session == null)
+							if (g.equals("All"))
+								return true;
+							else if (g.equals("default") && item.getGroups().isEmpty())
+								return true;
+							else
+								return item.getGroups().contains(g);
+						}
+					};
+					idx++;
+				}				
+				if ("offline".equals(selection))
+					showOffline = true;
+				if ("search".equals(selection)) {
+					showOffline = true;
+					final Predicate parent = p;
+					final String searchText = selectionArgs[idx].toLowerCase();
+					p = new Predicate() {
+						@Override
+						public boolean match(RosterItem item) {
+							if (parent != null && !parent.match(item)) {
 								return false;
-							return session.getPresence().isAvailable(item.getJid());
-						} catch (XMLException e) {
+							}
+							if (item.getName() != null && item.getName().toLowerCase().contains(searchText))
+								return true;
+							if (item.getJid().toString().toLowerCase().contains(searchText))
+								return true;
 							return false;
 						}
-					}
-				};
-			}
-			if (selection != null && "feature".equals(selection)) {
-				final Predicate parent = p;
-				Iterator<JaxmppCore> jaxmpp = ((MessengerApplication) getContext().getApplicationContext()).getMultiJaxmpp().get().iterator();
-				if (jaxmpp.hasNext()) {
-					CapabilitiesCache capsCache = jaxmpp.next().getModule(CapabilitiesModule.class).getCache();
-					final Set<String> nodes = capsCache.getNodesWithFeature(selectionArgs[1]);
-					for (int i = 2; i < selectionArgs.length; i++) {
-						nodes.retainAll(capsCache.getNodesWithFeature(selectionArgs[i]));
-					}
+					};
+					idx++;
+				}
+				if ("status".equals(selection)) {
+					final Predicate parent = p;
 					p = new Predicate() {
 						@Override
 						public boolean match(RosterItem item) {
@@ -246,36 +253,63 @@ public class RosterProvider extends ContentProvider {
 								SessionObject session = item.getSessionObject();
 								if (session == null)
 									return false;
-
-								boolean has = false;
-								Map<String, tigase.jaxmpp.core.client.xmpp.stanzas.Presence> presences = session.getPresence().getPresences(
-										item.getJid());
-								if (presences != null) {
-									for (Map.Entry<String, tigase.jaxmpp.core.client.xmpp.stanzas.Presence> entry : presences.entrySet()) {
-										Element c = entry.getValue().getChildrenNS("c", "http://jabber.org/protocol/caps");
-										if (c == null)
-											continue;
-
-										final String node = c.getAttribute("node");
-										final String ver = c.getAttribute("ver");
-
-										has |= nodes.contains(node + "#" + ver);
-									}
-								}
-								return has;
+								return session.getPresence().isAvailable(item.getJid());
 							} catch (XMLException e) {
 								return false;
 							}
 						}
 					};
+				}				
+				if ("feature".equals(selection)) {
+					final Predicate parent = p;
+					Iterator<JaxmppCore> jaxmpp = ((MessengerApplication) getContext().getApplicationContext()).getMultiJaxmpp().get().iterator();
+					if (jaxmpp.hasNext()) {
+						CapabilitiesCache capsCache = jaxmpp.next().getModule(CapabilitiesModule.class).getCache();
+						final Set<String> nodes = capsCache.getNodesWithFeature(selectionArgs[idx]);
+						for (int i = idx; i < selectionArgs.length; i++) {
+							nodes.retainAll(capsCache.getNodesWithFeature(selectionArgs[i]));
+						}
+						p = new Predicate() {
+							@Override
+							public boolean match(RosterItem item) {
+								try {
+									if (parent != null && !parent.match(item))
+										return false;
+									SessionObject session = item.getSessionObject();
+									if (session == null)
+										return false;
+
+									boolean has = false;
+									Map<String, tigase.jaxmpp.core.client.xmpp.stanzas.Presence> presences = session.getPresence().getPresences(
+											item.getJid());
+									if (presences != null) {
+										for (Map.Entry<String, tigase.jaxmpp.core.client.xmpp.stanzas.Presence> entry : presences.entrySet()) {
+											Element c = entry.getValue().getChildrenNS("c", "http://jabber.org/protocol/caps");
+											if (c == null)
+												continue;
+
+											final String node = c.getAttribute("node");
+											final String ver = c.getAttribute("ver");
+
+											has |= nodes.contains(node + "#" + ver);
+										}
+									}
+									return has;
+								} catch (XMLException e) {
+									return false;
+								}
+							}
+						};
+					}
+					idx = idx + selectionArgs.length;
 				}
 			}
 
-			if (DEBUG)
+			//if (DEBUG)
 				Log.d(TAG, "Querying " + uri + " projection=" + Arrays.toString(projection) + "; selection=" + selection
 						+ "; selectionArgs=" + Arrays.toString(selectionArgs));
 
-			c = new RosterCursor(getContext(), dbHelper.getReadableDatabase(), p);
+			c = new RosterCursor(getContext(), dbHelper.getReadableDatabase(), p, showOffline);
 			break;
 		case ROSTER_ITEM_URI_INDICATOR:
 			final String l = uri.getLastPathSegment();

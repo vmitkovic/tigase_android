@@ -140,7 +140,8 @@
             android:label="@string/account_advanced_preferences"
             android:theme="@style/XTheme" >
         </activity>
-        <activity android:name="org.tigase.mobile.filetransfer.SendFileActivity" >
+        <activity android:name="org.tigase.mobile.filetransfer.ShareActivity" 
+            android:theme="@style/XTheme.Light" >
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
 
@@ -162,7 +163,12 @@
 
                 <data android:mimeType="audio/*" />
             </intent-filter>
-        </activity>
+    		<intent-filter>
+        		<action android:name="android.intent.action.SEND" />
+        		<category android:name="android.intent.category.DEFAULT" />
+        		<data android:mimeType="text/plain" />
+    		</intent-filter>
+    	</activity>     
         <activity
             android:name="org.tigase.mobile.filetransfer.IncomingFileActivity"
             android:label="@string/incoming_file"

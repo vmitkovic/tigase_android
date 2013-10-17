@@ -65,8 +65,15 @@ public class RosterCursor extends AbstractCursor {
 	private final ArrayList<RosterItem> items = new ArrayList<RosterItem>();
 
 	private final Predicate predicate;
+	
+	private final Boolean showOffline;
 
 	public RosterCursor(Context ctx, SQLiteDatabase sqLiteDatabase, RosterStore.Predicate predicate) {
+		this(ctx, sqLiteDatabase, predicate, null);
+	}
+	
+	public RosterCursor(Context ctx, SQLiteDatabase sqLiteDatabase, RosterStore.Predicate predicate, Boolean showOffline) {
+		this.showOffline = showOffline;
 		this.context = ctx;
 		this.predicate = predicate;
 		this.db = sqLiteDatabase;
@@ -195,7 +202,7 @@ public class RosterCursor extends AbstractCursor {
 
 	private final void loadData() {
 		final MultiJaxmpp multi = ((MessengerApplication) context.getApplicationContext()).getMultiJaxmpp();
-		final boolean showOffline = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(Preferences.SHOW_OFFLINE,
+		final boolean showOffline = (this.showOffline != null) ? this.showOffline : PreferenceManager.getDefaultSharedPreferences(context).getBoolean(Preferences.SHOW_OFFLINE,
 				Boolean.TRUE);
 
 		Predicate pr = predicate;

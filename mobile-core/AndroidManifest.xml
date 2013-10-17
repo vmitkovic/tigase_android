@@ -97,7 +97,7 @@
             android:label="@string/account_advanced_preferences"
             android:theme="@style/XTheme" >
         </activity>        
-   		<activity android:name=".filetransfer.SendFileActivity" >
+   		<activity android:name=".filetransfer.ShareActivity" >
     		<intent-filter>
         		<action android:name="android.intent.action.SEND" />
         		<category android:name="android.intent.category.DEFAULT" />
@@ -112,6 +112,11 @@
         		<action android:name="android.intent.action.SEND" />
         		<category android:name="android.intent.category.DEFAULT" />
         		<data android:mimeType="audio/*" />
+    		</intent-filter>
+    		<intent-filter>
+        		<action android:name="android.intent.action.SEND" />
+        		<category android:name="android.intent.category.DEFAULT" />
+        		<data android:mimeType="text/plain" />
     		</intent-filter>
     	</activity>        
         <activity

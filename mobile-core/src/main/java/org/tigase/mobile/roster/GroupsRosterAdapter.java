@@ -67,7 +67,7 @@ public class GroupsRosterAdapter extends SimpleCursorTreeAdapter {
 		if (context == null)
 			context = staticContext;
 		String group = groupCursor.getString(1);
-		return context.getContentResolver().query(Uri.parse(RosterProvider.CONTENT_URI), null, null, new String[] { group },
+		return context.getContentResolver().query(Uri.parse(RosterProvider.CONTENT_URI), null, "group", new String[] { group },
 				null);
 	}
 

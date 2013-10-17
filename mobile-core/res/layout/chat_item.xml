@@ -19,8 +19,12 @@
         android:id="@+id/user_avatar"
         android:layout_width="@dimen/chat_item_layout_item_avatar_size"
         android:layout_height="@dimen/chat_item_layout_item_avatar_size"
-        android:padding="@dimen/chat_item_layout_item_padding"        
+        android:paddingBottom="@dimen/chat_item_layout_item_padding"
+        android:paddingLeft="@dimen/chat_item_layout_item_padding"
+        android:paddingRight="3dp"
+        android:paddingTop="@dimen/chat_item_layout_item_padding"
         android:src="@drawable/user_avatar" >
+
     </ImageView>
 
     <TextView

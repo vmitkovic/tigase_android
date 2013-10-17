@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    tools:context=".filetransfer.ShareActivity" >
+
+    <ImageView
+        android:id="@+id/imageView1"
+        android:layout_width="50sp"
+        android:layout_height="50sp"
+        android:src="@drawable/user_avatar" >
+    </ImageView>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"        
+        android:orientation="vertical" >
+        
+    <TextView
+        android:id="@+id/roster_item_jid"
+        android:layout_width="match_parent"
+        android:layout_height="32sp"
+        android:gravity="center_vertical"
+        android:paddingLeft="10sp"
+        android:singleLine="true"
+        android:text="Buddy name"
+        android:textSize="18sp"
+        android:textStyle="bold" >
+    </TextView>
+            
+    <TextView
+        android:id="@+id/roster_item_resource"
+        android:layout_width="match_parent"
+        android:layout_height="18sp"
+        android:gravity="center_vertical"
+        android:paddingLeft="10sp"
+        android:singleLine="true"
+        android:text="resource"
+        android:textSize="12sp"
+        android:textStyle="bold" >
+        </TextView>
+       
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/selectResource"
+        style="@style/BorderlesButton"
+        android:layout_width="40sp"
+        android:layout_height="50sp"
+        android:src="@android:drawable/ic_menu_more" />
+    
+    <ImageButton
+        android:id="@+id/delete"
+        style="@style/BorderlesButton"
+        android:layout_width="40sp"
+        android:layout_height="50sp"
+        android:src="@android:drawable/ic_menu_delete" />
+
+</LinearLayout>

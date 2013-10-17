@@ -1,15 +1,102 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:orientation="vertical" >
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal" >
 
-    <ExpandableListView
-        android:id="@+id/sendFileContacts"
-        android:layout_width="fill_parent"
+    <LinearLayout
+        android:layout_width="@dimen/vcard_layout_first_column_width"
         android:layout_height="fill_parent"
-        android:divider="#e5e4e5"
-        android:dividerHeight="1px"
-        android:saveEnabled="true" />
+        android:orientation="vertical"
+        android:padding="@dimen/vcard_layout_padding" >
 
-</LinearLayout>
+        <AutoCompleteTextView
+            android:id="@+id/recipients2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:hint="Select recipients.." >
+
+            <requestFocus />
+        </AutoCompleteTextView>
+
+        <ListView
+            android:id="@+id/recipientsList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+        </ListView>
+
+        <TextView
+            android:id="@+id/noRecipients"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="No recipients selected"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textColor="@color/account_dialog_separator"
+            android:textStyle="italic" />
+
+        <LinearLayout
+            android:id="@+id/filename_layout"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="15dp" >
+
+            <TextView
+                android:id="@+id/filename_label"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:text="Filename"
+                android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            <TextView
+                android:id="@+id/filename"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:ems="10"
+                android:textAppearance="?android:attr/textAppearanceMedium" />
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="Message"
+            android:ems="10"
+            android:hint="Optional message"
+            android:imeOptions="flagNoExtractUi"
+            android:inputType="textMultiLine"
+            android:paddingTop="15dp"
+            android:singleLine="false" />
+
+        <LinearLayout
+            android:id="@+id/buttons_layout"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:orientation="horizontal"
+            android:paddingTop="15dp" >
+
+            <Button
+                android:id="@+id/cancel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:text="Cancel" />
+
+            <Button
+                android:id="@+id/share"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:text="Share" />
+        </LinearLayout>
+    </LinearLayout>
+
+</RelativeLayout>
