@@ -31,5 +31,10 @@
         android:showAsAction="ifRoom"
         android:title="@string/showChatsButton">
     </item>
-
+    <item
+        android:id="@+id/showContact"
+        android:icon="@android:drawable/ic_menu_info_details"
+        android:showAsAction="ifRoom"
+        android:title="@string/showContact">
+    </item>
 </menu>

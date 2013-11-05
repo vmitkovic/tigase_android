@@ -22,6 +22,7 @@ import org.tigase.mobile.R;
 
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.xml.XMLException;
+import tigase.jaxmpp.core.client.xmpp.stanzas.StanzaType;
 import tigase.jaxmpp.core.client.xmpp.utils.EscapeUtils;
 import android.content.ContentProviderOperation;
 import android.content.ContentValues;
@@ -77,7 +78,9 @@ public class ContactOperations {
 			int state = StatusUpdates.OFFLINE;
 
 			if (p != null) {
-				state = StatusUpdates.AVAILABLE;
+				if (p.getType() != StanzaType.unavailable) {
+					state = StatusUpdates.AVAILABLE;
+				}
 
 				if (p.getShow() == tigase.jaxmpp.core.client.xmpp.stanzas.Presence.Show.away) {
 					state = StatusUpdates.AWAY;
