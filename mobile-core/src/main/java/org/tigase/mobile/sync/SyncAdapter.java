@@ -17,7 +17,12 @@
  */
 package org.tigase.mobile.sync;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -110,12 +115,27 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 			BatchOperation batchOperation = new BatchOperation(context, resolver);
 			PresenceEvent be = null;
 
+			AccountManager accountManager = AccountManager.get(context);
+			Account[] accounts = accountManager.getAccountsByType(Constants.ACCOUNT_TYPE);
+			Set<BareJID> syncEnabledAccounts = new HashSet<BareJID>();
+			if (accounts != null) {
+				for (Account acc : accounts) {
+					if (ContentResolver.getSyncAutomatically(acc, "com.android.contacts")) {
+						syncEnabledAccounts.add(BareJID.bareJIDInstance(acc.name));
+					}
+				}
+			}
+			
 			// we should schedule next event from now on
 			scheduled = false;
 
+			synchronized (SyncAdapter.class) {
 			while ((be = presenceEventQueue.poll()) != null) {
 				try {
 					BareJID buddyJid = be.getJid().getBareJid();
+					if (!syncEnabledAccounts.contains(be.getSessionObject().getUserBareJid()))
+						continue;
+					
 					JaxmppCore jaxmpp = multiJaxmpp.get(be.getSessionObject());
 					if (jaxmpp == null) {
 						if (DEBUG)
@@ -123,7 +143,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 									+ ", reason = no jaxmpp for session object");
 						continue;
 					}
-
+					
 					RosterItem ri = jaxmpp.getRoster().get(buddyJid);
 					if (ri == null) {
 						if (DEBUG)
@@ -132,14 +152,18 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 					}
 
 					long rawContactId = lookupRawContact(resolver, ri.getId());
-					if (rawContactId == 0 || buddyJid.equals(be.getSessionObject().getUserBareJid())) {
+					if (rawContactId == 0) {
+						if (buddyJid.equals(be.getSessionObject().getUserBareJid()))
+							continue;
+					
 						if (DEBUG)
 							Log.v(TAG, "not setting status for " + buddyJid.toString() + ", reason = contact not synchronized");
+						forceContactsSync.add(jaxmpp.getSessionObject().getUserBareJid());					
 						continue;
 					}
 
 					Presence p = jaxmpp.getPresence().getBestPresence(buddyJid);
-
+					
 					ContactOperations.syncStatus(context, be.getSessionObject().getUserBareJid().toString(), rawContactId,
 							buddyJid, p, batchOperation);
 
@@ -162,7 +186,18 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
 			int counter = batchOperation.size();
 			batchOperation.execute();
+			
 			Log.d(TAG, "updated " + counter + " contacts at once");
+			}
+			
+			if (!forceContactsSync.isEmpty()) {
+				for (Account account : accounts) {
+					BareJID accountJid = BareJID.bareJIDInstance(account.name);
+					if (syncEnabledAccounts.contains(accountJid) && forceContactsSync.contains(accountJid)) {
+						ContentResolver.requestSync(account, "com.android.contacts", new Bundle());
+					}
+				}
+			}
 		}
 
 		public void setScheduled(boolean value) {
@@ -181,6 +216,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 	private static final String SYNC_MARKER_KEY = "org.tigase.mobile.sync.marker";
 	private static final String TAG = "SyncAdapter";
 
+	private static Set<BareJID> forceContactsSync = Collections.synchronizedSet(new HashSet<BareJID>());
+	
 	public static long ensureGroupExists(Context context, String account, String group) {
 		final ContentResolver resolver = context.getContentResolver();
 
@@ -367,7 +404,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 		builder.append(")");
 
 		final Cursor c1 = resolver.query(RawContacts.CONTENT_URI, new String[] { BaseColumns._ID }, RawContacts.ACCOUNT_TYPE
-				+ "='" + Constants.ACCOUNT_TYPE + "' AND " + RawContacts.SOURCE_ID + " NOT IN " + builder.toString(), null,
+				+ "='" + Constants.ACCOUNT_TYPE + "' AND " + RawContacts.ACCOUNT_NAME + " = '" + account.name + "' AND " + RawContacts.SOURCE_ID + " NOT IN " + builder.toString(), null,
 				null);
 
 		try {
@@ -398,9 +435,13 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
 		long newMarker = new Date().getTime();
 		long oldMarker = getSyncMarker(account);
+		BareJID accountJid = BareJID.bareJIDInstance(account.name);
+		if (forceContactsSync.remove(accountJid)) {
+ 			oldMarker = 0;
+		}
 		// final MultiJaxmpp multiJaxmpp = ((MessengerApplication)
 
-		Log.d(TAG, "getting items in roster of account = " + account.name);
+		Log.d(TAG, "getting items in roster of account = " + account.name + " for old marker = " + oldMarker + " and new marker = " + newMarker);
 		final SQLiteDatabase db = dbHelper.getReadableDatabase();
 		final Cursor c = db.rawQuery("SELECT roster." + RosterCacheTableMetaData.FIELD_ID + ", roster."
 				+ RosterCacheTableMetaData.FIELD_JID + "," + " roster." + RosterCacheTableMetaData.FIELD_NAME + ", roster."
@@ -412,12 +453,14 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 				+ ">?)", new String[] { account.name, String.valueOf(oldMarker), String.valueOf(oldMarker) });
 
 		Log.d(TAG, "adding or updating in contacts based on roster of account = " + account.name);
-
+		
 		try {
 			BatchOperation batchOperation = new BatchOperation(context, context.getContentResolver());
-			int added = 0;
+			List<BareJID> added = new ArrayList<BareJID>();
 			int updated = 0;
+			int total = 0;
 			while (c.moveToNext()) {
+				total++;
 				long userId = c.getInt(c.getColumnIndex(RosterCacheTableMetaData.FIELD_ID));
 				long id = lookupRawContact(context.getContentResolver(), userId);
 				String group = null;
@@ -433,19 +476,21 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 				}
 				BareJID jid = BareJID.bareJIDInstance(c.getString(c.getColumnIndex(RosterCacheTableMetaData.FIELD_JID)));
 				if (id == 0) {
-					added++;
+					added.add(jid);
 					final ContactOperations contactOps = ContactOperations.createNewContact(context, userId, account.name,
 							true, batchOperation);
 					contactOps.addName(
 							EscapeUtils.unescape(c.getString(c.getColumnIndex(RosterCacheTableMetaData.FIELD_NAME))), null,
 							null).addJID(jid).addAvatar(c.getBlob(c.getColumnIndex(VCardsCacheTableMetaData.FIELD_DATA)));
 					contactOps.addProfile(jid.toString());
+					Log.d(TAG, "adding contact for jid = " + jid.toString());
 					if (group != null) {
 						long groupId = ensureGroupExists(context, account.name, group);
 						contactOps.addGroupMembership(groupId);
 					}
 				} else {
 					updated++;
+					Log.d(TAG, "updating contact for jid = " + jid.toString());
 					updateContact(context, context.getContentResolver(), account, jid.toString(),
 							EscapeUtils.unescape(c.getString(c.getColumnIndex(RosterCacheTableMetaData.FIELD_NAME))),
 							c.getBlob(c.getColumnIndex(VCardsCacheTableMetaData.FIELD_DATA)), group, true, id, userId,
@@ -459,8 +504,33 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 			}
 			batchOperation.execute();
 			if (DEBUG) {
-				Log.v(TAG, "added " + added + " contacts");
+				Log.v(TAG, "total " + total + " contacts");
+				Log.v(TAG, "added " + added.size() + " contacts");
 				Log.v(TAG, "updated " + updated + " contacts");
+			}
+			if (!added.isEmpty()) {
+				final MultiJaxmpp multiJaxmpp = ((MessengerApplication) context.getApplicationContext()).getMultiJaxmpp();
+				final JaxmppCore jaxmpp = multiJaxmpp.get(BareJID.bareJIDInstance(account.name));
+				if (jaxmpp != null) {
+					synchronized(SyncAdapter.class) {
+						for (BareJID jid : added) {
+							RosterItem ri = jaxmpp.getRoster().get(jid);
+							if (ri == null)
+								continue;
+							long id = lookupRawContact(context.getContentResolver(), ri.getId());							
+							try {
+								Presence p = jaxmpp.getPresence().getBestPresence(jid);
+								ContactOperations.syncStatus(context, account.name, id, jid, p, batchOperation);
+							} catch (XMLException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}							
+							if (batchOperation.size() > 50)
+								batchOperation.execute();
+						}
+						batchOperation.execute();
+					}
+				}
 			}
 		} finally {
 			c.close();

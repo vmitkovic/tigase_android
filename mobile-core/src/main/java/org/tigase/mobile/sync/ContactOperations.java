@@ -107,6 +107,8 @@ public class ContactOperations {
 			values.put(StatusUpdates.STATUS_RES_PACKAGE, context.getPackageName());
 			values.put(StatusUpdates.STATUS_ICON, R.drawable.icon);
 			values.put(StatusUpdates.STATUS_LABEL, R.string.app_name);
+			//values.put(StatusUpdates.CHAT_CAPABILITY, 7);
+			values.put(StatusUpdates.STATUS_TIMESTAMP, System.currentTimeMillis());
 
 			batchOperation.add(ContactOperations.newInsertCpo(StatusUpdates.CONTENT_URI, true, true).withValues(values).build());
 		} catch (XMLException e) {

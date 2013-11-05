@@ -25,6 +25,7 @@ import org.tigase.mobile.MultiJaxmpp.ChatWrapper;
 import org.tigase.mobile.accountstatus.AccountsStatusActivity;
 import org.tigase.mobile.authenticator.AuthenticatorActivity;
 import org.tigase.mobile.bookmarks.BookmarksActivity;
+import org.tigase.mobile.chat.ChatActivity;
 import org.tigase.mobile.chat.ChatHistoryFragment;
 import org.tigase.mobile.chatlist.ChatListActivity;
 import org.tigase.mobile.db.RosterTableMetaData;
@@ -44,6 +45,7 @@ import tigase.jaxmpp.core.client.JaxmppCore;
 import tigase.jaxmpp.core.client.exceptions.JaxmppException;
 import tigase.jaxmpp.core.client.observer.BaseEvent;
 import tigase.jaxmpp.core.client.observer.Listener;
+import tigase.jaxmpp.core.client.xmpp.modules.chat.Chat;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageModule.AbstractMessageEvent;
 import tigase.jaxmpp.core.client.xmpp.modules.muc.Room;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterItem;
@@ -194,7 +196,7 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 
 	public final static int CONTACT_REMOVE_DIALOG = 2;
 
-	private static final boolean DEBUG = true;
+	private static final boolean DEBUG = false;
 
 	public static final String ERROR_ACTION = "org.tigase.mobile.ERROR_ACTION";
 
@@ -390,20 +392,6 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 				}
 			}
 		});
-
-		if (getIntent().getData() instanceof Uri) {
-			Uri uri = getIntent().getData();
-			if (DEBUG)
-				Log.d(TAG, "onCreate(" + uri + ")");
-
-			JID jid = JID.jidInstance(uri.getPath().substring(1));
-			for (JaxmppCore jaxmpp : ((MessengerApplication) getApplicationContext()).getMultiJaxmpp().get()) {
-				RosterItem ri = jaxmpp.getRoster().get(jid.getBareJid());
-				if (ri != null) {
-					openChatWith(ri, jid.getResource());
-				}
-			}
-		}
 
 		processingNotificationIntent(getIntent());
 
@@ -677,14 +665,41 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 
 	private void processingNotificationIntent(final Intent intent) {
 		if (intent == null)
-			return;
-
+			return;	
+		
 		if (DEBUG)
 			Log.d(TAG, "processingNotificationIntent() action=" + intent.getAction());
 		// this.currentPage = findChatPage(intent.getExtras());
 
 		helper.updateActionBar(this, null);
 
+		if (intent.getData() instanceof Uri) {
+			Uri uri = intent.getData();
+			if (DEBUG)
+				Log.d(TAG, "onCreate(" + uri + ")");
+
+			JID jid = JID.jidInstance(uri.getPath().substring(1));
+			for (JaxmppCore jaxmpp : ((MessengerApplication) getApplicationContext()).getMultiJaxmpp().get()) {
+				RosterItem ri = jaxmpp.getRoster().get(jid.getBareJid());
+				if (ri != null) {					
+
+					ChatWrapper wrapper = this.findChatWrapper(ri);
+					if (wrapper == null) {
+						try { jaxmpp.createChat(jid); } catch (Exception ex) {}
+						wrapper = this.findChatWrapper(ri);
+					}
+					
+					Intent newintent = new Intent(this, ChatActivity.class);
+					newintent.putExtra("chatId", wrapper.getChat().getId());
+					newintent.putExtra("account", jaxmpp.getSessionObject().getUserBareJid().toString());
+					this.finish();
+					startActivity(newintent);
+					return;
+				}
+			}
+		}
+
+		
 		final Bundle bundle = intent.getExtras();
 		drawerList.post(new Runnable() {
 			@Override
