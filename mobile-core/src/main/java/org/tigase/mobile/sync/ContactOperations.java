@@ -24,6 +24,7 @@ import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.xml.XMLException;
 import tigase.jaxmpp.core.client.xmpp.stanzas.StanzaType;
 import tigase.jaxmpp.core.client.xmpp.utils.EscapeUtils;
+import tigase.jaxmpp.core.client.xmpp.utils.delay.XmppDelay;
 import android.content.ContentProviderOperation;
 import android.content.ContentValues;
 import android.content.Context;
@@ -111,7 +112,8 @@ public class ContactOperations {
 			values.put(StatusUpdates.STATUS_ICON, R.drawable.icon);
 			values.put(StatusUpdates.STATUS_LABEL, R.string.app_name);
 			//values.put(StatusUpdates.CHAT_CAPABILITY, 7);
-			values.put(StatusUpdates.STATUS_TIMESTAMP, System.currentTimeMillis());
+			XmppDelay delay = XmppDelay.extract(p);
+			values.put(StatusUpdates.STATUS_TIMESTAMP, delay == null ? System.currentTimeMillis() : delay.getStamp().getTime());
 
 			batchOperation.add(ContactOperations.newInsertCpo(StatusUpdates.CONTENT_URI, true, true).withValues(values).build());
 		} catch (XMLException e) {
