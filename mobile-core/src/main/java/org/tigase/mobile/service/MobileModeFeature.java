@@ -115,13 +115,19 @@ public class MobileModeFeature {
 				return;
 
 			String xmlns = null;
-			Element m = sf.getChildrenNS("mobile", Features.MOBILE_V2);
+			Element m = sf.getChildrenNS("mobile", Features.MOBILE_V3);
 			if (m != null) {
-				xmlns = Features.MOBILE_V2;
-			} else {
-				m = sf.getChildrenNS("mobile", Features.MOBILE_V1);
+				xmlns = Features.MOBILE_V3;
+			}
+			else {
+				m = sf.getChildrenNS("mobile", Features.MOBILE_V2);
 				if (m != null) {
-					xmlns = Features.MOBILE_V1;
+					xmlns = Features.MOBILE_V2;
+				} else {
+					m = sf.getChildrenNS("mobile", Features.MOBILE_V1);
+					if (m != null) {
+						xmlns = Features.MOBILE_V1;
+					}
 				}
 			}
 			if (xmlns == null || (enable && !((Boolean) jaxmpp.getSessionObject().getProperty(MOBILE_OPTIMIZATIONS_ENABLED))))

@@ -324,6 +324,10 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 		if (mobileV2) {
 			mobile = Features.MOBILE_V2;
 		}
+		boolean mobileV3 = AccountAdvancedPreferencesFragment.isMobileAvailable(contact, Features.MOBILE_V3);
+		if (mobileV3) {
+			mobile = Features.MOBILE_V3;
+		}
 		data.put(Constants.MOBILE_OPTIMIZATIONS_AVAILABLE_KEY, mobile);
 	}
 

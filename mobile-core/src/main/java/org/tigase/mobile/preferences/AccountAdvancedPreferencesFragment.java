@@ -160,8 +160,10 @@ public class AccountAdvancedPreferencesFragment extends Fragment {
 				&& Features.MOBILE_V1.equals(accountManager.getUserData(account, Constants.MOBILE_OPTIMIZATIONS_AVAILABLE_KEY));
 		boolean available_v2 = isMobileAvailable(getMulti().get(accountJid), Features.MOBILE_V2)
 				&& Features.MOBILE_V2.equals(accountManager.getUserData(account, Constants.MOBILE_OPTIMIZATIONS_AVAILABLE_KEY));
-		mobileOptimizations.setEnabled(available_v1 || available_v2);
-		presenceQueueTimeout.setEnabled(available_v1 && !available_v2);
+		boolean available_v3 = isMobileAvailable(getMulti().get(accountJid), Features.MOBILE_V3)
+				&& Features.MOBILE_V3.equals(accountManager.getUserData(account, Constants.MOBILE_OPTIMIZATIONS_AVAILABLE_KEY));
+		mobileOptimizations.setEnabled(available_v1 || available_v2 || available_v3);
+		presenceQueueTimeout.setEnabled(available_v1 && !available_v2 && !available_v3);
 
 		String valueStr = accountManager.getUserData(account, MobileModeFeature.MOBILE_OPTIMIZATIONS_ENABLED);
 		boolean enabled = valueStr == null || Boolean.valueOf(valueStr);

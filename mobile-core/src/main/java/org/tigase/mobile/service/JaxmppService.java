@@ -105,6 +105,7 @@ import tigase.jaxmpp.core.client.xmpp.stanzas.Message;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Presence.Show;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Stanza;
 import tigase.jaxmpp.core.client.xmpp.stanzas.StanzaType;
+import tigase.jaxmpp.core.client.xmpp.utils.delay.XmppDelay;
 import tigase.jaxmpp.j2se.J2SESessionObject;
 import tigase.jaxmpp.j2se.connectors.socket.SocketConnector;
 import android.accounts.Account;
@@ -1621,7 +1622,9 @@ public class JaxmppService extends Service {
 			values.put(ChatTableMetaData.FIELD_THREAD_ID, be.getChat().getThreadId());
 			values.put(ChatTableMetaData.FIELD_JID, be.getChat().getJid().getBareJid().toString());
 			values.put(ChatTableMetaData.FIELD_AUTHOR_JID, be.getChat().getJid().getBareJid().toString());
-			values.put(ChatTableMetaData.FIELD_TIMESTAMP, new Date().getTime());
+			
+			XmppDelay delay = XmppDelay.extract(be.getMessage());
+			values.put(ChatTableMetaData.FIELD_TIMESTAMP, (delay == null ? new Date() : delay.getStamp()).getTime());
 			Message msg = be.getMessage();
 			if (msg.getType() == StanzaType.error) {
 				ErrorElement error = ErrorElement.extract(msg);
@@ -1668,7 +1671,8 @@ public class JaxmppService extends Service {
 			ContentValues values = new ContentValues();
 			values.put(ChatTableMetaData.FIELD_AUTHOR_JID, chat.getSessionObject().getUserBareJid().toString());
 			values.put(ChatTableMetaData.FIELD_JID, chat.getJid().getBareJid().toString());
-			values.put(ChatTableMetaData.FIELD_TIMESTAMP, new Date().getTime());
+			XmppDelay delay = XmppDelay.extract(be.getMessage());
+			values.put(ChatTableMetaData.FIELD_TIMESTAMP, (delay == null ? new Date() : delay.getStamp()).getTime());
 			values.put(ChatTableMetaData.FIELD_BODY, t);
 			values.put(ChatTableMetaData.FIELD_THREAD_ID, chat.getThreadId());
 			values.put(ChatTableMetaData.FIELD_ACCOUNT, chat.getSessionObject().getUserBareJid().toString());
