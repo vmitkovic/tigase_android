@@ -20,6 +20,7 @@ package org.tigase.mobile.accountstatus;
 import org.tigase.mobile.MessengerApplication;
 import org.tigase.mobile.MultiJaxmpp;
 import org.tigase.mobile.R;
+import org.tigase.mobile.service.GeolocationFeature;
 import org.tigase.mobile.service.JaxmppService;
 import org.tigase.mobile.utils.AvatarHelper;
 
@@ -305,6 +306,7 @@ public class AccountsStatusFragment extends ListFragment {
 				@Override
 				public void run() {
 					try {
+						GeolocationFeature.updateLocation(jaxmpp, null, (Context) null);	
 						JaxmppService.disable(jaxmpp.getSessionObject(), true);
 						jaxmpp.disconnect();
 						((MessengerApplication) getActivity().getApplication()).clearPresences(jaxmpp.getSessionObject(), false);

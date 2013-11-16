@@ -37,6 +37,7 @@ import org.tigase.mobile.roster.ContactActivity;
 import org.tigase.mobile.roster.ContactFragment;
 import org.tigase.mobile.roster.RosterFragment;
 import org.tigase.mobile.security.SecureTrustManagerFactory.DataCertificateException;
+import org.tigase.mobile.service.GeolocationFeature;
 import org.tigase.mobile.service.JaxmppService;
 
 import tigase.jaxmpp.core.client.BareJID;
@@ -531,6 +532,21 @@ public class TigaseMobileMessengerActivity extends FragmentActivity {
 			return true;
 		} else if (id == R.id.disconnectButton) {
 			mPreferences.edit().putBoolean(Preferences.SERVICE_ACTIVATED, false).commit();
+			final MessengerApplication app = (MessengerApplication) getApplicationContext();
+			for (final JaxmppCore j : app.getMultiJaxmpp().get()) {
+				(new Thread() {
+					@Override
+					public void run() {
+						try {
+							GeolocationFeature.updateLocation(j, null, (Context) null);
+							((Jaxmpp) j).disconnect(false);
+							app.clearPresences(j.getSessionObject(), false);
+						} catch (Exception e) {
+							Log.e(TAG, "cant; disconnect account " + j.getSessionObject().getUserBareJid(), e);
+						}
+					}
+				}).start();
+			}						
 			stopService(new Intent(TigaseMobileMessengerActivity.this, JaxmppService.class));
 			return true;
 		} else if (id == R.id.connectButton) {
