@@ -58,6 +58,7 @@ import org.tigase.mobile.ui.NotificationHelper;
 import org.tigase.mobile.utils.AvatarHelper;
 
 import tigase.jaxmpp.android.Jaxmpp;
+import tigase.jaxmpp.core.client.AbstractSessionObject;
 import tigase.jaxmpp.core.client.AsyncCallback;
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.Base64;
@@ -97,6 +98,7 @@ import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceModule.PresenceEv
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterItem;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterModule;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterModule.RosterEvent;
+import tigase.jaxmpp.core.client.xmpp.modules.streammng.StreamManagementModule;
 import tigase.jaxmpp.core.client.xmpp.modules.vcard.VCard;
 import tigase.jaxmpp.core.client.xmpp.modules.vcard.VCardModule;
 import tigase.jaxmpp.core.client.xmpp.modules.vcard.VCardModule.VCardAsyncCallback;
@@ -857,16 +859,36 @@ public class JaxmppService extends Service {
 	}
 
 	private void disconnectAllJaxmpp(final boolean cleaning) {
+		disconnectAllJaxmpp(cleaning, true);
+	}
+	
+	private void disconnectAllJaxmpp(final boolean cleaning, final boolean reconnect) {
 		setUsedNetworkType(-1);
+		
 		final MessengerApplication app = (MessengerApplication) getApplicationContext();
 		for (final JaxmppCore j : getMulti().get()) {
 			(new Thread() {
 				@Override
 				public void run() {
 					try {
+						final SessionObject sessionObject = j.getSessionObject();
 						GeolocationFeature.updateLocation(j, null, (Context) null);
-						((Jaxmpp) j).disconnect(false);
-						app.clearPresences(j.getSessionObject(), !cleaning);
+						((Jaxmpp) j).disconnect(false, !reconnect);
+						boolean smEnabled = StreamManagementModule.isResumptionEnabled(sessionObject);
+						if (reconnect && smEnabled) {
+							long timeout = StreamManagementModule.getResumptionTime(sessionObject, 0);
+							timer.schedule(new TimerTask() {
+								public void run() {
+									if (!j.isConnected()) {
+										StreamManagementModule.reset((AbstractSessionObject) sessionObject);
+										app.clearPresences(j.getSessionObject(), !cleaning);
+									}
+								}
+							}, timeout);
+						}
+						else {
+							app.clearPresences(j.getSessionObject(), !cleaning);
+						}
 					} catch (Exception e) {
 						Log.e(TAG, "cant; disconnect account " + j.getSessionObject().getUserBareJid(), e);
 					}
@@ -1182,7 +1204,7 @@ public class JaxmppService extends Service {
 
 		Log.i(TAG, "Stopping service");
 		setRecconnect(false);
-		disconnectAllJaxmpp(true);
+		disconnectAllJaxmpp(true, false);
 		stopKeepAlive();
 		setUsedNetworkType(-1);
 
@@ -1311,7 +1333,7 @@ public class JaxmppService extends Service {
 			if (DEBUG)
 				Log.d(TAG, "No internet connection");
 			setRecconnect(false);
-			disconnectAllJaxmpp(false);
+			disconnectAllJaxmpp(false, true);
 		}
 	}
 
