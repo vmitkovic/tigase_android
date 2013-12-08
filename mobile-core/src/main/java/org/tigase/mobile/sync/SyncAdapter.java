@@ -133,8 +133,11 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 			while ((be = presenceEventQueue.poll()) != null) {
 				try {
 					BareJID buddyJid = be.getJid().getBareJid();
-					if (!syncEnabledAccounts.contains(be.getSessionObject().getUserBareJid()))
+					if (!syncEnabledAccounts.contains(be.getSessionObject().getUserBareJid())) {
+						if (DEBUG)
+							Log.v(TAG, "not setting status for " + buddyJid.toString() + ", reason = sync disabled");
 						continue;
+					}
 					
 					JaxmppCore jaxmpp = multiJaxmpp.get(be.getSessionObject());
 					if (jaxmpp == null) {

@@ -112,7 +112,7 @@ public class ContactOperations {
 			values.put(StatusUpdates.STATUS_ICON, R.drawable.icon);
 			values.put(StatusUpdates.STATUS_LABEL, R.string.app_name);
 			//values.put(StatusUpdates.CHAT_CAPABILITY, 7);
-			XmppDelay delay = XmppDelay.extract(p);
+			XmppDelay delay = p == null ? null : XmppDelay.extract(p);
 			values.put(StatusUpdates.STATUS_TIMESTAMP, delay == null ? System.currentTimeMillis() : delay.getStamp().getTime());
 
 			batchOperation.add(ContactOperations.newInsertCpo(StatusUpdates.CONTENT_URI, true, true).withValues(values).build());
