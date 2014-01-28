@@ -1,0 +1,13 @@
+<resources>
+
+    <string name="app_name">Tigase Messenger</string>
+    <string name="app_version">2.0</string>
+    
+    <string name="about_copyright">Copyright 2014 Tigase, Inc.</string>
+    <string name="about_terms_of_service"><a href="http://www.sure.im/terms.txt">Terms</a></string>
+    <string name="about_terms_of_service_url">http://www.sure.im/terms.txt</string>
+    <string name="about_privacy_policy">Privacy</string>
+    <string name="about_privacy_policy_url">http://www.sure.im/privacy.txt</string>
+    
+   
+</resources>
