@@ -106,12 +106,12 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		jaxmpps.add(jaxmpp);		
 		new Thread() {
 			public void run() {
-				try {
-					jaxmpp.login();
-				} catch (JaxmppException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}						
+//				try {
+//					jaxmpp.login();
+//				} catch (JaxmppException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}						
 			}
 		}.start();
 

@@ -37,14 +37,31 @@
         <activity
             android:name="MainActivity"
             android:label="@string/title_activity_main" >
-<intent-filter>
-            <action android:name="android.intent.action.MAIN" />
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>            
+			<intent-filter>
+            	<action android:name="android.intent.action.MAIN" />
+            	<category android:name="android.intent.category.LAUNCHER" />
+        	</intent-filter>            
+        </activity>
+		<activity
+            android:name="org.tigase.messenger.phone.pro.account.AuthenticatorActivity"
+            android:configChanges="orientation"	
+            android:excludeFromRecents="true"
+            android:label="@string/ui_authenticator_activity_title">
+            <intent-filter>
+                <action android:name="org.tigase.mobile.account.preference.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
         <service
             android:name="org.tigase.messenger.phone.pro.JaxmppService"
             android:process=":JaxmppService" >
+		</service>
+		<service android:name=".account.AuthenticatorService">
+    		<intent-filter>
+        		<action android:name="android.accounts.AccountAuthenticator" />
+    		</intent-filter>
+    		<meta-data android:name="android.accounts.AccountAuthenticator"
+            	   android:resource="@xml/authenticator" />
 		</service>        
     </application>
 

@@ -11,5 +11,32 @@
     <string name="title_activity_main">MainActivity</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
+<!--  Accounts Create/Edit  -->
+<string name="account_add_welcome">Join Tigase</string>
+<string name="account_add_login">I have an account</string>
+<string name="account_add_description">Hello world</string>
+<string name="account_add_create">Create a new account</string>
+<string name="account_dialog_enter_details">Enter details of your XMPP account</string>
+<string name="account_dialog_username_hint">User name</string>
+<string name="account_dialog_hostname_hint">Server name</string>
+<string name="account_dialog_password_hint">Password</string>
+<string name="account_dialog_password_confirm_hint">Confirm password</string>
+<string name="account_dialog_resource_hint">Client description</string>
+<string name="account_dialog_resource_default">Tigase Messenger</string>
+<string name="account_dialog_alternative_hostname_hint">Optional server address</string>
+<string name="account_dialog_nickname_hint">Optional nickname</string>
+<string name="account_dialog_email_hint">Optional e-mail address</string>
 
+<string name="ok">Ok</string>
+<string name="yes">Yes</string>
+<string name="no">No</string>
+<string name="cancel">Cancel</string>
+
+<!-- Message shown in progress dialog while app connects to the server -->
+<string name="ui_activity_authenticating">Authenticating\u2026</string>
+<string name="ui_authenticator_activity_title">Account</string>
+    <string name="termsOfService">Terms</string>
+    <string name="termsOfServiceURL">http://www.sure.im/terms.txt</string>
+    <string name="privacyPolicy">Privacy</string>
+    <string name="privacyPolicyURL">http://www.sure.im/privacy.txt</string>
 </resources>

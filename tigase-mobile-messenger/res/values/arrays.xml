@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<string-array name="free_account_hostnames">
+<item>sure.im</item>
+<item>jabber.me</item>
+<item>tigase.im</item>
+<item>other...</item>
+</string-array>
+<string-array name="free_account_create_hostnames">
+<item>sure.im</item>
+</string-array>
+</resources>
