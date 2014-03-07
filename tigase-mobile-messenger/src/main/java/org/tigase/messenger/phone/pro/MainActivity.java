@@ -52,7 +52,7 @@ public class MainActivity extends Activity {
 				String body = msgInput.getText().toString();
 				Message msg = Message.obtain(null, JaxmppService.SEND_MESSAGE);
 				Bundle data = new Bundle();
-				data.putString("account", "andrzej@hi-low.eu");
+				data.putString("account", "andrzej.wojcik@tigase.im");
 				data.putString("to", "andrzej.wojcik@tigase.org");
 				data.putString("message", body);
 				msg.setData(data);

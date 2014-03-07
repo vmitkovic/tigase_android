@@ -33,6 +33,9 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
+import org.tigase.messenger.phone.pro.JaxmppService;
+import org.tigase.messenger.phone.pro.R;
+
 import android.content.Context;
 import android.util.Log;
 
@@ -160,12 +163,12 @@ public class SecureTrustManagerFactory {
 		}
 	}
 
-	private void init() throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {
-//		loadKeystore(MessengerApplication.app.getResources().openRawResource(R.raw.trust_store_bks), null);
+	private void init() throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {		
+		loadKeystore(JaxmppService.context.getResources().openRawResource(R.raw.trust_store_bks), null);
 		loadKeystore(System.getProperty("javax.net.ssl.trustStore"));
-//		this.keyStoreFile = new File(MessengerApplication.app.getDir("TrustStore", Context.MODE_PRIVATE) + File.separator
-//				+ "TrustStore.bks");
-//		loadKeystore(keyStoreFile, DEFAULT_PASSWORD);
+		this.keyStoreFile = new File(JaxmppService.context.getDir("TrustStore", Context.MODE_PRIVATE) + File.separator
+				+ "TrustStore.bks");
+		loadKeystore(keyStoreFile, DEFAULT_PASSWORD);
 
 		factory.init(keyStore);
 
