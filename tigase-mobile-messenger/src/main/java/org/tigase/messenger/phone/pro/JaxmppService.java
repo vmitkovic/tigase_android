@@ -11,9 +11,12 @@ import javax.net.ssl.SSLSocketFactory;
 
 import org.tigase.messenger.phone.pro.account.AccountAuthenticator;
 import org.tigase.messenger.phone.pro.account.AccountsConstants;
+import org.tigase.messenger.phone.pro.db.DatabaseHelper;
 import org.tigase.messenger.phone.pro.security.SecureTrustManagerFactory;
 
 import tigase.jaxmpp.android.Jaxmpp;
+import tigase.jaxmpp.android.roster.AndroidRosterStore;
+import tigase.jaxmpp.android.roster.RosterProvider;
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.Connector;
 import tigase.jaxmpp.core.client.Connector.State;
@@ -29,6 +32,7 @@ import tigase.jaxmpp.core.client.xmpp.modules.capabilities.CapabilitiesModule;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.Chat;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageModule;
 import tigase.jaxmpp.core.client.xmpp.modules.disco.DiscoveryModule;
+import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterModule;
 import tigase.jaxmpp.j2se.J2SESessionObject;
 import tigase.jaxmpp.j2se.connectors.socket.SocketConnector;
 import android.accounts.Account;
@@ -72,6 +76,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private int usedNetworkType = -1;
 	
 	private AccountModifyReceiver accountModifyReceiver = new AccountModifyReceiver();
+	private DatabaseHelper dbHelper = null;
+	private RosterProvider rosterProvider = null;
 	
 	private class AccountModifyReceiver extends BroadcastReceiver {
 
@@ -98,6 +104,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 					JID to = JID.jidInstance(data.getString("to"));
 					final String body = data.getString("message");
 					JaxmppCore jaxmpp = multiJaxmpp.get(account);
+					Log.v(TAG, "for account " + account.toString() + " got " + (jaxmpp == null ? "null" : jaxmpp.toString()));
 					MessageModule messageModule = jaxmpp.getModule(MessageModule.class);
 					Chat chat = chats.get(to.getBareJid());
 					if (chat == null) {
@@ -145,6 +152,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		
 		IntentFilter filter = new IntentFilter(AccountManager.LOGIN_ACCOUNTS_CHANGED_ACTION);
 		registerReceiver(accountModifyReceiver, filter);
+
+		this.dbHelper = new DatabaseHelper(this);
+		this.rosterProvider = new RosterProvider(this, dbHelper, Preferences.ROSTER_VERSION_KEY);
 		
 		updateJaxmppInstances();
 	}
@@ -169,12 +179,12 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		if (intent != null && intent.getAction() != null) {
-			
-		}
-		else {
+//		if (intent != null && intent.getAction() != null) {
+//			
+//		}
+//		else {
 			connectAllJaxmpp(null);
-		}
+//		}
 
 		return Service.START_STICKY;
 	}
@@ -247,11 +257,14 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     			SSLSocketFactory sslSocketFactory = SSLCertificateSocketFactory.getDefault(0, sslSessionCache);
     			sessionObject.setUserProperty(SocketConnector.SSL_SOCKET_FACTORY_KEY, sslSocketFactory);    			
     			
-    			jaxmpp = new Jaxmpp();
+    			jaxmpp = new Jaxmpp(sessionObject);
     			jaxmpp.setExecutor(executor);
 
+    			RosterModule.setRosterStore(sessionObject, new AndroidRosterStore(this.rosterProvider));
+    			jaxmpp.getModulesManager().register(new RosterModule(this.rosterProvider));
     			jaxmpp.getModulesManager().register(new MessageModule());
     			
+    			Log.v(TAG, "registering account " + accountJid.toString());
     			multiJaxmpp.add(jaxmpp);
     		}
     		
@@ -289,19 +302,22 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     
     private void connectAllJaxmpp(Long delay) {
     	for (final JaxmppCore jaxmpp : multiJaxmpp.get()) {
+    		Log.v(TAG, "connecting account " + jaxmpp.getSessionObject().getUserBareJid());
     		connectJaxmpp((Jaxmpp) jaxmpp, delay);
     	}
     }
     
     private void connectJaxmpp(final Jaxmpp jaxmpp, final Date date) {
     	if (isLocked(jaxmpp.getSessionObject())) {
+    		Log.v(TAG, "cancelling connect for " + jaxmpp.getSessionObject().getUserBareJid() + " because it is locked");
     		return;
     	}
     	
     	final Runnable r = new Runnable() {
     		@Override
     		public void run() {
-    			if (!isDisabled(jaxmpp.getSessionObject())) {
+    			if (isDisabled(jaxmpp.getSessionObject())) {
+    				Log.v(TAG, "cancelling connect for " + jaxmpp.getSessionObject().getUserBareJid() + " because it is disabled");
     				return;
     			}
     			

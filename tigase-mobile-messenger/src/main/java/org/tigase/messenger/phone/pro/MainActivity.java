@@ -68,6 +68,7 @@ public class MainActivity extends Activity {
 				Process.killProcess(Process.myPid());
 			}			
 		});
+		startService(new Intent(this, JaxmppService.class));
 		bindService(new Intent(MainActivity.this, JaxmppService.class), connection, Context.BIND_AUTO_CREATE);
 	}
 

@@ -79,6 +79,7 @@ public class SecureTrustManagerFactory {
 			try {
 				defaultTrustManager.checkServerTrusted(chain, authType);
 			} catch (CertificateException e) {
+				//Log.e(TAG, "certificate validation failed = " + e.getMessage());
 				throw new DataCertificateException(e, chain, authType);
 			}
 		}
