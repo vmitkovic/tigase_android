@@ -1,87 +1,194 @@
 package org.tigase.messenger.phone.pro;
 
-import android.app.Activity;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.tigase.messenger.phone.pro.account.AccountAuthenticator;
+
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.os.Message;
 import android.os.Messenger;
-import android.os.Process;
 import android.os.RemoteException;
-import android.view.Menu;
+import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.widget.DrawerLayout;
+import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.Button;
-import android.widget.EditText;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
 
-public class MainActivity extends Activity {
+public class MainActivity extends FragmentActivity {
+	
+    private class DrawerMenuAdapter extends ArrayAdapter<DrawerMenuItem> {
 
-	private EditText msgInput;
-	private Button sendBtn;
+    	private final Context context;
+            private final List<DrawerMenuItem> items;
+
+            public DrawerMenuAdapter(Context context, int textViewResourceId, List<DrawerMenuItem> items) {
+                    super(context, textViewResourceId, items);
+                    this.context = context;
+                    this.items = items;
+            }
+
+            @Override
+            public boolean areAllItemsEnabled() {
+                    return false;
+            }
+
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                    LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    View rowView = inflater.inflate(R.layout.main_left_drawer_item, parent, false);
+                    TextView textView = (TextView) rowView.findViewById(R.id.main_left_drawer_item_text);
+                    ImageView imageView = (ImageView) rowView.findViewById(R.id.main_left_drawer_item_icon);
+
+                    DrawerMenuItem item = items.get(position);
+
+                    textView.setText(item.text);
+                    imageView.setImageResource(item.icon);
+
+                    return rowView;
+            }
+
+            @Override
+            public boolean isEnabled(int pos) {
+                    DrawerMenuItem item = getItem(pos);
+                    boolean connected = false;
+
+                    Account[] accounts = AccountManager.get(MainActivity.this).getAccountsByType(AccountAuthenticator.ACCOUNT_TYPE);
+                    for (Account account : accounts) {
+                            try {
+								connected |= jaxmppService != null && jaxmppService.isConnected(account.name);
+							} catch (RemoteException e) {
+							}
+                    }
+
+                    return super.isEnabled(pos) && (!item.connectionRequired || connected);
+            }
+    }
+
+    private class DrawerMenuItem {
+            final boolean connectionRequired;
+            final int icon;
+            final int id;
+            final int text;
+
+            public DrawerMenuItem(int id, int text, int icon) {
+                    this(id, text, icon, false);
+            }
+
+            public DrawerMenuItem(int id, int text, int icon, boolean connectionRequired) {
+                    this.id = id;
+                    this.text = text;
+                    this.icon = icon;
+                    this.connectionRequired = connectionRequired;
+            }
+    }	
 	
-	private Messenger service;
-	
-	private ServiceConnection connection = new ServiceConnection() {
+	private ServiceConnection messengerConnection = new ServiceConnection() {
 
 		@Override
 		public void onServiceConnected(ComponentName className, IBinder service) {
-			// TODO Auto-generated method stub
-			MainActivity.this.service = new Messenger(service);
+			MainActivity.this.messenger = new Messenger(service);
 		}
 
 		@Override
 		public void onServiceDisconnected(ComponentName className) {
-			// TODO Auto-generated method stub
-			service = null;
+			messenger = null;
+		}
+		
+	};    
+
+	private ServiceConnection jaxmppServiceConnection = new ServiceConnection() {
+
+		@Override
+		public void onServiceConnected(ComponentName className, IBinder service) {
+			MainActivity.this.jaxmppService = IJaxmppService.Stub.asInterface(service);
+		}
+
+		@Override
+		public void onServiceDisconnected(ComponentName className) {
+			jaxmppService = null;
 		}
 		
 	};
 	
+	protected DrawerLayout drawerLayout;
+	protected ListView drawerList;
+	protected ActionBarDrawerToggle drawerToggle;
+	
+	private Messenger messenger;
+	private IJaxmppService jaxmppService;
+	
+	private MainActivityHelper helper = MainActivityHelper.createInstance(this);
+	
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
+	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
-		msgInput = (EditText) this.findViewById(R.id.msg_input);
-		sendBtn = (Button) this.findViewById(R.id.send_btn);
-		sendBtn.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View arg0) {
-				String body = msgInput.getText().toString();
-				Message msg = Message.obtain(null, JaxmppService.SEND_MESSAGE);
-				Bundle data = new Bundle();
-				data.putString("account", "andrzej.wojcik@tigase.im");
-				data.putString("to", "andrzej.wojcik@tigase.org");
-				data.putString("message", body);
-				msg.setData(data);
-				
-				try {
-					service.send(msg);
-				} catch (RemoteException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
-				MainActivity.this.finish();				
-				Process.killProcess(Process.myPid());
-			}			
-		});
+		setContentView(R.layout.main_activity);
+		
+		this.drawerList = (ListView) findViewById(R.id.left_drawer);
+		this.drawerLayout = (DrawerLayout) findViewById(R.id.main_activity);
+		
+        // creating list of items available in drawer menu
+        final List<DrawerMenuItem> drawerMenuItems = new ArrayList<DrawerMenuItem>();
+//        drawerMenuItems.add(new DrawerMenuItem(R.id.accountsList, R.string.accounts, R.drawable.ic_menu_account_list));
+//        drawerMenuItems.add(new DrawerMenuItem(R.id.joinMucRoom, R.string.join_muc_room, R.drawable.group_chat, true));
+//        drawerMenuItems.add(new DrawerMenuItem(R.id.bookmarksShow, R.string.bookmarks_show, android.R.drawable.star_off, true));
+//        drawerMenuItems.add(new DrawerMenuItem(R.id.propertiesButton, R.string.propertiesButton,
+//                        android.R.drawable.ic_menu_preferences));
+//        drawerMenuItems.add(new DrawerMenuItem(R.id.aboutButton, R.string.aboutButton, android.R.drawable.ic_menu_info_details));
+        drawerMenuItems.add(new DrawerMenuItem(R.id.appNameText, R.string.app_name, android.R.drawable.ic_menu_info_details));
+
+        this.drawerList.setAdapter(new DrawerMenuAdapter(this.getApplicationContext(), R.layout.main_left_drawer_item,
+                        drawerMenuItems));
+        this.drawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.drawable.ic_drawer, R.string.accept,
+                        R.string.accept);
+	
+        drawerLayout.setDrawerListener(this.drawerToggle);
+        this.drawerList.setOnItemClickListener(new ListView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView parent, View view, int position, long id) {
+                        DrawerMenuItem item = drawerMenuItems.get(position);
+                        if (item != null) {
+                                drawerLayout.closeDrawers();
+                                onOptionsItemSelected(item.id);
+                        }
+                }
+        });		
+        
 		startService(new Intent(this, JaxmppService.class));
-		bindService(new Intent(MainActivity.this, JaxmppService.class), connection, Context.BIND_AUTO_CREATE);
+		Intent intent = new Intent(this, JaxmppService.class);
+		intent.putExtra("ID", "AIDL");
+		bindService(intent, jaxmppServiceConnection, Context.BIND_AUTO_CREATE);
+		
+		helper.updateActionBar();        
 	}
 
 	@Override
-	public void onDestroy() {
-		unbindService(connection);
-		super.onDestroy();
+	public boolean onOptionsItemSelected(MenuItem item) {
+	    // Pass the event to ActionBarDrawerToggle, if it returns
+	    // true, then it has handled the app icon touch event
+	    if (drawerToggle.onOptionsItemSelected(item)) {
+	      return true;
+	    }
+	    // Handle your other action bar items...
+
+	    return super.onOptionsItemSelected(item);
+	}	
+	protected void onOptionsItemSelected(int itemId) {
+		
 	}
-	
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.main, menu);
-		return true;
-	}
+		
 }

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-<color name="account_dialog_separator">#4c4d4d</color>    
+<color name="account_dialog_separator">#4c4d4d</color>  
+<drawable name="actionbar_background">#306799</drawable>
 </resources>

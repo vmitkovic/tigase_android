@@ -53,12 +53,24 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.RemoteException;
 import android.support.v4.app.NotificationCompat;
 import android.text.TextUtils;
 import android.util.Log;
 
 public class JaxmppService extends Service implements ConnectedHandler, DisconnectedHandler {
+	
+	private class Stub extends IJaxmppService.Stub {
 
+		@Override
+		public boolean isConnected(String accountJidStr) throws RemoteException {
+			BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+			JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+			return jaxmpp == null ? false : jaxmpp.isConnected();
+		}
+		
+	}
+	
 	public static final int SEND_MESSAGE = 1;
 
 	private static final String TAG = "JaxmppService";
@@ -160,8 +172,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	}
 	
 	@Override
-	public IBinder onBind(Intent arg0) {
+	public IBinder onBind(Intent intent) {
 		// TODO Auto-generated method stub
+		if ("AIDL".equals(intent.getStringExtra("ID"))) {
+			return new Stub();
+		}
 		return messenger.getBinder();
 	}
 

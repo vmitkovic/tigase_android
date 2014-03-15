@@ -31,6 +31,7 @@
 <string name="yes">Yes</string>
 <string name="no">No</string>
 <string name="cancel">Cancel</string>
+<string name="accept">Accept</string>
 
 <!-- Message shown in progress dialog while app connects to the server -->
 <string name="ui_activity_authenticating">Authenticating\u2026</string>

@@ -1,5 +1,6 @@
 package org.tigase.messenger.phone.pro.db;
 
+import tigase.jaxmpp.android.chat.OpenChatDbHelper;
 import tigase.jaxmpp.android.roster.RosterDbHelper;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
@@ -20,11 +21,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	@Override
 	public void onCreate(SQLiteDatabase db) {
 		RosterDbHelper.onCreate(db);
+		OpenChatDbHelper.onCreate(db);
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 		RosterDbHelper.onUpgrade(db, oldVersion, newVersion);
+		OpenChatDbHelper.onUpgrade(db, oldVersion, newVersion);
 	}
 
 }
