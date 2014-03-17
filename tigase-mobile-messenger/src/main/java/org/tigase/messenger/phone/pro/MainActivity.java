@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.tigase.messenger.phone.pro.account.AccountAuthenticator;
+import org.tigase.messenger.phone.pro.roster.RosterFragment;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -167,6 +168,8 @@ public class MainActivity extends FragmentActivity {
                         }
                 }
         });		
+
+        getSupportFragmentManager().beginTransaction().replace(R.id.content_frame, new RosterFragment()).commit();
         
 		startService(new Intent(this, JaxmppService.class));
 		Intent intent = new Intent(this, JaxmppService.class);

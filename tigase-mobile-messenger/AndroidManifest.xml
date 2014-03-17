@@ -64,6 +64,16 @@
     		<meta-data android:name="android.accounts.AccountAuthenticator"
             	   android:resource="@xml/authenticator" />
 		</service>        
+		<provider 
+		    android:name=".db.providers.RosterProvider"
+    		android:multiprocess="true"
+    		android:authorities="org.tigase.mobile.db.providers.RosterProvider" >		    
+		</provider>
+		<provider
+            android:name=".db.providers.ChatHistoryProvider"
+            android:multiprocess="true"
+            android:authorities="org.tigase.mobile.db.providers.ChatHistoryProvider" >
+        </provider>
     </application>
 
 </manifest>

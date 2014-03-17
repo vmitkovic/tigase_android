@@ -1,8 +1,10 @@
 package org.tigase.messenger.phone.pro;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -12,6 +14,8 @@ import javax.net.ssl.SSLSocketFactory;
 import org.tigase.messenger.phone.pro.account.AccountAuthenticator;
 import org.tigase.messenger.phone.pro.account.AccountsConstants;
 import org.tigase.messenger.phone.pro.db.DatabaseHelper;
+import org.tigase.messenger.phone.pro.db.providers.RosterProviderExt;
+import org.tigase.messenger.phone.pro.roster.CPresence;
 import org.tigase.messenger.phone.pro.security.SecureTrustManagerFactory;
 
 import tigase.jaxmpp.android.Jaxmpp;
@@ -27,12 +31,18 @@ import tigase.jaxmpp.core.client.JaxmppCore.DisconnectedHandler;
 import tigase.jaxmpp.core.client.MultiJaxmpp;
 import tigase.jaxmpp.core.client.SessionObject;
 import tigase.jaxmpp.core.client.exceptions.JaxmppException;
+import tigase.jaxmpp.core.client.xml.XMLException;
 import tigase.jaxmpp.core.client.xmpp.modules.SoftwareVersionModule;
 import tigase.jaxmpp.core.client.xmpp.modules.capabilities.CapabilitiesModule;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.Chat;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageModule;
 import tigase.jaxmpp.core.client.xmpp.modules.disco.DiscoveryModule;
+import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceModule;
+import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceStore;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterModule;
+import tigase.jaxmpp.core.client.xmpp.stanzas.Presence;
+import tigase.jaxmpp.core.client.xmpp.stanzas.Presence.Show;
+import tigase.jaxmpp.j2se.J2SEPresenceStore;
 import tigase.jaxmpp.j2se.J2SESessionObject;
 import tigase.jaxmpp.j2se.connectors.socket.SocketConnector;
 import android.accounts.Account;
@@ -68,6 +78,91 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
 			return jaxmpp == null ? false : jaxmpp.isConnected();
 		}
+
+		@Override
+		public List<CPresence> getPresences(String accountJidStr, String jidStr)
+				throws RemoteException {
+			BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+			JID jid = JID.jidInstance(jidStr);
+			JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+			PresenceStore store = PresenceModule.getPresenceStore(jaxmpp.getSessionObject());
+			List<CPresence> result = new ArrayList<CPresence>();
+			if (jid.getResource() != null) {
+				Presence p = store.getPresence(jid);
+				if (p != null) {
+					try {
+						result.add(new CPresence(p));
+					} catch (XMLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+			else {
+				Map<String,Presence> presences = store.getPresences(jid.getBareJid());
+				if (presences != null) {
+					for (Presence p : presences.values()) {
+						try {
+							result.add(new CPresence(p));
+						} catch (XMLException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}						
+					}
+				}
+			}
+			
+			return result;
+		}
+
+		@Override
+		public CPresence getBestPresence(String accountJidStr, String jidStr)
+				throws RemoteException {
+			BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+			BareJID jid = BareJID.bareJIDInstance(jidStr);
+			JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+			PresenceStore store = PresenceModule.getPresenceStore(jaxmpp.getSessionObject());
+			CPresence result = null;
+			try {
+				Presence p = store.getBestPresence(jid);
+				if (p != null) {
+					result = new CPresence(p);
+				}
+			} catch (XMLException ex) {				
+			}
+			return result;
+		}
+		
+	}
+	
+	private class PresenceHandler implements PresenceModule.ContactAvailableHandler, 
+		PresenceModule.ContactUnavailableHandler, PresenceModule.ContactChangedPresenceHandler {
+
+		private final JaxmppService jaxmppService;
+		
+		public PresenceHandler(JaxmppService jaxmppService) {
+			this.jaxmppService = jaxmppService;
+		}
+		
+		@Override
+		public void onContactChangedPresence(SessionObject sessionObject,
+				Presence stanza, JID jid, Show show, String status,
+				Integer priority) throws JaxmppException {
+			rosterProvider.updateStatus(sessionObject, jid);
+		}
+
+		@Override
+		public void onContactUnavailable(SessionObject sessionObject,
+				Presence stanza, JID jid, String status) {
+			rosterProvider.updateStatus(sessionObject, jid);		
+		}
+
+		@Override
+		public void onContactAvailable(SessionObject sessionObject,
+				Presence stanza, JID jid, Show show, String status,
+				Integer priority) throws JaxmppException {
+			rosterProvider.updateStatus(sessionObject, jid);
+		}
 		
 	}
 	
@@ -89,7 +184,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	
 	private AccountModifyReceiver accountModifyReceiver = new AccountModifyReceiver();
 	private DatabaseHelper dbHelper = null;
-	private RosterProvider rosterProvider = null;
+	private PresenceHandler presenceHandler = null;
+	private RosterProviderExt rosterProvider = null;
 	
 	private class AccountModifyReceiver extends BroadcastReceiver {
 
@@ -159,14 +255,19 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		
 		this.connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 		
-		multiJaxmpp.addHandler(JaxmppCore.ConnectedHandler.ConnectedEvent.class, this);
-		multiJaxmpp.addHandler(JaxmppCore.DisconnectedHandler.DisconnectedEvent.class, this);
-		
 		IntentFilter filter = new IntentFilter(AccountManager.LOGIN_ACCOUNTS_CHANGED_ACTION);
 		registerReceiver(accountModifyReceiver, filter);
 
 		this.dbHelper = new DatabaseHelper(this);
-		this.rosterProvider = new RosterProvider(this, dbHelper, Preferences.ROSTER_VERSION_KEY);
+		this.rosterProvider = new RosterProviderExt(this, dbHelper, Preferences.ROSTER_VERSION_KEY);
+
+		this.presenceHandler = new PresenceHandler(this);
+		
+		multiJaxmpp.addHandler(JaxmppCore.ConnectedHandler.ConnectedEvent.class, this);
+		multiJaxmpp.addHandler(JaxmppCore.DisconnectedHandler.DisconnectedEvent.class, this);
+		multiJaxmpp.addHandler(PresenceModule.ContactAvailableHandler.ContactAvailableEvent.class, presenceHandler);
+		multiJaxmpp.addHandler(PresenceModule.ContactUnavailableHandler.ContactUnavailableEvent.class, presenceHandler);
+		multiJaxmpp.addHandler(PresenceModule.ContactChangedPresenceHandler.ContactChangedPresenceEvent.class, presenceHandler);
 		
 		updateJaxmppInstances();
 	}
@@ -277,6 +378,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 
     			RosterModule.setRosterStore(sessionObject, new AndroidRosterStore(this.rosterProvider));
     			jaxmpp.getModulesManager().register(new RosterModule(this.rosterProvider));
+    			PresenceModule.setPresenceStore(sessionObject, new J2SEPresenceStore());
+    			jaxmpp.getModulesManager().register(new PresenceModule());
     			jaxmpp.getModulesManager().register(new MessageModule());
     			
     			Log.v(TAG, "registering account " + accountJid.toString());
