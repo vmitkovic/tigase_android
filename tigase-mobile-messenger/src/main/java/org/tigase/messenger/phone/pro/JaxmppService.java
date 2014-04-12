@@ -260,6 +260,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 
 		this.dbHelper = new DatabaseHelper(this);
 		this.rosterProvider = new RosterProviderExt(this, dbHelper, Preferences.ROSTER_VERSION_KEY);
+		rosterProvider.resetStatus();
 
 		this.presenceHandler = new PresenceHandler(this);
 		
@@ -299,7 +300,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 //			
 //		}
 //		else {
+		if (intent != null && "connect-all".equals(intent.getAction())) {
 			connectAllJaxmpp(null);
+		}
 //		}
 
 		return Service.START_STICKY;

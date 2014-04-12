@@ -16,7 +16,9 @@ public class MessengerApplication extends Application {
 		NotificationManager mNotificationManager =
 			    (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);	
 		mNotificationManager.notify(0, builder.build());        
-        startService(new Intent(getApplicationContext(), JaxmppService.class)); 
+		Intent startServiceIntent = new Intent(getApplicationContext(), JaxmppService.class);
+		startServiceIntent.setAction("connect-all");
+        startService(startServiceIntent); 
     }
 	
 }

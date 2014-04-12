@@ -4,14 +4,6 @@
     android:layout_height="wrap_content"
     android:padding="0sp" >
 
-    <FrameLayout
-        android:id="@+id/openChatNotifier"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:layout_alignBottom="@+id/roster_item_precence"
-        android:background="#ADD8E6" >
-    </FrameLayout>
-
     <ImageView
         android:id="@+id/imageView1"
         android:layout_width="50sp"
@@ -51,6 +43,8 @@
         android:layout_alignLeft="@+id/roster_item_jid"
         android:layout_below="@+id/roster_item_jid"
         android:layout_toLeftOf="@+id/roster_item_precence"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
         android:paddingLeft="10sp"
         android:singleLine="true"
         android:textSize="14sp" >
@@ -63,6 +57,8 @@
         android:layout_alignParentTop="true"
         android:layout_toLeftOf="@+id/roster_item_precence"
         android:layout_toRightOf="@+id/imageView1"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
         android:paddingLeft="10sp"
         android:singleLine="true"
         android:textSize="18sp"

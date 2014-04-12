@@ -112,7 +112,7 @@ public class CPresence implements Parcelable {
 	public static int getStatusFromPresence(Presence p) throws XMLException {
 		int status = p.getType() == null ? Presence.Show.online.ordinal() : 0;
 		if (status > 0) {
-			status = p.getShow().ordinal();
+			status = p.getShow().getWeight();
 		}
 		if (p.getType() == StanzaType.error) {
 			status = 1;

@@ -138,7 +138,7 @@ public class RosterCursor extends AbstractCursor {
 			Object[] data = items.get(mPos);
 			CPresence p = null;
 			try {
-				p = jaxmppService.getBestPresence((String) data[6], (String) data[1]);
+				p = (jaxmppService == null) ? null : jaxmppService.getBestPresence((String) data[6], (String) data[1]);
 			} catch (RemoteException ex) {}
 			return (p == null) ? null : p.getDescription();
 		}
@@ -211,6 +211,8 @@ public class RosterCursor extends AbstractCursor {
 		hideOffline |= !PreferenceManager.getDefaultSharedPreferences(context).getBoolean(Preferences.SHOW_OFFLINE,
 				Boolean.TRUE);
 
+		items.clear();
+		
 		SQLiteQueryBuilder sql = new SQLiteQueryBuilder();
 		Predicate pr = predicate;
 		String query = null;

@@ -42,6 +42,13 @@ public class RosterProviderExt extends tigase.jaxmpp.android.roster.RosterProvid
 		notifyChange(id);
 	}
 	
+	public void resetStatus() {
+		SQLiteDatabase db = dbHelper.getWritableDatabase();
+		ContentValues values = new ContentValues();
+		values.put(RosterItemsCacheTableExtMetaData.FIELD_STATUS, CPresence.OFFLINE);
+		db.update(RosterItemsCacheTableMetaData.TABLE_NAME, values, null, null);		
+	}
+	
 	public void notifyChange(long id) {
 		Uri uri = Uri.parse(org.tigase.messenger.phone.pro.db.providers.RosterProvider.CONTENT_URI + "/" + id);
 		context.getContentResolver().notifyChange(uri, null);
