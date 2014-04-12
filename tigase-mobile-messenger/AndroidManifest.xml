@@ -74,6 +74,11 @@
             android:multiprocess="true"
             android:authorities="org.tigase.mobile.db.providers.ChatHistoryProvider" >
         </provider>
+		<provider
+            android:name=".db.providers.OpenChatsProvider"
+            android:multiprocess="true"
+            android:authorities="org.tigase.mobile.db.providers.OpenChatsProvider" >
+        </provider>
     </application>
 
 </manifest>

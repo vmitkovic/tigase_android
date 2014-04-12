@@ -19,6 +19,8 @@ import org.tigase.messenger.phone.pro.roster.CPresence;
 import org.tigase.messenger.phone.pro.security.SecureTrustManagerFactory;
 
 import tigase.jaxmpp.android.Jaxmpp;
+import tigase.jaxmpp.android.chat.AndroidChatManager;
+import tigase.jaxmpp.android.chat.ChatProvider;
 import tigase.jaxmpp.android.roster.AndroidRosterStore;
 import tigase.jaxmpp.android.roster.RosterProvider;
 import tigase.jaxmpp.core.client.BareJID;
@@ -31,9 +33,11 @@ import tigase.jaxmpp.core.client.JaxmppCore.DisconnectedHandler;
 import tigase.jaxmpp.core.client.MultiJaxmpp;
 import tigase.jaxmpp.core.client.SessionObject;
 import tigase.jaxmpp.core.client.exceptions.JaxmppException;
+import tigase.jaxmpp.core.client.factory.UniversalFactory;
 import tigase.jaxmpp.core.client.xml.XMLException;
 import tigase.jaxmpp.core.client.xmpp.modules.SoftwareVersionModule;
 import tigase.jaxmpp.core.client.xmpp.modules.capabilities.CapabilitiesModule;
+import tigase.jaxmpp.core.client.xmpp.modules.chat.AbstractChatManager;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.Chat;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageModule;
 import tigase.jaxmpp.core.client.xmpp.modules.disco.DiscoveryModule;
@@ -58,6 +62,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.SSLCertificateSocketFactory;
 import android.net.SSLSessionCache;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -132,6 +137,28 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			}
 			return result;
 		}
+
+		@Override
+		public boolean openChat(String accountJidStr, String jidStr)
+				throws RemoteException {
+			try {
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+				JID jid = JID.jidInstance(jidStr);			
+				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);		
+				boolean chatExists = messageModule.getChatManager().isChatOpenFor(jid.getBareJid());
+				if (!chatExists) {
+					messageModule.createChat(jid);
+					return true;
+				}
+				return false;
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "EXCEPTION", e);
+			}
+			return false;
+		}
 		
 	}
 	
@@ -175,6 +202,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	
 	protected final Timer timer = new Timer();
 	
+	// do we need this any more?
 	private Map<BareJID,Chat> chats = new HashMap<BareJID,Chat>();
 	private MultiJaxmpp multiJaxmpp = new MultiJaxmpp();
 	private ConnectivityManager connManager;
@@ -186,6 +214,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private DatabaseHelper dbHelper = null;
 	private PresenceHandler presenceHandler = null;
 	private RosterProviderExt rosterProvider = null;
+	private ChatProvider chatProvider = null;
 	
 	private class AccountModifyReceiver extends BroadcastReceiver {
 
@@ -259,10 +288,27 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		registerReceiver(accountModifyReceiver, filter);
 
 		this.dbHelper = new DatabaseHelper(this);
-		this.rosterProvider = new RosterProviderExt(this, dbHelper, Preferences.ROSTER_VERSION_KEY);
+		this.rosterProvider = new RosterProviderExt(this, dbHelper, new RosterProvider.Listener() {		
+			@Override
+			public void onChange(Long rosterItemId) {
+				Uri uri = rosterItemId != null 
+						? Uri.parse(org.tigase.messenger.phone.pro.db.providers.RosterProvider.CONTENT_URI + "/" + rosterItemId)
+						: Uri.parse(org.tigase.messenger.phone.pro.db.providers.RosterProvider.CONTENT_URI);
+				context.getContentResolver().notifyChange(uri, null);
+			}
+		}, Preferences.ROSTER_VERSION_KEY);
 		rosterProvider.resetStatus();
 
 		this.presenceHandler = new PresenceHandler(this);
+		this.chatProvider = new ChatProvider(this, dbHelper, new ChatProvider.Listener() {
+			@Override
+			public void onChange(Long chatId) {
+				Uri uri = chatId != null
+						? Uri.parse(org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider.OPEN_CHATS_URI + "/" + chatId)
+						: Uri.parse(org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider.OPEN_CHATS_URI);
+				context.getContentResolver().notifyChange(uri, null);
+			}			
+		});
 		
 		multiJaxmpp.addHandler(JaxmppCore.ConnectedHandler.ConnectedEvent.class, this);
 		multiJaxmpp.addHandler(JaxmppCore.DisconnectedHandler.DisconnectedEvent.class, this);
@@ -383,7 +429,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     			jaxmpp.getModulesManager().register(new RosterModule(this.rosterProvider));
     			PresenceModule.setPresenceStore(sessionObject, new J2SEPresenceStore());
     			jaxmpp.getModulesManager().register(new PresenceModule());
-    			jaxmpp.getModulesManager().register(new MessageModule());
+    			jaxmpp.getModulesManager().register(new MessageModule(new AndroidChatManager(this.chatProvider)));
     			
     			Log.v(TAG, "registering account " + accountJid.toString());
     			multiJaxmpp.add(jaxmpp);

@@ -136,36 +136,10 @@ public class RosterAdapterHelper {
 				}
 			}
 		}
-		else
-			switch (p) {
-			case CPresence.CHAT:
-				holder.itemPresence.setImageResource(R.drawable.user_free_for_chat);
-				break;
-			case CPresence.ONLINE:
-				holder.itemPresence.setImageResource(R.drawable.user_available);
-				break;
-			case CPresence.AWAY:
-				holder.itemPresence.setImageResource(R.drawable.user_away);
-				break;
-			case CPresence.XA:
-				holder.itemPresence.setImageResource(R.drawable.user_extended_away);
-				break;
-			case CPresence.DND:
-				holder.itemPresence.setImageResource(R.drawable.user_busy);
-				break;
-//			case requested:
-//				holder.itemPresence.setImageResource(R.drawable.user_ask);
-//				break;
-			case CPresence.ERROR:
-				holder.itemPresence.setImageResource(R.drawable.user_error);
-				break;
-//			case offline_nonauth:
-//				holder.itemPresence.setImageResource(R.drawable.user_noauth);
-//				break;
-			default:
-				holder.itemPresence.setImageResource(R.drawable.user_offline);
-				break;
-			}
+		else {
+			int presenceDrawable = cPresenceToImageResource(p);
+			holder.itemPresence.setImageResource(presenceDrawable);
+		}
 
 		if (holder.itemDescription != null) {
 			String status = cursor.getString(cursor.getColumnIndex(RosterTableMetaData.FIELD_STATUS_MESSAGE));
@@ -197,4 +171,37 @@ public class RosterAdapterHelper {
 //		AvatarHelper.setAvatarToImageView(jid, holder.itemAvatar);
 	}
 
+	public static int cPresenceToImageResource(int p) {
+		int result;
+		switch (p) {
+		case CPresence.CHAT:
+			result = R.drawable.user_free_for_chat;
+			break;
+		case CPresence.ONLINE:
+			result = R.drawable.user_available;
+			break;
+		case CPresence.AWAY:
+			result = R.drawable.user_away;
+			break;
+		case CPresence.XA:
+			result =R.drawable.user_extended_away;
+			break;
+		case CPresence.DND:
+			result = R.drawable.user_busy;
+			break;
+//		case requested:
+//			holder.itemPresence.setImageResource(R.drawable.user_ask);
+//			break;
+		case CPresence.ERROR:
+			result = R.drawable.user_error;
+			break;
+//		case offline_nonauth:
+//			holder.itemPresence.setImageResource(R.drawable.user_noauth);
+//			break;
+		default:
+			result = R.drawable.user_offline;
+			break;
+		}
+		return result;
+	}
 }

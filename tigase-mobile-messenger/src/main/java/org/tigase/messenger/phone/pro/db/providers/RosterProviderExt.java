@@ -17,10 +17,10 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 
 public class RosterProviderExt extends tigase.jaxmpp.android.roster.RosterProvider {
-
-	public RosterProviderExt(Context context, SQLiteOpenHelper dbHelper,
+	
+	public RosterProviderExt(Context context, SQLiteOpenHelper dbHelper, Listener listener,
 			String versionKeyPrefix) {
-		super(context, dbHelper, versionKeyPrefix);
+		super(context, dbHelper, listener, versionKeyPrefix);
 	}
 	
 	public void updateStatus(SessionObject sessionObject, JID jid) {
@@ -39,7 +39,9 @@ public class RosterProviderExt extends tigase.jaxmpp.android.roster.RosterProvid
 		values.put(RosterItemsCacheTableExtMetaData.FIELD_STATUS, status);
 		db.update(RosterItemsCacheTableMetaData.TABLE_NAME, values, RosterItemsCacheTableMetaData.FIELD_ID + " = ?", 
 				new String[] { String.valueOf(id) });
-		notifyChange(id);
+		if (listener != null) {
+			listener.onChange(id);
+		}
 	}
 	
 	public void resetStatus() {
@@ -47,13 +49,11 @@ public class RosterProviderExt extends tigase.jaxmpp.android.roster.RosterProvid
 		ContentValues values = new ContentValues();
 		values.put(RosterItemsCacheTableExtMetaData.FIELD_STATUS, CPresence.OFFLINE);
 		db.update(RosterItemsCacheTableMetaData.TABLE_NAME, values, null, null);		
+		if (listener != null) {
+			listener.onChange(null);
+		}
 	}
 	
-	public void notifyChange(long id) {
-		Uri uri = Uri.parse(org.tigase.messenger.phone.pro.db.providers.RosterProvider.CONTENT_URI + "/" + id);
-		context.getContentResolver().notifyChange(uri, null);
-	}
-
 	private long createId(SessionObject sessionObject, BareJID jid) {
 		return (sessionObject.getUserBareJid() + "::" + jid).hashCode();
 	}	

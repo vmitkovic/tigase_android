@@ -100,12 +100,12 @@ public class ChatHistoryProvider extends ContentProvider {
 		return null;
 	}
 
-	private int match(Uri uri) {
+	private static int match(Uri uri) {
 		// /chat/${JID}
 		// /chat/${JID}/#
 
 		List<String> l = uri.getPathSegments();
-
+		
 		if (l.get(0).equals("unsent"))
 			return UNSENT_MESSAGES_URI_INDICATOR;
 

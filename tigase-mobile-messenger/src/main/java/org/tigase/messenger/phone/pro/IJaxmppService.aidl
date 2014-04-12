@@ -10,4 +10,6 @@ interface IJaxmppService {
 
 	List<CPresence> getPresences(String accountJid, String jid);
 	
+	boolean openChat(String accountJid, String jid);
+	
 }
