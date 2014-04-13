@@ -3,6 +3,7 @@ package org.tigase.messenger.phone.pro.chat;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider;
 
+import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -12,8 +13,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
+import android.widget.AdapterView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.AdapterView.OnItemClickListener;
 
 public class ChatsListFragment extends Fragment {
 
@@ -117,19 +120,21 @@ public class ChatsListFragment extends Fragment {
 //				((GridView) listView).setAdapter((ListAdapter) adapter);
 //			}
 
-//			listView.setOnItemClickListener(new OnItemClickListener() {
-//
-//				@Override
-//				public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-//					Log.i(TAG, "Clicked on id=" + id);
-//
-//					Intent intent = new Intent();
+			listView.setOnItemClickListener(new OnItemClickListener() {
+
+				@Override
+				public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+					Log.i(TAG, "Clicked on chat with id=" + id);
+
+					Intent intent = new Intent(getActivity(), ChatActivity.class);
+					intent.putExtra("chatId", id);
+					getActivity().startActivity(intent);
 //					intent.setAction(TigaseMobileMessengerActivity.ROSTER_CLICK_MSG);
 //					intent.putExtra("id", id);
 //
 //					getActivity().getApplicationContext().sendBroadcast(intent);
-//				}
-//			});
+				}
+			});
 //
 //		}
 		// there can be no connection status icon - we have notifications and

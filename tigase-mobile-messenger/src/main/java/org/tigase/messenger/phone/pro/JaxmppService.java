@@ -13,7 +13,9 @@ import javax.net.ssl.SSLSocketFactory;
 
 import org.tigase.messenger.phone.pro.account.AccountAuthenticator;
 import org.tigase.messenger.phone.pro.account.AccountsConstants;
+import org.tigase.messenger.phone.pro.db.ChatTableMetaData;
 import org.tigase.messenger.phone.pro.db.DatabaseHelper;
+import org.tigase.messenger.phone.pro.db.providers.ChatHistoryProvider;
 import org.tigase.messenger.phone.pro.db.providers.RosterProviderExt;
 import org.tigase.messenger.phone.pro.roster.CPresence;
 import org.tigase.messenger.phone.pro.security.SecureTrustManagerFactory;
@@ -32,6 +34,7 @@ import tigase.jaxmpp.core.client.JaxmppCore.ConnectedHandler;
 import tigase.jaxmpp.core.client.JaxmppCore.DisconnectedHandler;
 import tigase.jaxmpp.core.client.MultiJaxmpp;
 import tigase.jaxmpp.core.client.SessionObject;
+import tigase.jaxmpp.core.client.XMPPException.ErrorCondition;
 import tigase.jaxmpp.core.client.exceptions.JaxmppException;
 import tigase.jaxmpp.core.client.factory.UniversalFactory;
 import tigase.jaxmpp.core.client.xml.XMLException;
@@ -44,8 +47,11 @@ import tigase.jaxmpp.core.client.xmpp.modules.disco.DiscoveryModule;
 import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceModule;
 import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceStore;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterModule;
+import tigase.jaxmpp.core.client.xmpp.stanzas.ErrorElement;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Presence;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Presence.Show;
+import tigase.jaxmpp.core.client.xmpp.stanzas.StanzaType;
+import tigase.jaxmpp.core.client.xmpp.utils.delay.XmppDelay;
 import tigase.jaxmpp.j2se.J2SEPresenceStore;
 import tigase.jaxmpp.j2se.J2SESessionObject;
 import tigase.jaxmpp.j2se.connectors.socket.SocketConnector;
@@ -53,11 +59,14 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.AsyncQueryHandler;
 import android.content.BroadcastReceiver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.SSLCertificateSocketFactory;
@@ -159,6 +168,85 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			}
 			return false;
 		}
+
+		@Override
+		public boolean sendMessage(String accountJidStr, String jidStr, String threadId,
+				String body) throws RemoteException {
+			try {
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);		
+				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);	
+				JID jid = JID.jidInstance(jidStr);
+				Chat chat = messageModule.getChatManager().getChat(jid, threadId);
+				if (chat != null) {
+					chat.sendMessage(body);
+					return true;
+				}
+				return false;
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "EXCEPTION", e);
+			}			
+			return false;
+		}
+		
+	}
+	
+	private class MessageHandler implements MessageModule.MessageReceivedHandler {
+
+		@Override
+		public void onMessageReceived(SessionObject sessionObject, Chat chat,
+				tigase.jaxmpp.core.client.xmpp.stanzas.Message msg) {
+			try {
+				// for now let's ignore messages without body element
+				if (msg.getBody() == null)
+					return;
+				
+				Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/" + chat.getJid().getBareJid().toString());
+	
+				ContentValues values = new ContentValues();
+				values.put(ChatTableMetaData.FIELD_AUTHOR_JID, chat.getJid().getBareJid().toString());
+				values.put(ChatTableMetaData.FIELD_JID, chat.getJid().getBareJid().toString());
+
+				XmppDelay delay = XmppDelay.extract(msg);
+				values.put(ChatTableMetaData.FIELD_TIMESTAMP, (delay == null ? new Date() : delay.getStamp()).getTime());
+				if (msg.getType() == StanzaType.error) {
+					ErrorElement error = ErrorElement.extract(msg);
+					String body = "Error: ";
+					if (error != null) {
+						if (error.getText() != null) {
+							body += error.getText();
+						} else {
+							ErrorCondition errorCondition = error
+									.getCondition();
+							if (errorCondition != null) {
+								body += errorCondition.getElementName();
+							}
+						}
+					}
+					if (msg.getBody() != null) {
+						body += " ------ ";
+						body += msg.getBody();
+					}
+					values.put(ChatTableMetaData.FIELD_BODY, body);
+				} else {
+					values.put(ChatTableMetaData.FIELD_BODY, msg.getBody());
+				}
+				values.put(ChatTableMetaData.FIELD_BODY, msg.getBody());
+				values.put(ChatTableMetaData.FIELD_THREAD_ID, chat.getThreadId());
+				values.put(ChatTableMetaData.FIELD_ACCOUNT, sessionObject.getUserBareJid().toString());
+				values.put(ChatTableMetaData.FIELD_STATE, ChatTableMetaData.STATE_INCOMING_UNREAD);			
+				
+				SQLiteDatabase db = dbHelper.getWritableDatabase();
+				long id = db.insert(ChatTableMetaData.TABLE_NAME, null, values);
+				Log.v(TAG, "inserted message - id = " + id);
+				context.getContentResolver().notifyChange(uri, null);
+				//context.getContentResolver().insert(uri, values);
+			} catch (Exception ex) {
+				Log.e(TAG, "Exception handling received message", ex);
+			}
+		}
 		
 	}
 	
@@ -208,10 +296,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private ConnectivityManager connManager;
 	
 	private HashSet<SessionObject> locked = new HashSet<SessionObject>();
-	private int usedNetworkType = -1;
+	private int usedNetworkType = -1;	
 	
 	private AccountModifyReceiver accountModifyReceiver = new AccountModifyReceiver();
 	private DatabaseHelper dbHelper = null;
+	private MessageHandler messageHandler = null;
 	private PresenceHandler presenceHandler = null;
 	private RosterProviderExt rosterProvider = null;
 	private ChatProvider chatProvider = null;
@@ -300,6 +389,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		rosterProvider.resetStatus();
 
 		this.presenceHandler = new PresenceHandler(this);
+		this.messageHandler = new MessageHandler();
 		this.chatProvider = new ChatProvider(this, dbHelper, new ChatProvider.Listener() {
 			@Override
 			public void onChange(Long chatId) {
@@ -315,6 +405,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		multiJaxmpp.addHandler(PresenceModule.ContactAvailableHandler.ContactAvailableEvent.class, presenceHandler);
 		multiJaxmpp.addHandler(PresenceModule.ContactUnavailableHandler.ContactUnavailableEvent.class, presenceHandler);
 		multiJaxmpp.addHandler(PresenceModule.ContactChangedPresenceHandler.ContactChangedPresenceEvent.class, presenceHandler);
+		multiJaxmpp.addHandler(MessageModule.MessageReceivedHandler.MessageReceivedEvent.class, messageHandler);
 		
 		updateJaxmppInstances();
 	}

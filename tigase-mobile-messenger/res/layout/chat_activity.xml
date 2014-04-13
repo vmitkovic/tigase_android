@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v4.widget.SlidingPaneLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/chat_sliding_pane_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+    
+    <fragment
+        android:name="org.tigase.messenger.phone.pro.chat.ChatHistoryFragment"
+        android:id="@+id/chatlist_fragment"
+        android:layout_weight="1"
+        android:layout_width="280dp"
+        android:layout_gravity="left"
+        android:layout_height="match_parent" >
+    </fragment> 
+    
+	<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    	xmlns:tools="http://schemas.android.com/tools"
+    	android:id="@+id/main_detail_container"
+    	android:layout_width="match_parent"
+    	android:layout_height="match_parent"
+    	tools:context=".ChatActivity"
+    	tools:ignore="MergeRootFrame" />
+</android.support.v4.widget.SlidingPaneLayout>

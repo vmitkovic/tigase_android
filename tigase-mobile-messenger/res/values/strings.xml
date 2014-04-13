@@ -26,7 +26,10 @@
 <string name="account_dialog_alternative_hostname_hint">Optional server address</string>
 <string name="account_dialog_nickname_hint">Optional nickname</string>
 <string name="account_dialog_email_hint">Optional e-mail address</string>
-
+<string name="chatSendButton">Send</string>
+    <string name="chat_item_info_timestampt">Timestamp</string>
+    <string name="chat_item_info_state">State</string>
+    <string name="chat_item_info_chat_with">Chat with</string>
 <string name="ok">Ok</string>
 <string name="yes">Yes</string>
 <string name="no">No</string>

@@ -12,4 +12,5 @@ interface IJaxmppService {
 	
 	boolean openChat(String accountJid, String jid);
 	
+	boolean sendMessage(String accountJid, String jid, String thread, String message);
 }

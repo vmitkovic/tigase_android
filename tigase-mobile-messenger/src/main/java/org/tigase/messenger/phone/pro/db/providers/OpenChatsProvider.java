@@ -52,6 +52,7 @@ public class OpenChatsProvider extends ContentProvider {
 					+ " WHERE " + ChatTableMetaData.FIELD_ACCOUNT + " = open_chats." + OpenChatTableMetaData.FIELD_ACCOUNT 
 					+ " AND " + ChatTableMetaData.FIELD_JID + " = open_chats." + OpenChatTableMetaData.FIELD_JID 
 					+ " ORDER BY " + ChatTableMetaData.FIELD_TIMESTAMP + " DESC LIMIT 1) as " + OpenChatsProvider.FIELD_LAST_MESSAGE);
+			put(OpenChatTableMetaData.FIELD_THREAD_ID, "open_chats." + OpenChatTableMetaData.FIELD_THREAD_ID + " as " + OpenChatTableMetaData.FIELD_THREAD_ID);
 		}
 	};	
 	private DatabaseHelper dbHelper;
@@ -84,6 +85,9 @@ public class OpenChatsProvider extends ContentProvider {
 				qb.setTables(OpenChatTableMetaData.TABLE_NAME + " open_chats LEFT JOIN " + RosterItemsCacheTableMetaData.TABLE_NAME 
 						+ " recipient ON recipient." + RosterItemsCacheTableMetaData.FIELD_ACCOUNT + " = open_chats." + OpenChatTableMetaData.FIELD_ACCOUNT 
 						+ " AND recipient." + RosterItemsCacheTableMetaData.FIELD_JID + " = open_chats." + OpenChatTableMetaData.FIELD_JID);
+				
+				// may be removed later on production build - left to make tests easier
+				qb.appendWhere("open_chats." + OpenChatTableMetaData.FIELD_TYPE + " IS NOT NULL");
 				break;
 			default:
 				throw new IllegalArgumentException("Unknown URI '" + (uri != null ? uri.toString() : "null") + "'");		

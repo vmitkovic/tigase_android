@@ -11,6 +11,7 @@ import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
@@ -151,7 +152,7 @@ public class ChatHistoryProvider extends ContentProvider {
 
 			qb.setProjectionMap(x);
 			String jid = uri.getPathSegments().get(1);
-			qb.appendWhere(ChatTableMetaData.TABLE_NAME + "." + ChatTableMetaData.FIELD_JID + "='" + jid + "'");
+			qb.appendWhere(ChatTableMetaData.TABLE_NAME + "." + ChatTableMetaData.FIELD_JID + "=" + DatabaseUtils.sqlEscapeString(jid));
 			break;
 		}
 		case CHAT_ITEM_URI_INDICATOR: {
