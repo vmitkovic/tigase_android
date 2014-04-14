@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item android:id="@+id/newChat" 
+        android:title="New chat"
+        android:showAsAction="ifRoom"
+        android:icon="@drawable/ic_menu_start_conversation"></item>
+    <item android:id="@+id/newGroupChat" 
+        android:title="New group chat"
+        android:showAsAction="ifRoom"
+        android:icon="@drawable/ic_menu_cc_am"></item>    
+
+</menu>

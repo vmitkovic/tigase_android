@@ -2,14 +2,19 @@ package org.tigase.messenger.phone.pro.chat;
 
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider;
+import org.tigase.messenger.phone.pro.roster.RosterFragment;
 
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -47,7 +52,16 @@ public class ChatsListFragment extends Fragment {
 			this.chatsLayout = getArguments().getString("layout");
 		}
 
+		this.setHasOptionsMenu(true);
 	}	
+	
+	@Override
+	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+		// menu.clear();
+
+		inflater.inflate(R.menu.chat_list_menu, menu);
+		super.onCreateOptionsMenu(menu, inflater);
+	}
 	
 	@Override
 	public View onCreateView(final LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -165,6 +179,24 @@ public class ChatsListFragment extends Fragment {
 			Log.d(TAG + "_rf", "onDestroyView()");
 	}
 
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		if (item.getItemId() == R.id.newChat) {
+			Log.v(TAG, "new chat button clicked");
+			FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+			//ft.setCustomAnimations(R.animator.slide_in_right, R.animator.slide_out_left);
+			ft.setCustomAnimations(R.animator.slide_in_left, R.animator.slide_out_right, R.animator.slide_out_left, R.animator.slide_in_right);
+			RosterFragment rosterFragment = RosterFragment.newInstance(null);
+			ft.replace(R.id.content_frame, rosterFragment);
+			ft.addToBackStack(null);
+			ft.commit();
+		}
+		else if (item.getItemId() == R.id.newGroupChat) {
+			Log.v(TAG, "new group chat button not supported yet");
+		}
+		return super.onOptionsItemSelected(item);
+	}
+	
 	@Override
 	public void onResume() {
 		super.onResume();

@@ -180,6 +180,11 @@ public class MainActivity extends FragmentActivity {
 		
 		helper.updateActionBar();        
 	}
+	
+	public void onDestroy() {
+		super.onDestroy();
+		unbindService(jaxmppServiceConnection);
+	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {

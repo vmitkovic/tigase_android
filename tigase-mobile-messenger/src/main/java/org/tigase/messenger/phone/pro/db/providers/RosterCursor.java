@@ -72,6 +72,8 @@ public class RosterCursor extends AbstractCursor {
 			RosterItemsCacheTableExtMetaData.FIELD_STATUS, RosterItemsCacheTableMetaData.FIELD_ACCOUNT 
 	};
 	
+	private boolean bound = false;
+	
 	private final Context context;
 
 	private final SQLiteDatabase db;
@@ -103,7 +105,7 @@ public class RosterCursor extends AbstractCursor {
 		this.predicate = predicate;
 		this.db = sqLiteDatabase;
 		this.hideOffline = hideOffline;
-		ctx.bindService(new Intent(ctx, JaxmppService.class), conn, Context.BIND_AUTO_CREATE);
+		bound = ctx.bindService(new Intent(ctx, JaxmppService.class), conn, Context.BIND_AUTO_CREATE);
 		loadData();
 	}
 
@@ -334,6 +336,10 @@ public class RosterCursor extends AbstractCursor {
 	
 	@Override
 	public void close() {
-		context.unbindService(conn);
+		super.close();
+		if (bound) {
+			context.unbindService(conn);
+			bound = false;
+		}
 	}
 }
