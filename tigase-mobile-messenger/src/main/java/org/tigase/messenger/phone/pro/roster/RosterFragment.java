@@ -3,6 +3,9 @@ package org.tigase.messenger.phone.pro.roster;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
 
+import tigase.jaxmpp.android.roster.RosterItemsCacheTableMetaData;
+import tigase.jaxmpp.core.client.BareJID;
+import android.app.Activity;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -12,12 +15,19 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.GridView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 
 public class RosterFragment extends Fragment {
 
+	public static interface OnClickListener {
+		public void onRosterItemClicked(String account, BareJID jid);
+	}
+	
+//	public static RosterFragment newInstance(String layout, OnClickListener listener) {
 	public static RosterFragment newInstance(String layout) {
 		RosterFragment f = new RosterFragment();
 
@@ -28,6 +38,8 @@ public class RosterFragment extends Fragment {
 		return f;
 	}
 	
+	public static final String FRAG_TAG = "roster_fragment";
+	
 	private static final boolean DEBUG = true;
 	
 	private static final String TAG = "RosterFragment";
@@ -37,6 +49,17 @@ public class RosterFragment extends Fragment {
 	private AbsListView listView = null;
 	
 	private String rosterLayout = null;
+
+	private OnClickListener onClickListener;
+	
+	@Override
+	public void onAttach(Activity activity) {
+		super.onAttach(activity);
+		
+		if (activity instanceof OnClickListener) {
+			onClickListener = (OnClickListener) activity;
+		}
+	}
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -70,14 +93,14 @@ public class RosterFragment extends Fragment {
 
 		listView = (AbsListView) layout.findViewById(R.id.rosterList);
 		listView.setTextFilterEnabled(true);
-		registerForContextMenu(listView);
+		//registerForContextMenu(listView);
 
 //		if (listView instanceof ExpandableListView) {
 //			if (c != null) {
 //				getActivity().stopManagingCursor(c);
 //			}
 //			this.c = inflater.getContext().getContentResolver().query(Uri.parse(RosterProvider.GROUP_URI), null, null, null,
-//					null);
+	//					null);
 //			getActivity().startManagingCursor(c);
 //			GroupsRosterAdapter.staticContext = inflater.getContext();
 //
@@ -100,13 +123,13 @@ public class RosterFragment extends Fragment {
 //				}
 //			});
 //		} else if (listView instanceof ListView || listView instanceof GridView) {
-			if (c != null) {
-				getActivity().stopManagingCursor(c);
-			}
+//			if (c != null) {
+//				getActivity().stopManagingCursor(c);
+//			}
 			this.c = inflater.getContext().getContentResolver().query(Uri.parse(RosterProvider.CONTENT_URI), null, null, null,
 					null);
 
-			getActivity().startManagingCursor(c);
+			//getActivity().startManagingCursor(c);
 			// FlatRosterAdapter.staticContext = inflater.getContext();
 
 			if (listView instanceof ListView) {
@@ -115,6 +138,28 @@ public class RosterFragment extends Fragment {
 			} else if (listView instanceof GridView) {
 				this.adapter = new FlatRosterAdapter(inflater.getContext(), c, R.layout.roster_grid_item);
 				((GridView) listView).setAdapter((ListAdapter) adapter);
+			}
+			if (onClickListener != null) {
+				listView.setOnItemClickListener(new OnItemClickListener() {
+					@Override
+					public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+						Log.i(TAG, "Clicked on id=" + id);
+						Uri uri = Uri.parse(RosterProvider.CONTENT_URI + "/" + id);
+						Cursor c = inflater.getContext().getContentResolver().query(uri, null, null, null, null);
+						if (c.moveToNext()) {
+							String account = c.getString(c.getColumnIndex(RosterItemsCacheTableMetaData.FIELD_ACCOUNT));
+							String jidStr = c.getString(c.getColumnIndex(RosterItemsCacheTableMetaData.FIELD_JID));
+							BareJID jid = BareJID.bareJIDInstance(jidStr);
+							onClickListener.onRosterItemClicked(account, jid);
+						}
+	//
+//						Intent intent = new Intent();
+//						intent.setAction(TigaseMobileMessengerActivity.ROSTER_CLICK_MSG);
+//						intent.putExtra("id", id);
+	//
+//						getActivity().getApplicationContext().sendBroadcast(intent);
+					}
+				});
 			}
 //			listView.setOnItemClickListener(new OnItemClickListener() {
 //

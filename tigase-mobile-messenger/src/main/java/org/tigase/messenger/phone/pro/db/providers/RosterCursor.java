@@ -84,6 +84,8 @@ public class RosterCursor extends AbstractCursor {
 
 	private List<Object[]> items = new ArrayList<Object[]>();
 	
+	private String item = null;
+	
 	private IJaxmppService jaxmppService;
 	
 	private ServiceConnection conn = new ServiceConnection() {
@@ -100,11 +102,12 @@ public class RosterCursor extends AbstractCursor {
 		
 	};
 	
-	public RosterCursor(Context ctx, SQLiteDatabase sqLiteDatabase, boolean hideOffline, RosterStore.Predicate predicate) {
+	public RosterCursor(Context ctx, SQLiteDatabase sqLiteDatabase, boolean hideOffline, RosterStore.Predicate predicate, String item) {
 		this.context = ctx;
 		this.predicate = predicate;
 		this.db = sqLiteDatabase;
 		this.hideOffline = hideOffline;
+		this.item= item;
 		bound = ctx.bindService(new Intent(ctx, JaxmppService.class), conn, Context.BIND_AUTO_CREATE);
 		loadData();
 	}
@@ -274,7 +277,13 @@ public class RosterCursor extends AbstractCursor {
 			orderBy = RosterItemsCacheTableMetaData.FIELD_NAME + " ASC";
 		}
 		
-		Cursor c = db.query(RosterItemsCacheTableMetaData.TABLE_NAME, columns, query, null, null, null, orderBy);
+		String[] selectionArgs = null;
+		if (item != null) {
+			query = RosterItemsCacheTableMetaData.FIELD_ID + " = ? or " + RosterItemsCacheTableMetaData.FIELD_JID + " = ?";
+			selectionArgs = new String[] { item, item };
+		}
+		
+		Cursor c = db.query(RosterItemsCacheTableMetaData.TABLE_NAME, columns, query, selectionArgs, null, null, orderBy);
 		try {
 			while (c.moveToNext()) {
 				Object[] data = new Object[columns.length];

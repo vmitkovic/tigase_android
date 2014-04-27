@@ -115,13 +115,13 @@ public class ChatsListFragment extends Fragment {
 //				}
 //			});
 //		} else if (listView instanceof ListView || listView instanceof GridView) {
-			if (c != null) {
-				getActivity().stopManagingCursor(c);
-			}
+//			if (c != null) {
+//				getActivity().stopManagingCursor(c);
+//			}
 			this.c = inflater.getContext().getContentResolver().query(Uri.parse(OpenChatsProvider.OPEN_CHATS_URI), null, null, null,
 					null);
 
-			getActivity().startManagingCursor(c);
+//			getActivity().startManagingCursor(c);
 			// FlatRosterAdapter.staticContext = inflater.getContext();
 
 			this.adapter = new OpenChatsAdapter(inflater.getContext(), R.layout.chat_list_item, c);
@@ -187,8 +187,8 @@ public class ChatsListFragment extends Fragment {
 			//ft.setCustomAnimations(R.animator.slide_in_right, R.animator.slide_out_left);
 			ft.setCustomAnimations(R.animator.slide_in_left, R.animator.slide_out_right, R.animator.slide_out_left, R.animator.slide_in_right);
 			RosterFragment rosterFragment = RosterFragment.newInstance(null);
-			ft.replace(R.id.content_frame, rosterFragment);
-			ft.addToBackStack(null);
+			ft.replace(R.id.content_frame, rosterFragment, RosterFragment.FRAG_TAG);
+			ft.addToBackStack(RosterFragment.FRAG_TAG);
 			ft.commit();
 		}
 		else if (item.getItemId() == R.id.newGroupChat) {

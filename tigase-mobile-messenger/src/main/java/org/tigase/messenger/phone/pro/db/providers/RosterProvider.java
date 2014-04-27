@@ -260,24 +260,24 @@ public class RosterProvider extends ContentProvider {
 				Log.d(TAG, "Querying " + uri + " projection=" + Arrays.toString(projection) + "; selection=" + selection
 						+ "; selectionArgs=" + Arrays.toString(selectionArgs));
 
-			c = new RosterCursor(getContext(), dbHelper.getReadableDatabase(), hideOffline, p);
+			c = new RosterCursor(getContext(), dbHelper.getReadableDatabase(), hideOffline, p, null);
 			break;
 		case ROSTER_ITEM_URI_INDICATOR:
 			final String l = uri.getLastPathSegment();
-			p = new Predicate() {
-
-				@Override
-				public boolean match(RosterItem item) {
-					if (item.getJid().toString().equals(l))
-						return true;
-					else if (("" + item.getId()).equals(l))
-						return true;
-					else
-						return false;
-				}
-			};
+//			p = new Predicate() {
+//
+//				@Override
+//				public boolean match(RosterItem item) {
+//					if (item.getJid().toString().equals(l))
+//						return true;
+//					else if (("" + item.getId()).equals(l))
+//						return true;
+//					else
+//						return false;
+//				}
+//			};
 			// fix me
-			c = new RosterCursor(getContext(), dbHelper.getReadableDatabase(), false, p);
+			c = new RosterCursor(getContext(), dbHelper.getReadableDatabase(), false, p, l);
 			break;
 		case GROUPS_URI_INDICATOR:
 //			c = new GroupsCursor(getContext(), null);

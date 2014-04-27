@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.tigase.messenger.phone.pro.account.AccountAuthenticator;
+import org.tigase.messenger.phone.pro.chat.ChatActivity;
 import org.tigase.messenger.phone.pro.chat.ChatsListFragment;
 import org.tigase.messenger.phone.pro.roster.RosterFragment;
 
+import tigase.jaxmpp.core.client.BareJID;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.ComponentName;
@@ -18,7 +20,9 @@ import android.os.IBinder;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.DrawerLayout;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -30,7 +34,7 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-public class MainActivity extends FragmentActivity {
+public class MainActivity extends FragmentActivity implements RosterFragment.OnClickListener {
 	
     private class DrawerMenuAdapter extends ArrayAdapter<DrawerMenuItem> {
 
@@ -199,6 +203,28 @@ public class MainActivity extends FragmentActivity {
 	}	
 	protected void onOptionsItemSelected(int itemId) {
 		
+	}
+
+	@Override
+	public void onRosterItemClicked(String account, BareJID jid) {
+		try {
+			// creating chat
+			jaxmppService.openChat(account, jid.toString());
+		
+			// back to chat list fragment
+			//Fragment frag = getSupportFragmentManager().findFragmentByTag(RosterFragment.FRAG_TAG);
+			//getSupportFragmentManager().beginTransaction().remove(frag).commit();
+			getSupportFragmentManager().popBackStack(RosterFragment.FRAG_TAG, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+			
+			// opening activity
+			Intent intent = new Intent(this, ChatActivity.class);
+			intent.putExtra("account", account);
+			intent.putExtra("recipient", jid.toString());
+			startActivity(intent);			
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}		
 	}
 		
 }
