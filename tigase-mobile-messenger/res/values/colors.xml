@@ -3,6 +3,7 @@
 <color name="title_bar_text_color">#ffffff</color>
 <color name="account_dialog_separator">#4c4d4d</color>  
 <drawable name="actionbar_background">#306799</drawable>
+<color name="drawer_background">#3877B3</color>
     <color name="message_mine_text">#000000</color>
     <color name="message_his_text">#000000</color>
     <color name="mucmessage_mine_text">#000000</color>

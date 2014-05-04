@@ -142,13 +142,25 @@ public class ChatsListFragment extends Fragment {
 				public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 					Log.i(TAG, "Clicked on chat with id=" + id);
 
-					Intent intent = new Intent(getActivity(), ChatActivity.class);
-					intent.putExtra("chatId", id);
-					getActivity().startActivity(intent);
+//					Intent intent = new Intent(getActivity(), ChatActivity.class);
+//					intent.putExtra("chatId", id);
+//					getActivity().startActivity(intent);
 //					intent.setAction(TigaseMobileMessengerActivity.ROSTER_CLICK_MSG);
 //					intent.putExtra("id", id);
 //
 //					getActivity().getApplicationContext().sendBroadcast(intent);
+					Bundle arguments = new Bundle();
+					arguments.putLong("chatId", id);
+//					if (getIntent().getLongExtra("chatId", 0) != 0) {
+//						arguments.putLong("chatId", getIntent().getLongExtra("chatId",0));
+//					}
+//					else {
+//						arguments.putString("recipient", getIntent().getStringExtra("recipient"));
+//						arguments.putString("account", getIntent().getStringExtra("account"));
+//					}
+					ChatHistoryFragment fragment = new ChatHistoryFragment();
+					fragment.setArguments(arguments);					
+					((MainActivity) getActivity()).switchFragments(fragment, ChatHistoryFragment.FRAG_TAG);
 				}
 			});
 //
@@ -185,13 +197,9 @@ public class ChatsListFragment extends Fragment {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		if (item.getItemId() == R.id.newChat) {
 			Log.v(TAG, "new chat button clicked");
-			FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
-			//ft.setCustomAnimations(R.animator.slide_in_right, R.animator.slide_out_left);
-			ft.setCustomAnimations(R.animator.slide_in_left, R.animator.slide_out_right, R.animator.slide_out_left, R.animator.slide_in_right);
+			
 			RosterFragment rosterFragment = RosterFragment.newInstance(null);
-			ft.replace(R.id.content_frame, rosterFragment, RosterFragment.FRAG_TAG);
-			ft.addToBackStack(RosterFragment.FRAG_TAG);
-			ft.commit();	
+			((MainActivity)getActivity()).switchFragments(rosterFragment, RosterFragment.FRAG_TAG);	
 		}
 		else if (item.getItemId() == R.id.newGroupChat) {
 			Log.v(TAG, "new group chat button not supported yet");
@@ -220,7 +228,7 @@ public class ChatsListFragment extends Fragment {
 	public void onStart() {
 		super.onStart();
 		MainActivity activity = (MainActivity) getActivity();
-		activity.fragmentChanged();		
+		activity.fragmentChanged(this);		
 //		final MultiJaxmpp jaxmpp = ((MessengerApplication) getActivity().getApplicationContext()).getMultiJaxmpp();
 //
 //		jaxmpp.addListener(Connector.StateChanged, this.connectorListener);

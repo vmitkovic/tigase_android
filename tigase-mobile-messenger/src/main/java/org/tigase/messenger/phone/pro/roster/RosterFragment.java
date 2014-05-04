@@ -238,7 +238,7 @@ public class RosterFragment extends Fragment {
 //			restoreExpandedState(expandedIds);
 //		}
 		MainActivity activity = (MainActivity) getActivity();
-		activity.fragmentChanged();
+		activity.fragmentChanged(this);
 	}
 
 	@Override

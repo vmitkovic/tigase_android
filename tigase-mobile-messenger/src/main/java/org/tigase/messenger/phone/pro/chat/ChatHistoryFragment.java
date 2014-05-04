@@ -20,6 +20,7 @@ package org.tigase.messenger.phone.pro.chat;
 import java.util.Date;
 import java.util.List;
 
+import org.tigase.messenger.phone.pro.CustomHeader;
 import org.tigase.messenger.phone.pro.MessengerApplication;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.MainActivity;
@@ -28,12 +29,16 @@ import org.tigase.messenger.phone.pro.MainActivity;
 import org.tigase.messenger.phone.pro.db.ChatTableMetaData;
 import org.tigase.messenger.phone.pro.db.providers.ChatHistoryProvider;
 import org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider;
+import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
 //import org.tigase.mobile.filetransfer.FileTransferUtility;
 //import org.tigase.mobile.muc.MucActivity;
 import org.tigase.messenger.phone.pro.roster.CPresence;
 //import org.tigase.mobile.roster.ContactActivity;
 
 
+
+
+import org.tigase.messenger.phone.pro.roster.RosterAdapterHelper;
 
 import tigase.jaxmpp.android.chat.OpenChatTableMetaData;
 import tigase.jaxmpp.core.client.BareJID;
@@ -44,6 +49,7 @@ import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.ContentObserver;
 import android.database.Cursor;
 import android.database.DataSetObserver;
 import android.net.Uri;
@@ -69,14 +75,23 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cursor> {
+public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cursor>, CustomHeader {
 
+	private class Holder {
+		TextView description;
+		ImageView status;
+		TextView title;
+	}	
+	
 	private static final boolean DEBUG = true;
 
 	private static final String TAG = "tigase-chat";
+	
+	public static final String FRAG_TAG = "ChatHistoryFragment";
 
 	public static Fragment newInstance(String account, JID recipient) {
 		ChatHistoryFragment f = new ChatHistoryFragment();
@@ -102,9 +117,12 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 
 	private ListView lv;
 
+	private ContentObserver observer = null;
+	
 	private String account;
 	private JID recipient;
 	private String threadId;
+	private String name;
 	
 //	private final Listener<PresenceEvent> presenceListener;
 
@@ -176,7 +194,7 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 			if (getArguments().containsKey("chatId")) {
 				long chatId = getArguments().getLong("chatId");
 				Cursor c = this.getActivity().getContentResolver().query(Uri.parse(OpenChatsProvider.OPEN_CHATS_URI), 
-						new String[] { OpenChatTableMetaData.FIELD_ACCOUNT, OpenChatTableMetaData.FIELD_JID, OpenChatTableMetaData.FIELD_THREAD_ID }, 
+						new String[] { OpenChatTableMetaData.FIELD_ACCOUNT, OpenChatTableMetaData.FIELD_JID, OpenChatTableMetaData.FIELD_THREAD_ID, OpenChatsProvider.FIELD_NAME }, 
 						"open_chats."+OpenChatTableMetaData.FIELD_ID + "= ?", new String[] { String.valueOf(chatId) }, null);
 				try {
 					Log.v(TAG, "found " + c.getCount() + " for chatId = " + chatId);
@@ -184,6 +202,7 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 						this.account = c.getString(0);
 						this.recipient = JID.jidInstance(c.getString(1));
 						this.threadId = c.getString(2);
+						this.name = c.getString(3);
 					}
 				} finally {
 					c.close();
@@ -197,11 +216,12 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 				// maybe we should retrieve here recipients name as well? or maybe we should move it to method calling this method
 				// or maybe it is not needed at all
 				Cursor c = this.getActivity().getContentResolver().query(Uri.parse(OpenChatsProvider.OPEN_CHATS_URI), 
-						new String[] { OpenChatTableMetaData.FIELD_THREAD_ID }, "open_chats." + OpenChatTableMetaData.FIELD_ACCOUNT + " = ? AND open_chats." + OpenChatTableMetaData.FIELD_JID + "= ?", 
+						new String[] { OpenChatTableMetaData.FIELD_THREAD_ID, OpenChatsProvider.FIELD_NAME }, "open_chats." + OpenChatTableMetaData.FIELD_ACCOUNT + " = ? AND open_chats." + OpenChatTableMetaData.FIELD_JID + "= ?", 
 						new String[] { account, this.recipient.getBareJid().toString() }, null);
 				try {
 					if (c.moveToNext()) {
 						this.threadId = c.getString(0);
+						this.name = c.getString(1);
 					}
 				} finally {
 					c.close();
@@ -477,7 +497,24 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 //		jaxmpp.addListener(MessageModule.ChatUpdated, this.chatUpdateListener);
 
 		super.onStart();
-
+		
+		if (observer == null) {
+			observer = new ContentObserver(null) {
+				@Override
+				public void onChange(boolean selfChange) {
+					layout.post(new Runnable() {
+						@Override
+						public void run() {
+							// TODO Auto-generated method stub
+							updatePresence();
+						}				
+					});
+				}
+			};
+		}
+		
+		getActivity().getContentResolver().registerContentObserver(Uri.parse(RosterProvider.CONTENT_URI), true, observer);		
+		
 		updatePresence();
 		layout.updateClientIndicator();
 	}
@@ -493,6 +530,10 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 //		jaxmpp.removeListener(PresenceModule.ContactAvailable, this.presenceListener);
 //		jaxmpp.removeListener(PresenceModule.ContactUnavailable, this.presenceListener);
 //		jaxmpp.removeListener(PresenceModule.ContactChangedPresence, this.presenceListener);
+		if (observer != null) {
+			getActivity().getContentResolver().unregisterContentObserver(observer);
+			observer = null;
+		}
 		super.onStop();
 	}
 
@@ -561,6 +602,10 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 	}
 
 	protected void updatePresence() {
+		if (getActivity() instanceof MainActivity) {
+			MainActivity activity = (MainActivity) getActivity();
+			activity.fragmentChanged(this);					
+		}		
 //		if (chat != null) {
 //			CPresence cp = RosterDisplayTools.getShowOf(chat.getSessionObject(), chat.getJid().getBareJid());
 //
@@ -569,6 +614,68 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 //			helper.updateActionBar(getActivity(), chatWrapper);
 //
 //		}
+	}
+
+	@Override
+	public int getHeaderViewId() {
+		return R.layout.actionbar_status;
+	}
+	
+	@Override
+	public View updateHeaderView(View view) {
+		CPresence p = null;
+		try {
+			p = ((MainActivity) getActivity()).getJaxmppService().getBestPresence(account, recipient.getBareJid().toString());
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		int icon = R.drawable.user_offline;
+		String descr = null;
+		if (p != null) {
+			icon = RosterAdapterHelper.cPresenceToImageResource(p.getStatus());
+			descr = p.getDescription();
+		}
+		
+		Holder holder = (Holder) view.getTag();
+		if (holder == null) {
+			holder = new Holder();
+			holder.title = (TextView) view.findViewById(R.id.title);
+			holder.description = (TextView) view.findViewById(R.id.description);
+			holder.status = (ImageView) view.findViewById(R.id.status);
+			view.setTag(holder);
+		}
+		holder.title.setText(name);
+		holder.description.setText(descr == null ? "" : descr);
+		holder.status.setImageResource(icon);
+//		BareJID jid = c.getChat().getJid().getBareJid();
+//		RosterItem ri = c.getChat().getSessionObject().getRoster().get(jid);
+//		subtitle = "Chat with " + (ri != null ? ri.getName() : jid.toString());
+//
+//		icon = R.drawable.user_offline;
+//		CPresence p = RosterDisplayTools.getShowOf(c.getChat().getSessionObject(),
+//				c.getChat().getJid().getBareJid());
+//		c.getChat().getSessionObject().getPresence().getPresence(c.getChat().getJid());
+//		switch (p) {
+//		case chat:
+//			icon = R.drawable.user_free_for_chat;
+//			break;
+//		case online:
+//			icon = R.drawable.user_available;
+//			break;
+//		case away:
+//			icon = R.drawable.user_away;
+//			break;
+//		case xa:
+//			icon = R.drawable.user_extended_away;
+//			break;
+//		case dnd:
+//			icon = R.drawable.user_busy;
+//			break;
+//		default:
+//			break;
+//		}
+		return view;
 	}
 
 }

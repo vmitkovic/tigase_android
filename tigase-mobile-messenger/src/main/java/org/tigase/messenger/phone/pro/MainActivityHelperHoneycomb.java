@@ -24,6 +24,7 @@ import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterItem;
 import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.graphics.drawable.ColorDrawable;
+import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
@@ -56,7 +57,7 @@ public class MainActivityHelperHoneycomb extends MainActivityHelper {
 	}
 
 	@Override
-	public void updateActionBar() {
+	public void updateActionBar(Fragment frag) {
 //		activity.drawerLayout.post(new Runnable() {
 //
 //			@Override
@@ -86,9 +87,25 @@ public class MainActivityHelperHoneycomb extends MainActivityHelper {
 //				}
 				actionBar.setBackgroundDrawable(activity.getResources().getDrawable(R.drawable.actionbar_background));
 
+				if (frag instanceof CustomHeader) {
+					CustomHeader cheader = (CustomHeader) frag;
+					View cview = actionBar.getCustomView();
+					actionBar.setDisplayShowCustomEnabled(true);
+					int id = cheader.getHeaderViewId();
+					if (cview == null || cview.getId() != id) {
+						actionBar.setCustomView(id);
+						cview = actionBar.getCustomView();
+					}
+					cheader.updateHeaderView(cview);
+				}
+				else {
+					actionBar.setDisplayShowCustomEnabled(false);
+				}
 				// actionBar.setHomeButtonEnabled(true);
 				// actionBar.setDisplayHomeAsUpEnabled(currentPage != 1 &&
 				// !isXLarge());
+				
+				
 
 				// Setting subtitle to show who we chat with
 //				ChatWrapper c = activity.getChatByPageIndex(currentPage);

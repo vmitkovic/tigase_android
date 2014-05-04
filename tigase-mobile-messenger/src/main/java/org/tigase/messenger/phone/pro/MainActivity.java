@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.tigase.messenger.phone.pro.account.AccountAuthenticator;
 import org.tigase.messenger.phone.pro.chat.ChatActivity;
+import org.tigase.messenger.phone.pro.chat.ChatHistoryFragment;
 import org.tigase.messenger.phone.pro.chat.ChatsListFragment;
 import org.tigase.messenger.phone.pro.roster.RosterFragment;
 
@@ -23,6 +24,7 @@ import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -145,6 +147,10 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 //	  //fragmentChanged();
 //	}
 	
+	public IJaxmppService getJaxmppService() {
+		return jaxmppService;
+	}
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -188,7 +194,7 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 		intent.putExtra("ID", "AIDL");
 		bindService(intent, jaxmppServiceConnection, Context.BIND_AUTO_CREATE);
 		
-		helper.updateActionBar();        
+//		helper.updateActionBar();        
 	}
 	
 	public void onDestroy() {
@@ -227,14 +233,21 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 			//Fragment frag = getSupportFragmentManager().findFragmentByTag(RosterFragment.FRAG_TAG);
 			//getSupportFragmentManager().beginTransaction().remove(frag).commit();
 			getSupportFragmentManager().popBackStack(RosterFragment.FRAG_TAG, FragmentManager.POP_BACK_STACK_INCLUSIVE);
-			
-			fragmentChanged();
-			
+						
 			// opening activity
-			Intent intent = new Intent(this, ChatActivity.class);
-			intent.putExtra("account", account);
-			intent.putExtra("recipient", jid.toString());
-			startActivity(intent);			
+//			Intent intent = new Intent(this, ChatActivity.class);
+//			intent.putExtra("account", account);
+//			intent.putExtra("recipient", jid.toString());
+//			startActivity(intent);			
+			
+			Bundle arguments = new Bundle();
+			arguments.putString("account", account);
+			arguments.putString("recipient", jid.toString());
+			Fragment chatFragment = new ChatHistoryFragment();
+			chatFragment.setArguments(arguments);
+			switchFragments(chatFragment, ChatHistoryFragment.FRAG_TAG);
+			//fragmentChanged(chatFragment);
+
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -246,7 +259,21 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 		return (frag != null && !frag.isHidden() && !frag.isDetached() && frag.isMenuVisible() && !frag.isRemoving());// && frag.isInLayout());
 	}
 	
-	public void fragmentChanged() {
-		helper.updateActionBar();
+	public void fragmentChanged(Fragment frag) {
+		helper.updateActionBar(frag);
+	}
+	
+	public void switchFragments(Fragment newFragment, String tag) {
+		FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+		switchFragments(newFragment, tag, ft);
+	}
+	
+	public void switchFragments(Fragment newFragment, String tag, FragmentTransaction ft) {
+		//ft.setCustomAnimations(R.animator.slide_in_right, R.animator.slide_out_left);
+		ft.setCustomAnimations(R.animator.slide_in_left, R.animator.slide_out_right, R.animator.slide_out_left, R.animator.slide_in_right);
+		
+		ft.replace(R.id.content_frame, newFragment, tag);
+		ft.addToBackStack(RosterFragment.FRAG_TAG);
+		ft.commit();		
 	}
 }

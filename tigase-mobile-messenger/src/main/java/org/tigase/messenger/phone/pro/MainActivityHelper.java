@@ -19,6 +19,7 @@ package org.tigase.messenger.phone.pro;
 
 import android.content.res.Configuration;
 import android.os.Build;
+import android.support.v4.app.Fragment;
 import android.view.MenuItem;
 
 public class MainActivityHelper {
@@ -49,7 +50,7 @@ public class MainActivityHelper {
 	public void setShowAsAction(MenuItem item, int value) {
 	};
 
-	public void updateActionBar() {
+	public void updateActionBar(Fragment frag) {
 	}
 
 	public void updateActionBar(int itemHashCode) {

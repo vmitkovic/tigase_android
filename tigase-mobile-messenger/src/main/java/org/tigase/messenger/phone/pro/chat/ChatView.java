@@ -127,6 +127,16 @@ public class ChatView extends RelativeLayout {
 		this.prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
 	}
 
+	public CPresence getPresence() {
+		try {
+			return jaxmppService.getBestPresence(account,recipient.getBareJid().toString());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
 	void cancelEdit() {
 		if (ed == null)
 			return;
