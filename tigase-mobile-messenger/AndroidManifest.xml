@@ -84,6 +84,12 @@
             android:multiprocess="true"
             android:authorities="org.tigase.mobile.db.providers.OpenChatsProvider" >
         </provider>
+        <receiver 
+            android:name=".receivers.AvatarUpdatedReceiver">
+            <intent-filter>
+                <action android:name="org.tigase.messenger.phone.pro.AvatarUpdated"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

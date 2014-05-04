@@ -1,5 +1,7 @@
 package org.tigase.messenger.phone.pro;
 
+import org.tigase.messenger.phone.pro.utils.AvatarHelper;
+
 import android.app.Application;
 import android.app.NotificationManager;
 import android.content.Context;
@@ -11,6 +13,8 @@ public class MessengerApplication extends Application {
 	@Override
     public void onCreate() {
         super.onCreate();
+        AvatarHelper.initilize(this);
+        
 		NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
 		builder.setContentTitle("Messenger").setContentText("Started");
 		NotificationManager mNotificationManager =

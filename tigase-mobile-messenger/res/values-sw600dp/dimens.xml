@@ -1,8 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <!--
-         Customize dimensions originally defined in res/values/dimens.xml (such as
-         screen margins) for sw600dp devices (e.g. 7" tablets) here.
-    -->
-
+    <dimen name="vcard_layout_padding">20dp</dimen>
+    <dimen name="vcard_layout_first_column_width">380dp</dimen>
+    <dimen name="vcard_layout_second_column_width">380dp</dimen>
+	<dimen name="vcard_layout_labels_padding">4dp</dimen>    
+	<dimen name="chat_item_layout_item_padding">1dp</dimen>	
+	<dimen name="chat_item_layout_item_avatar_size">50dp</dimen>
+    <dimen name="chat_item_layout_item_text_size">15sp</dimen>
+    <dimen name="chat_item_layout_item_timestamp_text_size">13sp</dimen>
+    <dimen name="contact_layout_width">300dp</dimen>	
+    <dimen name="contact_layout_padding">5dp</dimen>
+    <dimen name="contact_avatar_height">260dp</dimen>
 </resources>

@@ -15,6 +15,7 @@ import org.tigase.messenger.phone.pro.account.AccountAuthenticator;
 import org.tigase.messenger.phone.pro.account.AccountsConstants;
 import org.tigase.messenger.phone.pro.db.ChatTableMetaData;
 import org.tigase.messenger.phone.pro.db.DatabaseHelper;
+import org.tigase.messenger.phone.pro.db.VCardsCacheTableMetaData;
 import org.tigase.messenger.phone.pro.db.providers.ChatHistoryProvider;
 import org.tigase.messenger.phone.pro.db.providers.RosterProviderExt;
 import org.tigase.messenger.phone.pro.roster.CPresence;
@@ -26,6 +27,7 @@ import tigase.jaxmpp.android.chat.ChatProvider;
 import tigase.jaxmpp.android.roster.AndroidRosterStore;
 import tigase.jaxmpp.android.roster.RosterProvider;
 import tigase.jaxmpp.core.client.BareJID;
+import tigase.jaxmpp.core.client.Base64;
 import tigase.jaxmpp.core.client.Connector;
 import tigase.jaxmpp.core.client.Connector.State;
 import tigase.jaxmpp.core.client.JID;
@@ -37,6 +39,7 @@ import tigase.jaxmpp.core.client.SessionObject;
 import tigase.jaxmpp.core.client.XMPPException.ErrorCondition;
 import tigase.jaxmpp.core.client.exceptions.JaxmppException;
 import tigase.jaxmpp.core.client.factory.UniversalFactory;
+import tigase.jaxmpp.core.client.xml.Element;
 import tigase.jaxmpp.core.client.xml.XMLException;
 import tigase.jaxmpp.core.client.xmpp.modules.SoftwareVersionModule;
 import tigase.jaxmpp.core.client.xmpp.modules.capabilities.CapabilitiesModule;
@@ -47,9 +50,12 @@ import tigase.jaxmpp.core.client.xmpp.modules.disco.DiscoveryModule;
 import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceModule;
 import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceStore;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterModule;
+import tigase.jaxmpp.core.client.xmpp.modules.vcard.VCard;
+import tigase.jaxmpp.core.client.xmpp.modules.vcard.VCardModule;
 import tigase.jaxmpp.core.client.xmpp.stanzas.ErrorElement;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Presence;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Presence.Show;
+import tigase.jaxmpp.core.client.xmpp.stanzas.Stanza;
 import tigase.jaxmpp.core.client.xmpp.stanzas.StanzaType;
 import tigase.jaxmpp.core.client.xmpp.utils.delay.XmppDelay;
 import tigase.jaxmpp.j2se.J2SEPresenceStore;
@@ -61,11 +67,13 @@ import android.app.NotificationManager;
 import android.app.Service;
 import android.content.AsyncQueryHandler;
 import android.content.BroadcastReceiver;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -263,6 +271,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		public void onContactChangedPresence(SessionObject sessionObject,
 				Presence stanza, JID jid, Show show, String status,
 				Integer priority) throws JaxmppException {
+			updateRosterItem(sessionObject, stanza);
 			rosterProvider.updateStatus(sessionObject, jid);
 		}
 
@@ -276,6 +285,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		public void onContactAvailable(SessionObject sessionObject,
 				Presence stanza, JID jid, Show show, String status,
 				Integer priority) throws JaxmppException {
+			updateRosterItem(sessionObject, stanza);
 			rosterProvider.updateStatus(sessionObject, jid);
 		}
 		
@@ -521,6 +531,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     			PresenceModule.setPresenceStore(sessionObject, new J2SEPresenceStore());
     			jaxmpp.getModulesManager().register(new PresenceModule());
     			jaxmpp.getModulesManager().register(new MessageModule(new AndroidChatManager(this.chatProvider)));
+    			jaxmpp.getModulesManager().register(new VCardModule());
     			
     			Log.v(TAG, "registering account " + accountJid.toString());
     			multiJaxmpp.add(jaxmpp);
@@ -681,4 +692,71 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     	return this.usedNetworkType;
     }
     
+	protected synchronized void updateRosterItem(final SessionObject sessionObject, final Presence p)
+			throws XMLException {
+		if (p != null) {
+			Element x = p.getChildrenNS("x", "vcard-temp:x:update");
+			if (x != null) {
+				for (Element c : x.getChildren()) {
+					if (c.getName().equals("photo") && c.getValue() != null) {
+						boolean retrieve = false;
+						final String sha = c.getValue();
+						if (sha == null)
+							continue;
+						retrieve = !rosterProvider.checkVCardHash(sessionObject, p.getFrom().getBareJid(), sha);
+
+						if (retrieve)
+							retrieveVCard(sessionObject, p.getFrom().getBareJid());
+					}
+				}
+			}
+		}
+
+		// Synchronize contact status
+		// SyncAdapter.syncContactStatus(getApplicationContext(), be);
+	}
+	
+	private void retrieveVCard(final SessionObject sessionObject,
+			final BareJID jid) {
+		try {
+			JaxmppCore jaxmpp = multiJaxmpp.get(sessionObject);
+			if (jaxmpp == null)
+				return;
+			// final RosterItem rosterItem = jaxmpp.getRoster().get(jid);
+			jaxmpp.getModule(VCardModule.class).retrieveVCard(
+					JID.jidInstance(jid), (long) 3 * 60 * 1000,
+					new VCardModule.VCardAsyncCallback() {
+
+						@Override
+						public void onError(Stanza responseStanza,
+								ErrorCondition error) throws JaxmppException {
+						}
+
+						@Override
+						public void onTimeout() throws JaxmppException {
+						}
+
+						@Override
+						protected void onVCardReceived(VCard vcard)
+								throws XMLException {
+							try {
+								if (vcard.getPhotoVal() != null
+										&& vcard.getPhotoVal().length() > 0) {
+									byte[] buffer = Base64.decode(vcard
+											.getPhotoVal());
+
+									rosterProvider.updateVCardHash(sessionObject, jid, buffer);
+									Intent intent = new Intent("org.tigase.messenger.phone.pro.AvatarUpdated");
+									intent.putExtra("jid", jid.toString());
+									JaxmppService.this.sendBroadcast(intent);
+								}
+							} catch (Exception e) {
+								Log.e("tigase", "WTF?", e);
+							}
+						}
+					});
+		} catch (Exception e) {
+			Log.e("tigase", "WTF?", e);
+		}
+	}
 }

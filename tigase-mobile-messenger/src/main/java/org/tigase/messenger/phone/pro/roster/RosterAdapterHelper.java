@@ -27,6 +27,7 @@ package org.tigase.messenger.phone.pro.roster;
 
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.RosterTableMetaData;
+import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.xmpp.modules.capabilities.CapabilitiesModule;
@@ -168,7 +169,7 @@ public class RosterAdapterHelper {
 //				holder.itemDescription.setText(status);
 			}
 		}
-//		AvatarHelper.setAvatarToImageView(jid, holder.itemAvatar);
+		AvatarHelper.setAvatarToImageView(jid, holder.itemAvatar);
 	}
 
 	public static int cPresenceToImageResource(int p) {

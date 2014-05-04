@@ -22,6 +22,8 @@ import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.ChatTableMetaData;
 //import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 
+import org.tigase.messenger.phone.pro.utils.AvatarHelper;
+
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.JaxmppCore;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterItem;
@@ -65,9 +67,10 @@ public class ChatAdapter extends SimpleCursorAdapter {
 		// but it is not good as in chat async avatar loading while here
 		// synchronized loading is better as we can use results from cache
 
-		//avatar.setImageBitmap(AvatarHelper.getAvatar(jid));
+		avatar.setImageBitmap(AvatarHelper.getAvatar(jid));
 	}
 
+	private String recipientName = null;
 	private String nickname;
 
 	public ChatAdapter(Context context, int layout) {
@@ -101,7 +104,7 @@ public class ChatAdapter extends SimpleCursorAdapter {
 //			JaxmppCore jaxmpp = ((MessengerApplication) context.getApplicationContext()).getMultiJaxmpp().get(account);
 //			RosterItem ri = jaxmpp.getRoster().get(jid);
 //			holder.nickname.setText(ri == null ? jid.toString() : RosterDisplayTools.getDisplayName(ri));
-			holder.nickname.setText(jid.toString());
+			holder.nickname.setText(recipientName == null ? jid.toString() : recipientName);
 
 			holder.nickname.setTextColor(context.getResources().getColor(R.color.message_his_text));
 			holder.webview.setTextColor(context.getResources().getColor(R.color.message_his_text));
@@ -146,5 +149,9 @@ public class ChatAdapter extends SimpleCursorAdapter {
 		// DateUtils.MINUTE_IN_MILLIS) :
 		DateUtils.getRelativeDateTimeString(mContext, ts, DateUtils.MINUTE_IN_MILLIS, DateUtils.WEEK_IN_MILLIS, 0);
 		holder.timestamp.setText(tsStr);
+	}
+	
+	public void setRecipientName(String name) {
+		this.recipientName = name;
 	}
 }

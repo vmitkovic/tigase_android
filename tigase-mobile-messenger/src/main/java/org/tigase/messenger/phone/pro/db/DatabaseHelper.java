@@ -11,7 +11,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 	public static final String DATABASE_NAME = "mobile_messenger1.db";
 
-	public static final Integer DATABASE_VERSION = 1;
+	public static final Integer DATABASE_VERSION = 2;
 
 	private static final String TAG = "tigase";
 	
@@ -47,12 +47,47 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         sql += ChatTableMetaData.FIELD_JID;
         sql += ")";
         db.execSQL(sql);		
+        
+		sql = "CREATE TABLE " + VCardsCacheTableMetaData.TABLE_NAME + " (";
+		sql += VCardsCacheTableMetaData.FIELD_ID + " INTEGER PRIMARY KEY, ";
+		sql += VCardsCacheTableMetaData.FIELD_JID + " TEXT, ";
+		sql += VCardsCacheTableMetaData.FIELD_HASH + " TEXT, ";
+		sql += VCardsCacheTableMetaData.FIELD_DATA + " BLOB, ";
+		sql += VCardsCacheTableMetaData.FIELD_TIMESTAMP + " DATETIME";
+		sql += ");";
+		db.execSQL(sql);
+
+		sql = "CREATE INDEX IF NOT EXISTS ";
+		sql += VCardsCacheTableMetaData.INDEX_JID;
+		sql += " ON " + VCardsCacheTableMetaData.TABLE_NAME + " (";
+		sql += VCardsCacheTableMetaData.FIELD_JID;
+		sql += ")";
+		db.execSQL(sql);        
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 		RosterDbHelper.onUpgrade(db, oldVersion, newVersion);
 		OpenChatDbHelper.onUpgrade(db, oldVersion, newVersion);
+		
+		if (oldVersion < 2) {
+			String sql;
+			sql = "CREATE TABLE " + VCardsCacheTableMetaData.TABLE_NAME + " (";
+			sql += VCardsCacheTableMetaData.FIELD_ID + " INTEGER PRIMARY KEY, ";
+			sql += VCardsCacheTableMetaData.FIELD_JID + " TEXT, ";
+			sql += VCardsCacheTableMetaData.FIELD_HASH + " TEXT, ";
+			sql += VCardsCacheTableMetaData.FIELD_DATA + " BLOB, ";
+			sql += VCardsCacheTableMetaData.FIELD_TIMESTAMP + " DATETIME";
+			sql += ");";
+			db.execSQL(sql);
+
+			sql = "CREATE INDEX IF NOT EXISTS ";
+			sql += VCardsCacheTableMetaData.INDEX_JID;
+			sql += " ON " + VCardsCacheTableMetaData.TABLE_NAME + " (";
+			sql += VCardsCacheTableMetaData.FIELD_JID;
+			sql += ")";
+			db.execSQL(sql);			
+		}
 	}
 
 }

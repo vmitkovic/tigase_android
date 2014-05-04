@@ -3,8 +3,10 @@ package org.tigase.messenger.phone.pro.chat;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider;
 import org.tigase.messenger.phone.pro.roster.RosterAdapterHelper;
+import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 
 import tigase.jaxmpp.android.chat.OpenChatTableMetaData;
+import tigase.jaxmpp.core.client.BareJID;
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Typeface;
@@ -72,7 +74,9 @@ public class OpenChatsAdapter extends SimpleCursorAdapter {
 			case OpenChatTableMetaData.TYPE_CHAT:
 				holder.itemAvatar.setImageResource(R.drawable.user_avatar);
 				// add support for avatars!!
-//				AvatarHelper.setAvatarToImageView(jid, holder.itemAvatar);
+				String jidStr = cursor.getString(cursor.getColumnIndex(OpenChatTableMetaData.FIELD_JID));
+				BareJID jid = BareJID.bareJIDInstance(jidStr);
+				AvatarHelper.setAvatarToImageView(jid, holder.itemAvatar);
 				break;
 			case OpenChatTableMetaData.TYPE_MUC:
 				holder.itemAvatar.setImageResource(R.drawable.group_chat);

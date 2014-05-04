@@ -27,6 +27,7 @@ import java.util.Set;
 
 import org.tigase.messenger.phone.pro.db.DatabaseHelper;
 import org.tigase.messenger.phone.pro.db.RosterTableMetaData;
+import org.tigase.messenger.phone.pro.db.VCardsCacheTableMetaData;
 
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.JaxmppCore;
@@ -289,11 +290,11 @@ public class RosterProvider extends ContentProvider {
 
 			// case for VCard?
 		case VCARD_URI_INDICATOR:
-//			c = dbHelper.getReadableDatabase().query(
-//					VCardsCacheTableMetaData.TABLE_NAME,
-//					new String[] { VCardsCacheTableMetaData.FIELD_JID, VCardsCacheTableMetaData.FIELD_DATA,
-//							VCardsCacheTableMetaData.FIELD_HASH }, VCardsCacheTableMetaData.FIELD_JID + "=?",
-//					new String[] { uri.getLastPathSegment() }, null, null, null);
+			c = dbHelper.getReadableDatabase().query(
+					VCardsCacheTableMetaData.TABLE_NAME,
+					new String[] { VCardsCacheTableMetaData.FIELD_JID, VCardsCacheTableMetaData.FIELD_DATA,
+							VCardsCacheTableMetaData.FIELD_HASH }, VCardsCacheTableMetaData.FIELD_JID + "=?",
+					new String[] { uri.getLastPathSegment() }, null, null, null);
 			break;
 		default:
 			throw new IllegalArgumentException("Unknown URI " + uri);

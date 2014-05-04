@@ -234,6 +234,7 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		
 		if (account != null && recipient != null) {
 			layout.setChat(account, recipient, threadId);
+			chatAdapter.setRecipientName(name);
 			getLoaderManager().initLoader(this.recipient.hashCode(), null, this);
 		}
 	}

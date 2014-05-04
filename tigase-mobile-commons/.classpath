@@ -13,6 +13,7 @@
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/jaxmpp-roster"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/jaxmpp-android"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/jaxmpp-registration"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/jaxmpp-vcard"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/jaxmpp-core"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/jaxmpp-j2se"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/tigase-xmltools"/>
