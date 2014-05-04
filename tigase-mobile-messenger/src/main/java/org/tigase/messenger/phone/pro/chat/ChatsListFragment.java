@@ -1,5 +1,6 @@
 package org.tigase.messenger.phone.pro.chat;
 
+import org.tigase.messenger.phone.pro.MainActivity;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider;
 import org.tigase.messenger.phone.pro.roster.RosterFragment;
@@ -37,6 +38,7 @@ public class ChatsListFragment extends Fragment {
 	
 	private static boolean DEBUG = false;
 	private static final String TAG = "ChatsListFragment";
+	public static final String FRAG_TAG = "ChatsListFragment";
 
 	private Cursor c = null;
 	private ListAdapter adapter = null;
@@ -189,7 +191,7 @@ public class ChatsListFragment extends Fragment {
 			RosterFragment rosterFragment = RosterFragment.newInstance(null);
 			ft.replace(R.id.content_frame, rosterFragment, RosterFragment.FRAG_TAG);
 			ft.addToBackStack(RosterFragment.FRAG_TAG);
-			ft.commit();
+			ft.commit();	
 		}
 		else if (item.getItemId() == R.id.newGroupChat) {
 			Log.v(TAG, "new group chat button not supported yet");
@@ -217,6 +219,8 @@ public class ChatsListFragment extends Fragment {
 	@Override
 	public void onStart() {
 		super.onStart();
+		MainActivity activity = (MainActivity) getActivity();
+		activity.fragmentChanged();		
 //		final MultiJaxmpp jaxmpp = ((MessengerApplication) getActivity().getApplicationContext()).getMultiJaxmpp();
 //
 //		jaxmpp.addListener(Connector.StateChanged, this.connectorListener);

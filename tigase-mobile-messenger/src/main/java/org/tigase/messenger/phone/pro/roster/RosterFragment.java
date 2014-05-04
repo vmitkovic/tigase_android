@@ -1,5 +1,6 @@
 package org.tigase.messenger.phone.pro.roster;
 
+import org.tigase.messenger.phone.pro.MainActivity;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
 
@@ -236,6 +237,8 @@ public class RosterFragment extends Fragment {
 //		if (this.expandedIds != null) {
 //			restoreExpandedState(expandedIds);
 //		}
+		MainActivity activity = (MainActivity) getActivity();
+		activity.fragmentChanged();
 	}
 
 	@Override

@@ -139,6 +139,12 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 	
 	private MainActivityHelper helper = MainActivityHelper.createInstance(this);
 	
+//	@Override
+//	public void onBackPressed() {
+//	  super.onBackPressed();
+//	  //fragmentChanged();
+//	}
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -175,7 +181,7 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
         });		
 
         //getSupportFragmentManager().beginTransaction().replace(R.id.content_frame, new RosterFragment()).commit();
-        getSupportFragmentManager().beginTransaction().replace(R.id.content_frame, new ChatsListFragment()).commit();
+        getSupportFragmentManager().beginTransaction().replace(R.id.content_frame, new ChatsListFragment(), ChatsListFragment.FRAG_TAG).commit();
         
 		startService(new Intent(this, JaxmppService.class));
 		Intent intent = new Intent(this, JaxmppService.class);
@@ -197,10 +203,16 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 	    if (drawerToggle.onOptionsItemSelected(item)) {
 	      return true;
 	    }
+	    if (item.getItemId() == android.R.id.home) {
+	    	onBackPressed();
+	    	return true;
+	    }
+	    
 	    // Handle your other action bar items...
 
 	    return super.onOptionsItemSelected(item);
 	}	
+
 	protected void onOptionsItemSelected(int itemId) {
 		
 	}
@@ -216,6 +228,8 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 			//getSupportFragmentManager().beginTransaction().remove(frag).commit();
 			getSupportFragmentManager().popBackStack(RosterFragment.FRAG_TAG, FragmentManager.POP_BACK_STACK_INCLUSIVE);
 			
+			fragmentChanged();
+			
 			// opening activity
 			Intent intent = new Intent(this, ChatActivity.class);
 			intent.putExtra("account", account);
@@ -226,5 +240,13 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 			e.printStackTrace();
 		}		
 	}
-		
+	
+	public boolean isMainView() {
+		Fragment frag = getSupportFragmentManager().findFragmentByTag(ChatsListFragment.FRAG_TAG);
+		return (frag != null && !frag.isHidden() && !frag.isDetached() && frag.isMenuVisible() && !frag.isRemoving());// && frag.isInLayout());
+	}
+	
+	public void fragmentChanged() {
+		helper.updateActionBar();
+	}
 }

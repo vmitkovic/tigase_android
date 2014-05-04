@@ -24,6 +24,7 @@ import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterItem;
 import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.graphics.drawable.ColorDrawable;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
@@ -37,6 +38,8 @@ public class MainActivityHelperHoneycomb extends MainActivityHelper {
 		ImageView status;
 		TextView title;
 	}
+
+	protected static final String TAG = "MainActivityHelperHoneycomb";
 
 	protected MainActivityHelperHoneycomb(MainActivity activity) {
 		super(activity);
@@ -54,24 +57,34 @@ public class MainActivityHelperHoneycomb extends MainActivityHelper {
 
 	@Override
 	public void updateActionBar() {
-		activity.drawerLayout.post(new Runnable() {
-
-			@Override
-			public void run() {
+//		activity.drawerLayout.post(new Runnable() {
+//
+//			@Override
+//			public void run() {
 				// TODO Auto-generated method stub
 //				int currentPage = activity.getCurrentPage();
 
+				boolean isMain = activity.isMainView();
+				
+				Log.v(TAG, "updating ActionBar - isMain: " + isMain);
+				
 				ActionBar actionBar = activity.getActionBar();
-				actionBar.setDisplayHomeAsUpEnabled(true);
-				actionBar.setBackgroundDrawable(activity.getResources().getDrawable(R.drawable.actionbar_background));
+				actionBar.setDisplayHomeAsUpEnabled(true);//isMain);
+				if (isMain) {
+					activity.drawerLayout.setDrawerListener(activity.drawerToggle);
+				}
+				else {
+					activity.drawerLayout.setDrawerListener(null);
+				}
 				
 ////				if (currentPage != 1 && !isXLarge()) {
 //					activity.drawerLayout.setDrawerListener(null);
 //					activity.drawerToggle.setDrawerIndicatorEnabled(false);
 //				} else {
-					activity.drawerLayout.setDrawerListener(activity.drawerToggle);
-					activity.drawerToggle.setDrawerIndicatorEnabled(true);
+//					activity.drawerLayout.setDrawerListener(activity.drawerToggle);
+					activity.drawerToggle.setDrawerIndicatorEnabled(isMain);
 //				}
+				actionBar.setBackgroundDrawable(activity.getResources().getDrawable(R.drawable.actionbar_background));
 
 				// actionBar.setHomeButtonEnabled(true);
 				// actionBar.setDisplayHomeAsUpEnabled(currentPage != 1 &&
@@ -149,9 +162,9 @@ public class MainActivityHelperHoneycomb extends MainActivityHelper {
 //						actionBar.setSubtitle(null);
 //					}
 //				}
-			}
-
-		});
+//			}
+//
+//		});
 	}
 
 	@Override
