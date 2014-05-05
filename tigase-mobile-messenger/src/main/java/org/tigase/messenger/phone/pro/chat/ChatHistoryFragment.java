@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.tigase.messenger.phone.pro.CustomHeader;
+import org.tigase.messenger.phone.pro.IJaxmppService;
 import org.tigase.messenger.phone.pro.MessengerApplication;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.MainActivity;
@@ -55,6 +56,7 @@ import android.database.DataSetObserver;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.NavUtils;
@@ -319,8 +321,8 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 		// menu.clear();
 
-//		inflater.inflate(R.menu.chat_main_menu, menu);
-//
+		inflater.inflate(R.menu.chat_main_menu, menu);
+
 //		MenuItem showChats = menu.findItem(R.id.showChatsButton);
 //		if (showChats != null) {
 //			showChats.setVisible(getActivity() instanceof ChatActivity);
@@ -395,8 +397,8 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		chatAdapter.swapCursor(cursor);
 	}
 
-//	@Override
-//	public boolean onOptionsItemSelected(MenuItem item) {
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
 //		if (item.getItemId() == R.id.showChatsButton) {
 //			SlidingPaneLayout slidingPaneLayout = (SlidingPaneLayout) getActivity().findViewById(R.id.chat_sliding_pane_layout);
 //			if (slidingPaneLayout.isOpen()) {
@@ -404,8 +406,19 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 //			} else {
 //				slidingPaneLayout.openPane();
 //			}
-//		} else if (item.getItemId() == R.id.closeChatButton) {
-//			layout.cancelEdit();
+//		} else 
+		if (item.getItemId() == R.id.closeChatButton) {
+			layout.cancelEdit();
+			
+			IJaxmppService jaxmppService = ((MainActivity) getActivity()).getJaxmppService();
+			try {
+				jaxmppService.closeChat(account, recipient.toString(), threadId);
+			} catch (RemoteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			getActivity().onBackPressed();
+			
 //			final Jaxmpp jaxmpp = ((MessengerApplication) getActivity().getApplicationContext()).getMultiJaxmpp().get(
 //					chat.getSessionObject());
 //			final AbstractChatManager cm = jaxmpp.getModule(MessageModule.class).getChatManager();
@@ -434,9 +447,9 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 //			intent.putExtra("jid", chat.getJid().getBareJid().toString());
 //			intent.putExtra("account", chat.getSessionObject().getUserBareJid().toString());
 //			startActivity(intent);
-//		}
-//		return true;
-//	}
+		}
+		return true;
+	}
 
 //	@Override
 //	public void onPause() {

@@ -198,7 +198,10 @@ public class ChatsListFragment extends Fragment {
 		if (item.getItemId() == R.id.newChat) {
 			Log.v(TAG, "new chat button clicked");
 			
-			RosterFragment rosterFragment = RosterFragment.newInstance(null);
+			RosterFragment rosterFragment = new RosterFragment();//.newInstance(null);
+			Bundle args = new Bundle();
+			args.putString("action", "chat");
+			rosterFragment.setArguments(args);
 			((MainActivity)getActivity()).switchFragments(rosterFragment, RosterFragment.FRAG_TAG);	
 		}
 		else if (item.getItemId() == R.id.newGroupChat) {

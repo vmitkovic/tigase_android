@@ -25,7 +25,7 @@ import android.widget.ListView;
 public class RosterFragment extends Fragment {
 
 	public static interface OnClickListener {
-		public void onRosterItemClicked(String account, BareJID jid);
+		public void onRosterItemClicked(String action, String account, BareJID jid);
 	}
 	
 //	public static RosterFragment newInstance(String layout, OnClickListener listener) {
@@ -50,6 +50,7 @@ public class RosterFragment extends Fragment {
 	private AbsListView listView = null;
 	
 	private String rosterLayout = null;
+	private String action = null;
 
 	private OnClickListener onClickListener;
 	
@@ -67,6 +68,7 @@ public class RosterFragment extends Fragment {
 		super.onCreate(savedInstanceState);
 
 		if (getArguments() != null) {
+			this.action = getArguments().getString("action");
 			this.rosterLayout = getArguments().getString("layout");
 		}
 
@@ -151,7 +153,7 @@ public class RosterFragment extends Fragment {
 							String account = c.getString(c.getColumnIndex(RosterItemsCacheTableMetaData.FIELD_ACCOUNT));
 							String jidStr = c.getString(c.getColumnIndex(RosterItemsCacheTableMetaData.FIELD_JID));
 							BareJID jid = BareJID.bareJIDInstance(jidStr);
-							onClickListener.onRosterItemClicked(account, jid);
+							onClickListener.onRosterItemClicked(action, account, jid);
 						}
 	//
 //						Intent intent = new Intent();

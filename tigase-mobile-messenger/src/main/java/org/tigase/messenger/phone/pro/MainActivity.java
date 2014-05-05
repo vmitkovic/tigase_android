@@ -7,9 +7,11 @@ import org.tigase.messenger.phone.pro.account.AccountAuthenticator;
 import org.tigase.messenger.phone.pro.chat.ChatActivity;
 import org.tigase.messenger.phone.pro.chat.ChatHistoryFragment;
 import org.tigase.messenger.phone.pro.chat.ChatsListFragment;
+import org.tigase.messenger.phone.pro.roster.ContactFragment;
 import org.tigase.messenger.phone.pro.roster.RosterFragment;
 
 import tigase.jaxmpp.core.client.BareJID;
+import tigase.jaxmpp.core.client.JID;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.ComponentName;
@@ -161,6 +163,7 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 		
         // creating list of items available in drawer menu
         final List<DrawerMenuItem> drawerMenuItems = new ArrayList<DrawerMenuItem>();
+        drawerMenuItems.add(new DrawerMenuItem(R.id.rosterList, R.string.contacts, R.drawable.ic_launcher));
 //        drawerMenuItems.add(new DrawerMenuItem(R.id.accountsList, R.string.accounts, R.drawable.ic_menu_account_list));
 //        drawerMenuItems.add(new DrawerMenuItem(R.id.joinMucRoom, R.string.join_muc_room, R.drawable.group_chat, true));
 //        drawerMenuItems.add(new DrawerMenuItem(R.id.bookmarksShow, R.string.bookmarks_show, android.R.drawable.star_off, true));
@@ -220,11 +223,29 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 	}	
 
 	protected void onOptionsItemSelected(int itemId) {
-		
+		if (itemId == R.id.rosterList) {
+			Fragment frag = new RosterFragment();
+			switchFragments(frag, RosterFragment.FRAG_TAG);
+		}
 	}
 
 	@Override
-	public void onRosterItemClicked(String account, BareJID jid) {
+	public void onRosterItemClicked(String action, String account, BareJID jid) {
+		//openChat(account, JID.jidInstance(jid));
+		if (action == null) {
+			Bundle args = new Bundle();
+			args.putString("account", account);
+			args.putString("jid", jid.toString());
+			ContactFragment frag = new ContactFragment();
+			frag.setArguments(args);
+			switchFragments(frag, ContactFragment.FRAG_TAG);
+		}
+		else if ("chat".equals(action)) {
+			openChat(account, JID.jidInstance(jid));
+		}
+	}
+	
+	public void openChat(String account, JID jid) {
 		try {
 			// creating chat
 			jaxmppService.openChat(account, jid.toString());
@@ -251,7 +272,7 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}		
+		}				
 	}
 	
 	public boolean isMainView() {

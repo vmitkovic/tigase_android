@@ -11,6 +11,6 @@ interface IJaxmppService {
 	List<CPresence> getPresences(String accountJid, String jid);
 	
 	boolean openChat(String accountJid, String jid);
-	
 	boolean sendMessage(String accountJid, String jid, String thread, String message);
+	void closeChat(String accountJid, String jid, String thread);
 }

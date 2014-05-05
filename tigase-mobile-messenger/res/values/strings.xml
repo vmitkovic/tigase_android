@@ -43,4 +43,12 @@
     <string name="termsOfServiceURL">http://www.sure.im/terms.txt</string>
     <string name="privacyPolicy">Privacy</string>
     <string name="privacyPolicyURL">http://www.sure.im/privacy.txt</string>
+    <string name="closeChatButton">Close chat</string>
+    <string name="showContact">Show contact</string>
+    <string name="loginButton">Connect</string>
+    <string name="logoutButton">Disconnect</string>
+    <string name="contact_add">Add contact</string>
+    <string name="chat">Chat</string>
+    <string name="shareButton">Share</string>
+    <string name="contacts">Contacts</string>
 </resources>

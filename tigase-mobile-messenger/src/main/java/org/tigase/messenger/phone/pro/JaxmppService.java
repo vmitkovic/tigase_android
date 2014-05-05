@@ -199,6 +199,22 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			return false;
 		}
 		
+		public void closeChat(String accountJidStr, String jidStr, String threadId)
+					throws RemoteException {
+			try {
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+				JID jid = JID.jidInstance(jidStr);			
+				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);	
+				Chat chat = messageModule.getChatManager().getChat(jid, threadId);
+				if (chat != null)
+					messageModule.close(chat);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "EXCEPTION", e);
+			}		
+		}
 	}
 	
 	private class MessageHandler implements MessageModule.MessageReceivedHandler {
