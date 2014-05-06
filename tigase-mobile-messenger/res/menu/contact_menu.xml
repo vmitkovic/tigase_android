@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+<!--     <item
+        android:id="@+id/contactDetails"
+        android:icon="@android:drawable/ic_menu_info_details"
+        android:showAsAction="ifRoom"
+        android:title="@string/contact_details">
+    </item> -->
+    <item
+        android:id="@+id/contactEdit"
+        android:icon="@android:drawable/ic_menu_edit"
+        android:showAsAction="ifRoom"
+        android:title="@string/contact_edit">
+    </item>
+    <item
+        android:id="@+id/contactRemove"
+        android:icon="@android:drawable/ic_menu_delete"
+        android:title="@string/contact_remove">
+    </item>
+    
+    <item
+        android:id="@+id/contactAuthorization"
+        android:title="Authorization">
+        <menu>
+            <item
+                android:id="@+id/contactAuthResend"
+                android:title="Resend"/>
+            <item
+                android:id="@+id/contactAuthRerequest"
+                android:title="Rerequest"/>
+            <item
+                android:id="@+id/contactAuthRemove"
+                android:title="Remove"/>
+        </menu>
+    </item>
+    
+</menu>

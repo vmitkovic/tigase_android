@@ -23,9 +23,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.tigase.messenger.phone.pro.R;
+import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 import org.tigase.messenger.phone.pro.MainActivity;
 
+import tigase.jaxmpp.android.roster.RosterItemsCacheTableMetaData;
 import tigase.jaxmpp.core.client.BareJID;
 //import tigase.jaxmpp.core.client.Connector;
 //import tigase.jaxmpp.core.client.Connector.ConnectorEvent;
@@ -33,6 +35,7 @@ import tigase.jaxmpp.core.client.JID;
 //import tigase.jaxmpp.core.client.exceptions.JaxmppException;
 //import tigase.jaxmpp.core.client.observer.Listener;
 import tigase.jaxmpp.core.client.xml.XMLException;
+import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterCacheProvider;
 //import tigase.jaxmpp.core.client.xmpp.modules.chat.Chat;
 //import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceModule;
 //import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceModule.PresenceEvent;
@@ -44,6 +47,7 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -170,6 +174,7 @@ public class ContactFragment extends Fragment {
 	
 	private String account;
 	private BareJID jid;
+	private String name;
 
 //	private ResourcesAdapter resourcesAdapter;
 //	private ListView resourcesView;
@@ -245,7 +250,7 @@ public class ContactFragment extends Fragment {
 
 	@Override
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-//		inflater.inflate(R.menu.contact_menu, menu);
+		inflater.inflate(R.menu.contact_menu, menu);
 		super.onCreateOptionsMenu(menu, inflater);
 	}
 	
@@ -351,6 +356,15 @@ public class ContactFragment extends Fragment {
 //		String name = RosterDisplayTools.getDisplayName(ri);
 //		if (name == null) name = jid.toString();
 //		nameTextView.setText(name);
+		Uri uri = Uri.parse(RosterProvider.CONTENT_URI + "/" + Uri.encode(jid.toString()));
+		Cursor c = getActivity().getContentResolver().query(uri, null, null, null, null);
+		if (c.moveToNext()) {
+			this.name = c.getString(c.getColumnIndex(RosterItemsCacheTableMetaData.FIELD_NAME));
+		}		
+		else {
+			name = "";
+		}
+		nameTextView.setText(name);
 		AvatarHelper.setAvatarToImageView(jid, avatarView);
 //		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
 //			showActionBar();
@@ -367,14 +381,21 @@ public class ContactFragment extends Fragment {
 		super.onDestroy();
 	}
 	
-//	@Override
-//	public boolean onOptionsItemSelected(MenuItem item) {
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
 //		if (item.getItemId() == R.id.contactDetails) {
 //			Intent intent = new Intent(getActivity().getApplicationContext(), VCardViewActivity.class);
 //			intent.putExtra("account", account.toString());
 //			intent.putExtra("jid", jid.toString());
 //			this.startActivityForResult(intent, 0);
-//		} else if (item.getItemId() == R.id.contactEdit) {
+//		} else 
+		if (item.getItemId() == R.id.contactEdit) {
+			Fragment frag = new ContactEditFragment();
+			Bundle args = new Bundle();
+			args.putString("account", account);
+			args.putString("jid", jid.toString());
+			frag.setArguments(args);
+			((MainActivity) getActivity()).switchFragments(frag, ContactEditFragment.FRAG_TAG);
 //			Intent intent = new Intent(getActivity().getApplicationContext(), ContactEditActivity.class);
 //			intent.putExtra("account", account.toString());
 //			intent.putExtra("jid", jid.toString());
@@ -391,12 +412,12 @@ public class ContactFragment extends Fragment {
 //			sendAuthRerequest();
 //		} else if (item.getItemId() == R.id.contactAuthRemove) {
 //			sendAuthRemove();
-//		}
-//		else {
-//			return super.onOptionsItemSelected(item);
-//		}
-//		return true;
-//	}
+		}
+		else {
+			return super.onOptionsItemSelected(item);
+		}
+		return true;
+	}
 	
 	@Override
 	public void onPrepareOptionsMenu(Menu menu) {
@@ -407,12 +428,18 @@ public class ContactFragment extends Fragment {
 		}
 		
 //		Jaxmpp jaxmpp = getJaxmpp();
-//		boolean connected = jaxmpp != null && jaxmpp.isConnected();
+		boolean connected = true;
+//		try {
+//			connected = ((MainActivity) getActivity()).getJaxmppService().isConnected(account);// jaxmpp != null && jaxmpp.isConnected();
+//		}
+//		catch (Exception ex) {
+//			ex.printStackTrace();
+//		}
 //		
 //		menu.findItem(R.id.contactDetails).setEnabled(connected);
-//		menu.findItem(R.id.contactEdit).setEnabled(connected);
-//		menu.findItem(R.id.contactRemove).setEnabled(connected);
-//		menu.findItem(R.id.contactAuthorization).setEnabled(connected);
+		menu.findItem(R.id.contactEdit).setEnabled(connected);
+		menu.findItem(R.id.contactRemove).setEnabled(connected);
+		menu.findItem(R.id.contactAuthorization).setEnabled(connected);
 
 		super.onPrepareOptionsMenu(menu);
 	}	

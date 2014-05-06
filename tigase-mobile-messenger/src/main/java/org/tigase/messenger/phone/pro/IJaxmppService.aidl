@@ -1,6 +1,7 @@
 package org.tigase.messenger.phone.pro;
 
 import org.tigase.messenger.phone.pro.roster.CPresence;
+import org.tigase.messenger.phone.pro.roster.RosterUpdateCallback;
 
 interface IJaxmppService {
 
@@ -13,4 +14,6 @@ interface IJaxmppService {
 	boolean openChat(String accountJid, String jid);
 	boolean sendMessage(String accountJid, String jid, String thread, String message);
 	void closeChat(String accountJid, String jid, String thread);
+	
+	void updateRosterItem(String accountJid, String jid, String name, in List<String> groups, boolean requestAuth, RosterUpdateCallback callback);
 }

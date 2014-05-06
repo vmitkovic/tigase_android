@@ -51,4 +51,17 @@
     <string name="chat">Chat</string>
     <string name="shareButton">Share</string>
     <string name="contacts">Contacts</string>
+    
+    <string name="contact_edit">Edit</string>
+    <string name="contact_edit_wrn_jid_cant_be_empty">JID can\'t be empty</string>
+    <string name="contact_edit_wrn_wrong_jid">Wrong JabberID</string>
+    <string name="contact_edit_wrn_name_cant_be_empty">Name can\'t be empty</string>
+    <string name="contact_edit_wrn_unkown">unkown</string>
+    <string name="contact_edit_wrn_timeout">Timeout</string>
+    <string name="contact_edit_info_updating">Updating. Please wait...</string>
+    <string name="contact_edit_jabberid">JabberID</string>
+    <string name="contact_edit_name">Name</string>
+    <string name="contact_edit_group">Group</string>
+    <string name="contact_edit_request_authorization">Request authorization</string>    
+    <string name="contact_remove">Remove</string>
 </resources>

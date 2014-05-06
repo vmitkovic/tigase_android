@@ -1,18 +1,25 @@
 package org.tigase.messenger.phone.pro.roster;
 
 import org.tigase.messenger.phone.pro.MainActivity;
+import org.tigase.messenger.phone.pro.Preferences;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
 
 import tigase.jaxmpp.android.roster.RosterItemsCacheTableMetaData;
 import tigase.jaxmpp.core.client.BareJID;
 import android.app.Activity;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -49,6 +56,7 @@ public class RosterFragment extends Fragment {
 	private ListAdapter adapter = null;
 	private AbsListView listView = null;
 	
+	private SharedPreferences mPreferences;
 	private String rosterLayout = null;
 	private String action = null;
 
@@ -62,7 +70,7 @@ public class RosterFragment extends Fragment {
 			onClickListener = (OnClickListener) activity;
 		}
 	}
-	
+		
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -71,6 +79,9 @@ public class RosterFragment extends Fragment {
 			this.action = getArguments().getString("action");
 			this.rosterLayout = getArguments().getString("layout");
 		}
+		
+		this.mPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+		//this.mPreferences.registerOnSharedPreferenceChangeListener(prefChangeListener);
 
 	}
 	
@@ -79,6 +90,8 @@ public class RosterFragment extends Fragment {
 		if (DEBUG)
 			Log.d(TAG + "_rf", "onCreateView()");
 
+		setHasOptionsMenu(true);
+		
 		if (getArguments() != null) {
 			this.rosterLayout = getArguments().getString("layout");
 		}
@@ -129,19 +142,8 @@ public class RosterFragment extends Fragment {
 //			if (c != null) {
 //				getActivity().stopManagingCursor(c);
 //			}
-			this.c = inflater.getContext().getContentResolver().query(Uri.parse(RosterProvider.CONTENT_URI), null, null, null,
-					null);
-
-			//getActivity().startManagingCursor(c);
-			// FlatRosterAdapter.staticContext = inflater.getContext();
-
-			if (listView instanceof ListView) {
-				this.adapter = new FlatRosterAdapter(inflater.getContext(), c, R.layout.roster_item);
-				((ListView) listView).setAdapter((ListAdapter) adapter);
-			} else if (listView instanceof GridView) {
-				this.adapter = new FlatRosterAdapter(inflater.getContext(), c, R.layout.roster_grid_item);
-				((GridView) listView).setAdapter((ListAdapter) adapter);
-			}
+			reinitializeAdapters();
+		
 			if (onClickListener != null) {
 				listView.setOnItemClickListener(new OnItemClickListener() {
 					@Override
@@ -196,6 +198,12 @@ public class RosterFragment extends Fragment {
 	}
 
 	@Override
+	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+		inflater.inflate(R.menu.roster_main_menu, menu);
+		super.onCreateOptionsMenu(menu, inflater);
+	}	
+	
+	@Override
 	public void onDestroyView() {
 		if (c != null) {
 			if (DEBUG)
@@ -207,6 +215,27 @@ public class RosterFragment extends Fragment {
 			Log.d(TAG + "_rf", "onDestroyView()");
 	}
 
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		if (item.getItemId() == R.id.contactAdd) {
+			ContactEditFragment frag = new ContactEditFragment();
+			((MainActivity) getActivity()).switchFragments(frag, ContactEditFragment.FRAG_TAG);
+			return true;
+		}
+		else if (item.getItemId() == R.id.showHideOffline) {
+            boolean x = mPreferences.getBoolean(Preferences.SHOW_OFFLINE, Boolean.TRUE);
+
+            Editor editor = mPreferences.edit();
+            editor.putBoolean(Preferences.SHOW_OFFLINE, !x);
+            editor.commit();
+
+//            Uri insertedItem = Uri.parse(RosterProvider.CONTENT_URI);
+//            getActivity().getContentResolver().notifyChange(insertedItem, null);			
+            reinitializeAdapters();
+		}
+		return super.onOptionsItemSelected(item);
+	}
+	
 	@Override
 	public void onResume() {
 		super.onResume();
@@ -260,5 +289,32 @@ public class RosterFragment extends Fragment {
 		if (DEBUG)
 			Log.d(TAG + "_rf", "onViewCreated()");
 	}	
+
+	private void reinitializeAdapters() {
+		String selection = null;
+		if (!showOffline()) {
+			selection = "status";
+		}
+		if (c != null && !c.isClosed()) {
+			c.close();
+		}
+		
+		this.c = getActivity().getContentResolver().query(Uri.parse(RosterProvider.CONTENT_URI), null, selection, null,
+				null);
+
+		//getActivity().startManagingCursor(c);
+		// FlatRosterAdapter.staticContext = inflater.getContext();
+
+		if (listView instanceof ListView) {
+			this.adapter = new FlatRosterAdapter(getActivity(), c, R.layout.roster_item);
+			((ListView) listView).setAdapter((ListAdapter) adapter);
+		} else if (listView instanceof GridView) {
+			this.adapter = new FlatRosterAdapter(getActivity(), c, R.layout.roster_grid_item);
+			((GridView) listView).setAdapter((ListAdapter) adapter);
+		}		
+	}
 	
+	private boolean showOffline() {
+		return mPreferences.getBoolean(Preferences.SHOW_OFFLINE, false);
+	}
 }

@@ -19,6 +19,7 @@ import org.tigase.messenger.phone.pro.db.VCardsCacheTableMetaData;
 import org.tigase.messenger.phone.pro.db.providers.ChatHistoryProvider;
 import org.tigase.messenger.phone.pro.db.providers.RosterProviderExt;
 import org.tigase.messenger.phone.pro.roster.CPresence;
+import org.tigase.messenger.phone.pro.roster.RosterUpdateCallback;
 import org.tigase.messenger.phone.pro.security.SecureTrustManagerFactory;
 
 import tigase.jaxmpp.android.Jaxmpp;
@@ -26,6 +27,7 @@ import tigase.jaxmpp.android.chat.AndroidChatManager;
 import tigase.jaxmpp.android.chat.ChatProvider;
 import tigase.jaxmpp.android.roster.AndroidRosterStore;
 import tigase.jaxmpp.android.roster.RosterProvider;
+import tigase.jaxmpp.core.client.AsyncCallback;
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.Base64;
 import tigase.jaxmpp.core.client.Connector;
@@ -214,6 +216,80 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				e.printStackTrace();
 				Log.e(TAG, "EXCEPTION", e);
 			}		
+		}
+
+		@Override
+		public void updateRosterItem(String accountJidStr, final String jidStr,
+				final String name, final List<String> groups, final boolean requestAuth,
+				final RosterUpdateCallback callback) throws RemoteException {
+			try {
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+				final JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				final BareJID jid = BareJID.bareJIDInstance(jidStr);
+				new Thread() { 
+					public void run() {
+						
+						try {
+				jaxmpp.getModule(RosterModule.class).getRosterStore().add(jid, name, groups, new AsyncCallback() {
+
+					@Override
+					public void onError(Stanza responseStanza, ErrorCondition error) throws JaxmppException {
+						//dialog.cancel();
+//						if (error == null)
+//							WarningDialog.showWarning(ContactEditActivity.this, R.string.contact_edit_wrn_unkown);
+//						else
+//							WarningDialog.showWarning(ContactEditActivity.this, error.name());
+						try {
+							callback.onFailure((error != null) ? error.name() : null);
+						} catch (RemoteException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+
+					@Override
+					public void onSuccess(Stanza responseStanza) throws JaxmppException {
+						if (requestAuth) {
+							jaxmpp.getModule(PresenceModule.class).subscribe(JID.jidInstance(jid));
+						}
+						try {
+							callback.onSuccess(null);
+						} catch (RemoteException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+
+					@Override
+					public void onTimeout() throws JaxmppException {
+						//dialog.cancel();
+						//WarningDialog.showWarning(ContactEditActivity.this, R.string.contact_edit_wrn_timeout);
+						//getActivity().onBackPressed();
+						try {
+							callback.onFailure("timeout");
+						} catch (RemoteException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+				});
+						}
+						catch (Exception e) {
+							Log.e(TAG, "EXCEPTION", e);
+							try {
+								callback.onFailure(e.getMessage());
+							} catch (RemoteException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+						}
+					}
+				}.start();
+			}
+			catch (Exception e) {
+				Log.e(TAG, "EXCEPTION", e);
+				callback.onFailure(e.getMessage());
+			}
 		}
 	}
 	
@@ -409,6 +485,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				Uri uri = rosterItemId != null 
 						? Uri.parse(org.tigase.messenger.phone.pro.db.providers.RosterProvider.CONTENT_URI + "/" + rosterItemId)
 						: Uri.parse(org.tigase.messenger.phone.pro.db.providers.RosterProvider.CONTENT_URI);
+				//Log.v(TAG, "Notifing about changed roster item with id = " + rosterItemId + " - " + uri.toString());
 				context.getContentResolver().notifyChange(uri, null);
 			}
 		}, Preferences.ROSTER_VERSION_KEY);
