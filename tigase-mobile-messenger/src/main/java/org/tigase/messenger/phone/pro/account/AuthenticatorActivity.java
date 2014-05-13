@@ -17,32 +17,31 @@
  */
 package org.tigase.messenger.phone.pro.account;
 
+import java.net.ConnectException;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
-
-
-
-
-//import org.tigase.messenger.phone.pro.Constants;
-//import org.tigase.messenger.phone.pro.Features;
 import org.tigase.messenger.phone.pro.R;
 //import org.tigase.messenger.phone.pro.TrustCertDialog;
 //import org.tigase.messenger.phone.pro.db.AccountsTableMetaData;
 //import org.tigase.messenger.phone.pro.preferences.AccountAdvancedPreferencesActivity;
 import org.tigase.messenger.phone.pro.security.SecureTrustManagerFactory;
 import org.tigase.messenger.phone.pro.security.SecureTrustManagerFactory.DataCertificateException;
-import org.tigase.messenger.phone.pro.service.JaxmppService;
 
 import tigase.jaxmpp.android.Jaxmpp;
 import tigase.jaxmpp.core.client.AsyncCallback;
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.Connector;
 import tigase.jaxmpp.core.client.JID;
-import tigase.jaxmpp.core.client.JaxmppCore;
 import tigase.jaxmpp.core.client.SessionObject;
 import tigase.jaxmpp.core.client.XMPPException.ErrorCondition;
+import tigase.jaxmpp.core.client.connector.StreamError;
+import tigase.jaxmpp.core.client.eventbus.Event;
+import tigase.jaxmpp.core.client.eventbus.EventHandler;
+import tigase.jaxmpp.core.client.eventbus.EventListener;
 import tigase.jaxmpp.core.client.exceptions.JaxmppException;
+import tigase.jaxmpp.core.client.xmpp.modules.ResourceBinderModule;
 import tigase.jaxmpp.core.client.xmpp.modules.registration.InBandRegistrationModule;
 import tigase.jaxmpp.core.client.xmpp.stanzas.IQ;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Stanza;
@@ -51,7 +50,6 @@ import android.accounts.AccountAuthenticatorActivity;
 import android.accounts.AccountManager;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -84,9 +82,107 @@ import android.widget.ViewFlipper;
  */
 public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 
+	public abstract class JaxmppAccountTask extends AsyncTask<String, Void, String> implements Connector.ErrorHandler {
+
+		protected abstract void initJaxmpp(String[] params);
+
+		@Override
+		protected void onPostExecute(final String authToken) {
+			if (errorMessage != null)
+				onCreationError(errorMessage);
+			else
+				onAuthenticationResult(authToken, data, exception);
+		}
+
+		protected Map<String, String> data = new HashMap<String, String>();
+
+		protected String errorMessage;
+
+		protected String token;
+
+		@Override
+		protected String doInBackground(String... params) {
+			initJaxmpp(params);
+
+			try {
+				contact.login(true);
+
+				Log.w(TAG, "Czy jest error? " + contact.getSessionObject().getProperty(tigase.jaxmpp.j2se.Jaxmpp.EXCEPTION_KEY));
+
+				// if
+				// (contact.getSessionObject().getProperty(tigase.jaxmpp.j2se.Jaxmpp.EXCEPTION_KEY)
+				// != null) {
+				// final JaxmppException e = (JaxmppException)
+				// contact.getSessionObject().getProperty(
+				// tigase.jaxmpp.j2se.Jaxmpp.EXCEPTION_KEY);
+				// exception = e;
+				// data.put("account",
+				// contact.getSessionObject().getUserBareJid().toString());
+				// return null;
+				// }
+
+				// if
+				// (ResourceBinderModule.getBindedJID(contact.getSessionObject())
+				// != null)
+				// return params[1];
+				// else
+				return token;
+			} catch (JaxmppException e) {
+				Log.w(TAG, "Auth problem", e);
+				exception = e;
+				data.put("account", contact.getSessionObject().getUserBareJid().toString());
+				return null;
+			} catch (Exception e) {
+				Log.e(TAG, "Problem on password check2", e);
+				return null;
+			} finally {
+				try {
+					contact.disconnect();
+				} catch (Exception e) {
+					Log.e(TAG, "Disconnect problem on password check", e);
+				}
+			}
+		}
+
+		protected void wakeup() {
+			synchronized (contact) {
+				contact.notify();
+			}
+		}
+
+		@Override
+		protected void onCancelled() {
+			onAuthenticationCancel();
+		}
+
+		protected Throwable exception;
+
+		protected final Jaxmpp contact;
+
+		public JaxmppAccountTask() {
+			contact = new Jaxmpp();
+			contact.getEventBus().addHandler(Connector.ErrorHandler.ErrorEvent.class, this);
+
+			contact.getEventBus().addListener(new EventListener() {
+
+				@Override
+				public void onEvent(Event<? extends EventHandler> event) {
+					Log.i(TAG, "Event: " + event.getClass());
+				}
+			});
+		}
+
+		@Override
+		public void onError(SessionObject sessionObject, StreamError condition, Throwable e) throws JaxmppException {
+			Log.w(TAG, "onError() " + condition + "   " + e);
+			if (exception == null)
+				exception = e;
+		}
+	}
+
 	public class UserCreateAccountTask extends AsyncTask<String, Void, String> {
 
-		private DataCertificateException certException;
+		private JaxmppException exception;
 
 		private final Jaxmpp contact = new Jaxmpp();
 
@@ -102,38 +198,26 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 		 */
 		@Override
 		protected String doInBackground(final String... params) {
-
 			contact.getModulesManager().register(new InBandRegistrationModule());
 			final InBandRegistrationModule reg = contact.getModule(InBandRegistrationModule.class);
 			contact.getProperties().setUserProperty(InBandRegistrationModule.IN_BAND_REGISTRATION_MODE_KEY, Boolean.TRUE);
 			contact.getProperties().setUserProperty(SessionObject.DOMAIN_NAME, BareJID.bareJIDInstance(params[0]).getDomain());
-			
-			if (JaxmppService.context == null) {
-				try {
-					JaxmppService.context = (AuthenticatorActivity.this);
-					contact.getProperties().setUserProperty(Connector.TRUST_MANAGERS_KEY, SecureTrustManagerFactory.getTrustManagers());
-				}
-				finally {
-					JaxmppService.context = null;
-				}
-			}
-			else {
-				contact.getProperties().setUserProperty(Connector.TRUST_MANAGERS_KEY, SecureTrustManagerFactory.getTrustManagers());
-			}
+
+			contact.getProperties().setUserProperty(Connector.TRUST_MANAGERS_KEY,
+					SecureTrustManagerFactory.getTrustManagers(getApplicationContext()));
 
 			reg.addNotSupportedErrorHandler(new InBandRegistrationModule.NotSupportedErrorHandler() {
 				@Override
-				public void onNotSupportedError(SessionObject sessionObject)
-						throws JaxmppException {
+				public void onNotSupportedError(SessionObject sessionObject) throws JaxmppException {
 					token = null;
 					errorMessage = "Registration not supported!";
 					wakeup();
-				}			
+				}
 			});
 			reg.addReceivedErrorHandler(new InBandRegistrationModule.ReceivedErrorHandler() {
 				@Override
-				public void onReceivedError(SessionObject sessionObject, IQ responseStanza,
-						ErrorCondition errorCondition) throws JaxmppException {
+				public void onReceivedError(SessionObject sessionObject, IQ responseStanza, ErrorCondition errorCondition)
+						throws JaxmppException {
 					// TODO Auto-generated method stub
 					final ErrorCondition error = errorCondition;
 					if (error == null)
@@ -149,54 +233,51 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 			});
 			reg.addReceivedTimeoutHandler(new InBandRegistrationModule.ReceivedTimeoutHandler() {
 				@Override
-				public void onReceivedTimeout(SessionObject sessionObject)
-						throws JaxmppException {
+				public void onReceivedTimeout(SessionObject sessionObject) throws JaxmppException {
 					errorMessage = "Server doesn't responses";
-					wakeup();					
+					wakeup();
 				}
 			});
 			reg.addReceivedRequestedFieldsHandler(new InBandRegistrationModule.ReceivedRequestedFieldsHandler() {
 				@Override
-				public void onReceivedRequestedFields(
-						SessionObject sessionObject, IQ responseStanza) {
+				public void onReceivedRequestedFields(SessionObject sessionObject, IQ responseStanza) {
 					try {
-					reg.register(params[0], params[1], params[3], new AsyncCallback() {
+						reg.register(params[0], params[1], params[3], new AsyncCallback() {
 
-						@Override
-						public void onError(Stanza responseStanza, ErrorCondition error) throws JaxmppException {
-							token = null;
-							if (error == null)
-								errorMessage = "Registration error";
-							else
-								switch (error) {
-								case conflict:
-									errorMessage = "Username is not available. Choose another one.";
-									break;
-								default:
-									errorMessage = error.name();
-									break;
-								}
-							wakeup();
-						}
+							@Override
+							public void onError(Stanza responseStanza, ErrorCondition error) throws JaxmppException {
+								token = null;
+								if (error == null)
+									errorMessage = "Registration error";
+								else
+									switch (error) {
+									case conflict:
+										errorMessage = "Username is not available. Choose another one.";
+										break;
+									default:
+										errorMessage = error.name();
+										break;
+									}
+								wakeup();
+							}
 
-						@Override
-						public void onSuccess(Stanza responseStanza) throws JaxmppException {
-							token = params[1];
-							wakeup();
-						}
+							@Override
+							public void onSuccess(Stanza responseStanza) throws JaxmppException {
+								token = params[1];
+								wakeup();
+							}
 
-						@Override
-						public void onTimeout() throws JaxmppException {
-							token = null;
-							errorMessage = "Server doesn't responses";
-							wakeup();
-						}
-					});
-					}
-					catch (JaxmppException ex) {
+							@Override
+							public void onTimeout() throws JaxmppException {
+								token = null;
+								errorMessage = "Server doesn't responses";
+								wakeup();
+							}
+						});
+					} catch (JaxmppException ex) {
 						Log.v(TAG, "received exception during registration", ex);
 					}
-				}			
+				}
 			});
 
 			try {
@@ -205,22 +286,18 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 				if (contact.getSessionObject().getProperty(tigase.jaxmpp.j2se.Jaxmpp.EXCEPTION_KEY) != null) {
 					final JaxmppException e = (JaxmppException) contact.getSessionObject().getProperty(
 							tigase.jaxmpp.j2se.Jaxmpp.EXCEPTION_KEY);
-					if (e.getCause() instanceof SecureTrustManagerFactory.DataCertificateException) {
-						certException = (DataCertificateException) e.getCause();
-						data.put("account", contact.getSessionObject().getUserBareJid().toString());
-					}
+					exception = e;
+					data.put("account", contact.getSessionObject().getUserBareJid().toString());
 					return null;
 				}
 
 				// here we process features available for account
-//				processJaxmppForFeatures(contact, data);
+				// processJaxmppForFeatures(contact, data);
 
 				return token;
 			} catch (JaxmppException e) {
-				if (e.getCause() instanceof SecureTrustManagerFactory.DataCertificateException) {
-					certException = (DataCertificateException) e.getCause();
-					data.put("account", contact.getSessionObject().getUserBareJid().toString());
-				}
+				exception = e;
+				data.put("account", contact.getSessionObject().getUserBareJid().toString());
 				return null;
 			} catch (Exception e) {
 				Log.e(TAG, "Problem on password check2", e);
@@ -245,7 +322,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 			if (errorMessage != null)
 				onCreationError(errorMessage);
 			else
-				onAuthenticationResult(authToken, data, certException);
+				onAuthenticationResult(authToken, data, exception);
 		}
 
 		private void wakeup() {
@@ -255,88 +332,28 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 		}
 	}
 
-	public class UserLoginTask extends AsyncTask<String, Void, String> {
+	public class UserLoginTask extends JaxmppAccountTask {
 
-		private DataCertificateException certException;
-
-		final Jaxmpp contact = new Jaxmpp();
-
-		private Map<String, String> data = new HashMap<String, String>();
-
-		/**
-		 * @param params
-		 *            mUsername, mPassword, mHostname
-		 */
 		@Override
-		protected String doInBackground(String... params) {
+		protected void initJaxmpp(final String[] params) {
 			contact.getProperties().setUserProperty(SessionObject.USER_BARE_JID, BareJID.bareJIDInstance(params[0]));
 			contact.getProperties().setUserProperty(SessionObject.PASSWORD, params[1]);
-			if (JaxmppService.context == null) {
-				try {
-					JaxmppService.context = (AuthenticatorActivity.this);
-					contact.getProperties().setUserProperty(Connector.TRUST_MANAGERS_KEY, SecureTrustManagerFactory.getTrustManagers());
-				}
-				finally {
-					JaxmppService.context = null;
-				}
-			}
-			else {
-				contact.getProperties().setUserProperty(Connector.TRUST_MANAGERS_KEY, SecureTrustManagerFactory.getTrustManagers());
-			}
 
-			try {
-				contact.login(true);
+			contact.getProperties().setUserProperty(Connector.TRUST_MANAGERS_KEY,
+					SecureTrustManagerFactory.getTrustManagers(getApplicationContext()));
+			contact.getEventBus().addHandler(ResourceBinderModule.ResourceBindSuccessHandler.ResourceBindSuccessEvent.class,
+					new ResourceBinderModule.ResourceBindSuccessHandler() {
 
-				if (contact.getSessionObject().getProperty(tigase.jaxmpp.j2se.Jaxmpp.EXCEPTION_KEY) != null) {
-					final JaxmppException e = (JaxmppException) contact.getSessionObject().getProperty(
-							tigase.jaxmpp.j2se.Jaxmpp.EXCEPTION_KEY);
-					if (e.getCause() instanceof SecureTrustManagerFactory.DataCertificateException) {
-						certException = (DataCertificateException) e.getCause();
-						data.put("account", contact.getSessionObject().getUserBareJid().toString());
-					}
-					return null;
-				}
-
-				// here we process features available for account
-//				processJaxmppForFeatures(contact, data);
-
-				return params[1];
-			} catch (JaxmppException e) {
-				if (e.getCause() instanceof SecureTrustManagerFactory.DataCertificateException) {
-					certException = (DataCertificateException) e.getCause();
-					data.put("account", contact.getSessionObject().getUserBareJid().toString());
-				}
-				return null;
-			} catch (Exception e) {
-				Log.e(TAG, "Problem on password check2", e);
-				return null;
-			} finally {
-				try {
-					contact.disconnect();
-				} catch (Exception e) {
-					Log.e(TAG, "Disconnect problem on password check", e);
-				}
-			}
+						@Override
+						public void onResourceBindSuccess(SessionObject sessionObject, JID bindedJid) throws JaxmppException {
+							token = params[1];
+						}
+					});
 		}
 
-		@Override
-		protected void onCancelled() {
-			onAuthenticationCancel();
-		}
-
-		@Override
-		protected void onPostExecute(final String authToken) {
-			onAuthenticationResult(authToken, data, certException);
-		}
 	}
 
 	public static final String ACCOUNT_MODIFIED_MSG = "org.tigase.messenger.phone.pro.ACCOUNT_MODIFIED_MSG";
-
-	private static final int CERTIFICATE_TRUST_DIALOG = 4;
-
-	private static final int CREATION_ERROR_DIALOG = 3;
-
-	private static final int LOGIN_ERROR_DIALOG = 2;
 
 	private static final int PAGE_ADD = 1;
 
@@ -350,22 +367,25 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 
 	private static final int PICK_ACCOUNT = 1;
 
-	private final static int PROGRESS_DIALOG = 1;
-
 	private static final String TAG = "AuthenticatorActivity";
 
-//	public static void processJaxmppForFeatures(JaxmppCore contact, Map<String, String> data) {
-//		String mobile = null;
-//		boolean mobileV1 = AccountAdvancedPreferencesActivity.isMobileAvailable(contact, Features.MOBILE_V1);
-//		if (mobileV1) {
-//			mobile = Features.MOBILE_V1;
-//		}
-//		boolean mobileV2 = AccountAdvancedPreferencesActivity.isMobileAvailable(contact, Features.MOBILE_V2);
-//		if (mobileV2) {
-//			mobile = Features.MOBILE_V2;
-//		}
-//		data.put(Constants.MOBILE_OPTIMIZATIONS_AVAILABLE_KEY, mobile);
-//	}
+	// public static void processJaxmppForFeatures(JaxmppCore contact,
+	// Map<String, String> data) {
+	// String mobile = null;
+	// boolean mobileV1 =
+	// AccountAdvancedPreferencesActivity.isMobileAvailable(contact,
+	// Features.MOBILE_V1);
+	// if (mobileV1) {
+	// mobile = Features.MOBILE_V1;
+	// }
+	// boolean mobileV2 =
+	// AccountAdvancedPreferencesActivity.isMobileAvailable(contact,
+	// Features.MOBILE_V2);
+	// if (mobileV2) {
+	// mobile = Features.MOBILE_V2;
+	// }
+	// data.put(Constants.MOBILE_OPTIMIZATIONS_AVAILABLE_KEY, mobile);
+	// }
 
 	private ViewFlipper flipper;
 
@@ -521,7 +541,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 		mResource = mResourceEdit.getText().toString();
 		final String mEmail = mEmailEdit == null ? null : mEmailEdit.getText().toString();
 
-		showDialog(PROGRESS_DIALOG);
+		showProgressDialog();
 
 		mAuthTask = authTask;
 		mAuthTask.execute(mUsername, mPassword, mHostname, mEmail);
@@ -576,7 +596,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 		hideProgress();
 	}
 
-	protected void onAuthenticationResult(String authToken, Map<String, String> data, DataCertificateException certException) {
+	protected void onAuthenticationResult(String authToken, Map<String, String> data, Throwable e) {
 		boolean success = ((authToken != null) && (authToken.length() > 0));
 		Log.i(TAG, "onAuthenticationResult(" + success + ")");
 
@@ -586,13 +606,8 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 		// Hide the progress dialog
 		hideProgress();
 
-		if (certException != null) {
-			Bundle args = new Bundle();
-
-			args.putString("account", data.get("account"));
-			args.putSerializable("cause", certException);
-
-			showDialog(CERTIFICATE_TRUST_DIALOG, args);
+		if (e != null && e instanceof DataCertificateException) {
+			showCertificateTrustDialog(data.get("account"), (DataCertificateException) e.getCause());
 		} else if (success) {
 			if (!mConfirmCredentials) {
 				finishLogin(authToken, data);
@@ -601,7 +616,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 			}
 		} else {
 			Log.e(TAG, "onAuthenticationResult: failed to authenticate");
-			showDialog(LOGIN_ERROR_DIALOG);
+			showLoginErrorDialog(e);
 		}
 	}
 
@@ -660,80 +675,78 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 
 	}
 
-	@Override
-	protected Dialog onCreateDialog(int id, Bundle args) {
-		switch (id) {
-		case CERTIFICATE_TRUST_DIALOG: {
-			final String account = args.getString("account");
-			final DataCertificateException cause = (DataCertificateException) args.getSerializable("cause");
+	protected void showCertificateTrustDialog(String accoutn, DataCertificateException cause) {
+		// TrustCertDialog.createDIalogInstance(this, account,
+		// cause, getResources(), null);
+		showCreationErrorDialog("Untrusted certificate (temporary message)");
+	}
 
-			return null;//TrustCertDialog.createDIalogInstance(this, account, cause, getResources(), null);
+	protected void showCreationErrorDialog(String msg) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		if (msg == null)
+			msg = "unknown";
+		builder.setMessage(msg).setCancelable(true);
+		builder.setIcon(android.R.drawable.ic_dialog_alert);
+		builder.setTitle("Error");
+		builder.setNeutralButton("Ok", new DialogInterface.OnClickListener() {
+
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				dialog.cancel();
+			}
+		});
+		builder.create().show();
+	}
+
+	protected void showLoginErrorDialog(Throwable e) {
+		Log.i(TAG, "Display error dialog for exception " + (e != null), e);
+
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+		if (e != null && e.getCause() instanceof UnknownHostException) {
+			builder.setMessage("Unknown hostname");
+		} else if (e != null && e.getCause() instanceof ConnectException) {
+			builder.setMessage("Can't connect with server");
+		} else if (e != null) {
+			builder.setMessage(e.getMessage());
+		} else {
+			builder.setMessage("Unknown");
 		}
-		case CREATION_ERROR_DIALOG: {
-			AlertDialog.Builder builder = new AlertDialog.Builder(this);
-			String msg = args.getString("msg");
-			if (msg == null)
-				msg = "unknown";
-			builder.setMessage(msg).setCancelable(true);
-			builder.setIcon(android.R.drawable.ic_dialog_alert);
-			builder.setTitle("Error");
-			builder.setNeutralButton("Ok", new DialogInterface.OnClickListener() {
+		builder.setCancelable(true);
+		builder.setIcon(android.R.drawable.ic_dialog_alert);
+		builder.setTitle("Error");
+		builder.setNeutralButton("Ok", new DialogInterface.OnClickListener() {
 
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					dialog.cancel();
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				dialog.cancel();
+			}
+		});
+		builder.create().show();
+	}
+
+	protected void showProgressDialog() {
+		final ProgressDialog dialog = new ProgressDialog(this);
+		dialog.setMessage(getText(R.string.ui_activity_authenticating));
+		dialog.setIndeterminate(true);
+		dialog.setCancelable(true);
+		dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+			@Override
+			public void onCancel(DialogInterface dialog) {
+				Log.i(TAG, "user cancelling authentication");
+				if (mAuthTask != null) {
+					mAuthTask.cancel(true);
 				}
-			});
-			return builder.create();
+			}
+		});
 
-		}
-		case LOGIN_ERROR_DIALOG: {
-			AlertDialog.Builder builder = new AlertDialog.Builder(this);
-			builder.setMessage("Invalid username or password.").setCancelable(true);
-			builder.setIcon(android.R.drawable.ic_dialog_alert);
-			builder.setTitle("Error");
-			builder.setNeutralButton("Ok", new DialogInterface.OnClickListener() {
-
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					dialog.cancel();
-				}
-			});
-			return builder.create();
-		}
-		case PROGRESS_DIALOG: {
-			final ProgressDialog dialog = new ProgressDialog(this);
-			dialog.setMessage(getText(R.string.ui_activity_authenticating));
-			dialog.setIndeterminate(true);
-			dialog.setCancelable(true);
-			dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-				@Override
-				public void onCancel(DialogInterface dialog) {
-					Log.i(TAG, "user cancelling authentication");
-					if (mAuthTask != null) {
-						mAuthTask.cancel(true);
-					}
-				}
-			});
-
-			mProgressDialog = dialog;
-			return dialog;
-		}
-		default:
-			return null;
-		}
-
+		mProgressDialog = dialog;
+		mProgressDialog.show();
 	}
 
 	protected void onCreationError(String errorMessage) {
-		Bundle b = new Bundle();
-		b.putString("msg", errorMessage);
 		hideProgress();
-
-		Dialog dlg = onCreateDialog(CREATION_ERROR_DIALOG, b);
-		if (dlg != null) {
-			dlg.show();
-		}
+		showCreationErrorDialog(errorMessage);
 	}
 
 	@Override
@@ -1091,8 +1104,8 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 
 	@TargetApi(14)
 	private void startChooseAccountIceCream(final Account account) {
-		Intent intentChooser = AccountManager.newChooseAccountIntent(account, null, new String[] { AccountAuthenticator.ACCOUNT_TYPE },
-				false, null, null, null, null);
+		Intent intentChooser = AccountManager.newChooseAccountIntent(account, null,
+				new String[] { AccountAuthenticator.ACCOUNT_TYPE }, false, null, null, null, null);
 		this.startActivityForResult(intentChooser, PICK_ACCOUNT);
 	}
 

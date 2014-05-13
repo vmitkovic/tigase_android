@@ -34,7 +34,6 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 import org.tigase.messenger.phone.pro.R;
-import org.tigase.messenger.phone.pro.service.JaxmppService;
 
 import android.content.Context;
 import android.util.Log;
@@ -98,26 +97,24 @@ public class SecureTrustManagerFactory {
 	private final static String TAG = "SecureTrustManagerFactory";
 
 	static {
+	}
+
+	public static TrustManager[] getTrustManagers(Context ctx) {
+		initIfRequired(ctx);
+		return instance.getManagers(ctx);
+	}
+
+	private static void initIfRequired(Context ctx) {
+		if (instance != null)
+			return;
+
 		try {
 			instance = new SecureTrustManagerFactory();
-			instance.init();
+			instance.init(ctx);
 		} catch (Exception e) {
 			Log.e(TAG, "Can't initialize TrustManagerFactory!", e);
 		}
-	}
 
-	public static void add(X509Certificate[] chain) {
-		try {
-			instance.addTrustKey(chain);
-		} catch (Exception e) {
-			Log.w(TAG, "Can't add keys", e);
-		}
-	}
-
-	public static TrustManager[] getTrustManagers() {
-		if (instance == null)
-			return new TrustManager[] {};
-		return instance.getManagers();
 	}
 
 	private X509TrustManager defaultTrustManager;
@@ -154,7 +151,7 @@ public class SecureTrustManagerFactory {
 		}
 	}
 
-	private TrustManager[] getManagers() {
+	private TrustManager[] getManagers(Context ctx) {
 		if (defaultTrustManager != null) {
 			Log.d(TAG, "Using wrapped TrustManager");
 			return new TrustManager[] { new TrustManagerWrapper() };
@@ -164,12 +161,14 @@ public class SecureTrustManagerFactory {
 		}
 	}
 
-	private void init() throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {		
-		loadKeystore(JaxmppService.context.getResources().openRawResource(R.raw.trust_store_bks), null);
+	private void init(Context ctx) throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {
+		loadKeystore(ctx.getResources().openRawResource(R.raw.trust_store_bks), null);
 		loadKeystore(System.getProperty("javax.net.ssl.trustStore"));
-		this.keyStoreFile = new File(JaxmppService.context.getDir("TrustStore", Context.MODE_PRIVATE) + File.separator
-				+ "TrustStore.bks");
-		loadKeystore(keyStoreFile, DEFAULT_PASSWORD);
+		// this.keyStoreFile = new
+		// File(MessengerApplication.app.getDir("TrustStore",
+		// Context.MODE_PRIVATE) + File.separator
+		// + "TrustStore.bks");
+		// loadKeystore(keyStoreFile, DEFAULT_PASSWORD);
 
 		factory.init(keyStore);
 
