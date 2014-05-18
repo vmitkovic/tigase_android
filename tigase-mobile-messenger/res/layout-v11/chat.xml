@@ -2,7 +2,7 @@
 <org.tigase.messenger.phone.pro.chat.ChatView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    class="org.tigase.mobile.chat.ChatView"
+    class="org.tigase.messenger.phone.pro.chat.ChatView"
     android:orientation="vertical" >
 
     <ListView

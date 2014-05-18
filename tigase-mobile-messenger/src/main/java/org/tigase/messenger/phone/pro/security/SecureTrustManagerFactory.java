@@ -33,8 +33,8 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
-import org.tigase.messenger.phone.pro.JaxmppService;
 import org.tigase.messenger.phone.pro.R;
+import org.tigase.messenger.phone.pro.service.JaxmppService;
 
 import android.content.Context;
 import android.util.Log;

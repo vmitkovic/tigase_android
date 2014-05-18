@@ -22,12 +22,12 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.tigase.messenger.phone.pro.IJaxmppService;
-import org.tigase.messenger.phone.pro.JaxmppService;
 import org.tigase.messenger.phone.pro.MainActivity;
 import org.tigase.messenger.phone.pro.Preferences;
 import org.tigase.messenger.phone.pro.db.RosterItemsCacheTableExtMetaData;
 import org.tigase.messenger.phone.pro.db.RosterTableMetaData;
 import org.tigase.messenger.phone.pro.roster.CPresence;
+import org.tigase.messenger.phone.pro.service.JaxmppService;
 
 import tigase.jaxmpp.android.roster.RosterItemsCacheTableMetaData;
 import tigase.jaxmpp.core.client.BareJID;

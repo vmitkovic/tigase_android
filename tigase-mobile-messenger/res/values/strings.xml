@@ -11,34 +11,43 @@
     <string name="title_activity_main">Tigase Messenger</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
-<!--  Accounts Create/Edit  -->
-<string name="account_add_welcome">Join Tigase</string>
-<string name="account_add_login">I have an account</string>
-<string name="account_add_description">Hello world</string>
-<string name="account_add_create">Create a new account</string>
-<string name="account_dialog_enter_details">Enter details of your XMPP account</string>
-<string name="account_dialog_username_hint">User name</string>
-<string name="account_dialog_hostname_hint">Server name</string>
-<string name="account_dialog_password_hint">Password</string>
-<string name="account_dialog_password_confirm_hint">Confirm password</string>
-<string name="account_dialog_resource_hint">Client description</string>
-<string name="account_dialog_resource_default">Tigase Messenger</string>
-<string name="account_dialog_alternative_hostname_hint">Optional server address</string>
-<string name="account_dialog_nickname_hint">Optional nickname</string>
-<string name="account_dialog_email_hint">Optional e-mail address</string>
-<string name="chatSendButton">Send</string>
+    <!-- Accounts Create/Edit -->
+    <string name="account_add_welcome">Join Tigase</string>
+    <string name="account_add_login">I have an account</string>
+    <string name="account_add_description">Hello world</string>
+    <string name="account_add_create">Create a new account</string>
+    <string name="account_dialog_enter_details">Enter details of your XMPP account</string>
+    <string name="account_dialog_username_hint">User name</string>
+    <string name="account_dialog_hostname_hint">Server name</string>
+    <string name="account_dialog_password_hint">Password</string>
+    <string name="account_dialog_password_confirm_hint">Confirm password</string>
+    <string name="account_dialog_resource_hint">Client description</string>
+    <string name="account_dialog_resource_default">Tigase Messenger</string>
+    <string name="account_dialog_alternative_hostname_hint">Optional server address</string>
+    <string name="account_dialog_nickname_hint">Optional nickname</string>
+    <string name="account_dialog_email_hint">Optional e-mail address</string>
+    <string name="account_advanced_preferences">More settings…</string>
+    <string name="mobile_optimizations_not_supported">Your server doesn\'t support this… try Tigase - sure.im, jabber.me, tigase.im</string>
+    <string name="mobile_optimizations">Mobile optimizations</string>
+    <string name="presence_queue_max_timeout">Maximum presence queue timeout</string>
+    <string name="auth_request_info">This user wants to subscribe to your presence.</string>
+    <string name="geolocation_listen">Receive geolocation</string>
+    <string name="geolocation_publish">Publish location</string>
+    <string name="geolocation_precision">Location precision</string>
+    <string name="geolocation_show">Geolocation</string>
+    <string name="chatSendButton">Send</string>
     <string name="chat_item_info_timestampt">Timestamp</string>
     <string name="chat_item_info_state">State</string>
     <string name="chat_item_info_chat_with">Chat with</string>
-<string name="ok">Ok</string>
-<string name="yes">Yes</string>
-<string name="no">No</string>
-<string name="cancel">Cancel</string>
-<string name="accept">Accept</string>
+    <string name="ok">Ok</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="cancel">Cancel</string>
+    <string name="accept">Accept</string>
 
-<!-- Message shown in progress dialog while app connects to the server -->
-<string name="ui_activity_authenticating">Authenticating\u2026</string>
-<string name="ui_authenticator_activity_title">Account</string>
+    <!-- Message shown in progress dialog while app connects to the server -->
+    <string name="ui_activity_authenticating">Authenticating\u2026</string>
+    <string name="ui_authenticator_activity_title">Account</string>
     <string name="termsOfService">Terms</string>
     <string name="termsOfServiceURL">http://www.sure.im/terms.txt</string>
     <string name="privacyPolicy">Privacy</string>
@@ -51,7 +60,6 @@
     <string name="chat">Chat</string>
     <string name="shareButton">Share</string>
     <string name="contacts">Contacts</string>
-    
     <string name="contact_edit">Edit</string>
     <string name="contact_edit_wrn_jid_cant_be_empty">JID can\'t be empty</string>
     <string name="contact_edit_wrn_wrong_jid">Wrong JabberID</string>
@@ -62,8 +70,36 @@
     <string name="contact_edit_jabberid">JabberID</string>
     <string name="contact_edit_name">Name</string>
     <string name="contact_edit_group">Group</string>
-    <string name="contact_edit_request_authorization">Request authorization</string>    
+    <string name="contact_edit_request_authorization">Request authorization</string>
     <string name="contact_remove">Remove</string>
     <string name="service_new_message">New message</string>
     <string name="service_warning_notification_title">Warning</string>
+
+    <!-- Preferences -->
+    <string name="propertiesButton">Settings</string>
+    <string name="preferencesTitle">Settings</string>
+    <string name="pref_login_section_title">Login data</string>
+    <string name="pref_login_section_summary">Data needed to login to XMPP server</string>
+    <string name="pref_advanced_section_title">Advanced settings</string>
+    <string name="pref_advanced_section_summary">Advanced settings</string>
+    <string name="pref_default_priority_summary">Online priority is %1$s</string>
+    <string name="pref_default_priority_title">Online priority</string>
+    <string name="pref_default_priority_dialog">Enter online priority</string>
+    <string name="pref_auto_away_priority_summary">Auto away priority is %1$s</string>
+    <string name="pref_auto_away_priority_title">Auto away priority</string>
+    <string name="pref_auto_away_priority_dialog">Enter auto away priority</string>
+    <string name="pref_keepalive_time_summary">Keep alive timeout is %1$s minutes</string>
+    <string name="pref_keepalive_time_title">Keep alive timeout</string>
+    <string name="pref_keepalive_time_dialog">Enter keep alive timeout</string>
+    <string name="pref_reconnect_time_summary">Client will wait %1$s sec between reconnects</string>
+    <string name="pref_reconnect_time_title">Reconnect delay</string>
+    <string name="pref_reconnect_time_dialog">Enter reconnect delay</string>
+    <string name="pref_login_ui_section_title">User Interface</string>
+    <string name="pref_login_notifications_section_title">Notifications</string>
+    <string name="pref_notification_sound_title">Sound</string>
+    <string name="pref_notification_vibrate_title">Vibrate</string>
+    <string name="pref_notification_sound_muc_title">MUC mention sound</string>
+    <string name="pref_notification_sound_chat_title">Chat message sound</string>
+    <string name="pref_notification_advanced_section_title">Advanced</string>
+
 </resources>

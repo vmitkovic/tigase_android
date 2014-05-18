@@ -20,7 +20,6 @@ package org.tigase.messenger.phone.pro.chat;
 import java.util.Date;
 
 import org.tigase.messenger.phone.pro.IJaxmppService;
-import org.tigase.messenger.phone.pro.JaxmppService;
 import org.tigase.messenger.phone.pro.MainActivity;
 //import org.tigase.messenger.phone.pro.ClientIconsTool;
 import org.tigase.messenger.phone.pro.MessengerApplication;
@@ -30,6 +29,7 @@ import org.tigase.messenger.phone.pro.db.ChatTableMetaData;
 import org.tigase.messenger.phone.pro.db.providers.ChatHistoryProvider;
 import org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider;
 import org.tigase.messenger.phone.pro.roster.CPresence;
+import org.tigase.messenger.phone.pro.service.JaxmppService;
 
 import tigase.jaxmpp.android.chat.OpenChatTableMetaData;
 import tigase.jaxmpp.core.client.JID;

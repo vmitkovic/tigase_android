@@ -17,13 +17,13 @@
  */
 package org.tigase.messenger.phone.pro.roster;
 
-//import org.tigase.mobile.ClientIconsTool;
-//import org.tigase.mobile.MessengerApplication;
-//import org.tigase.mobile.R;
-//import org.tigase.mobile.db.GeolocationTableMetaData;
-//import org.tigase.mobile.db.RosterTableMetaData;
-//import org.tigase.mobile.pubsub.GeolocationModule;
-//import org.tigase.mobile.utils.AvatarHelper;
+//import org.tigase.messenger.phone.pro.ClientIconsTool;
+//import org.tigase.messenger.phone.pro.MessengerApplication;
+//import org.tigase.messenger.phone.pro.R;
+//import org.tigase.messenger.phone.pro.db.GeolocationTableMetaData;
+//import org.tigase.messenger.phone.pro.db.RosterTableMetaData;
+//import org.tigase.messenger.phone.pro.pubsub.GeolocationModule;
+//import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.RosterTableMetaData;

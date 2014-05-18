@@ -1,5 +1,6 @@
 package org.tigase.messenger.phone.pro;
 
+import org.tigase.messenger.phone.pro.service.JaxmppService;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 
 import android.app.Application;

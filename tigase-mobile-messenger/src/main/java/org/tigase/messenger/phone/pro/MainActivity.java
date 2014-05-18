@@ -7,8 +7,10 @@ import org.tigase.messenger.phone.pro.account.AccountAuthenticator;
 import org.tigase.messenger.phone.pro.chat.ChatActivity;
 import org.tigase.messenger.phone.pro.chat.ChatHistoryFragment;
 import org.tigase.messenger.phone.pro.chat.ChatsListFragment;
+import org.tigase.messenger.phone.pro.preferences.MessengerPreferenceActivity;
 import org.tigase.messenger.phone.pro.roster.ContactFragment;
 import org.tigase.messenger.phone.pro.roster.RosterFragment;
+import org.tigase.messenger.phone.pro.service.JaxmppService;
 
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.JID;
@@ -169,8 +171,8 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 //        drawerMenuItems.add(new DrawerMenuItem(R.id.accountsList, R.string.accounts, R.drawable.ic_menu_account_list));
 //        drawerMenuItems.add(new DrawerMenuItem(R.id.joinMucRoom, R.string.join_muc_room, R.drawable.group_chat, true));
 //        drawerMenuItems.add(new DrawerMenuItem(R.id.bookmarksShow, R.string.bookmarks_show, android.R.drawable.star_off, true));
-//        drawerMenuItems.add(new DrawerMenuItem(R.id.propertiesButton, R.string.propertiesButton,
-//                        android.R.drawable.ic_menu_preferences));
+        drawerMenuItems.add(new DrawerMenuItem(R.id.action_settings, R.string.propertiesButton,
+                        android.R.drawable.ic_menu_preferences));
 //        drawerMenuItems.add(new DrawerMenuItem(R.id.aboutButton, R.string.aboutButton, android.R.drawable.ic_menu_info_details));
         drawerMenuItems.add(new DrawerMenuItem(R.id.appNameText, R.string.app_name, android.R.drawable.ic_menu_info_details));
 
@@ -233,6 +235,10 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 		if (itemId == R.id.rosterList) {
 			Fragment frag = new RosterFragment();
 			switchFragments(frag, RosterFragment.FRAG_TAG);
+		}
+		else if (itemId == R.id.action_settings) {
+			Intent intent = new Intent().setClass(this, MessengerPreferenceActivity.class);
+			this.startActivityForResult(intent, 0);
 		}
 	}
 

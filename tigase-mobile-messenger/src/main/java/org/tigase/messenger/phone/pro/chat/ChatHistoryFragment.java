@@ -22,25 +22,25 @@ import java.util.List;
 
 import org.tigase.messenger.phone.pro.CustomHeader;
 import org.tigase.messenger.phone.pro.IJaxmppService;
-import org.tigase.messenger.phone.pro.JaxmppService;
 import org.tigase.messenger.phone.pro.MessengerApplication;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.MainActivity;
-//import org.tigase.mobile.TigaseMobileMessengerActivityHelper;
+//import org.tigase.messenger.phone.pro.TigaseMobileMessengerActivityHelper;
 //import org.tigase.messenger.phone.pro.chat.ChatListActivity;
 import org.tigase.messenger.phone.pro.db.ChatTableMetaData;
 import org.tigase.messenger.phone.pro.db.providers.ChatHistoryProvider;
 import org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider;
 import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
-//import org.tigase.mobile.filetransfer.FileTransferUtility;
-//import org.tigase.mobile.muc.MucActivity;
+//import org.tigase.messenger.phone.pro.filetransfer.FileTransferUtility;
+//import org.tigase.messenger.phone.pro.muc.MucActivity;
 import org.tigase.messenger.phone.pro.roster.CPresence;
-//import org.tigase.mobile.roster.ContactActivity;
+//import org.tigase.messenger.phone.pro.roster.ContactActivity;
 
 
 
 
 import org.tigase.messenger.phone.pro.roster.RosterAdapterHelper;
+import org.tigase.messenger.phone.pro.service.JaxmppService;
 
 import tigase.jaxmpp.android.chat.OpenChatTableMetaData;
 import tigase.jaxmpp.core.client.BareJID;

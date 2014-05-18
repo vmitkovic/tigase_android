@@ -9,6 +9,7 @@ interface IJaxmppService {
 	boolean disconnect(String accountJid);
 
 	boolean isConnected(String accountJid);
+	boolean hasStreamFeature(String accountJid, String elemName, String streamFeatureXmlns);
 
 	CPresence getBestPresence(String accountJid, String jid);
 

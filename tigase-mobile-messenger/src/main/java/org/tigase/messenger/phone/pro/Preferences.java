@@ -2,6 +2,8 @@ package org.tigase.messenger.phone.pro;
 
 public class Preferences {
 
+	public static final String KEEPALIVE_TIME_KEY = "keepalive_time";
+	
 	public static final String NOTIFICATION_CHAT_KEY = "notification_chat";
 	
 	public static final String NOTIFICATION_SOUND_KEY = "notification_sound";

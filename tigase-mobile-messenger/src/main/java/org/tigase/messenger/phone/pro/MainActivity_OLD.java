@@ -1,5 +1,7 @@
 package org.tigase.messenger.phone.pro;
 
+import org.tigase.messenger.phone.pro.service.JaxmppService;
+
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;

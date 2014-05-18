@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:key="tigase_messenger_preferences"
+    android:title="@string/preferencesTitle" >
+
+    <PreferenceCategory
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:key="login_data"
+        android:summary="@string/pref_login_section_summary"
+        android:title="@string/pref_login_section_title" >
+        <PreferenceScreen
+            android:key="accounts_manager"
+            android:summary="Accounts manager"
+            android:title="Accounts" >
+            <intent android:action="android.settings.SYNC_SETTINGS" />
+        </PreferenceScreen>
+
+        <!--
+             <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="autostart"
+            android:summary="@string/pref_autostart_summary"
+            android:title="@string/pref_autostart_title" />
+        -->
+    </PreferenceCategory>
+    <!--
+         <PreferenceCategory
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:key="gui_details"
+        android:title="@string/pref_login_ui_section_title" >
+        <ListPreference
+            android:defaultValue="flat"
+            android:entries="@array/roster_layout_options"
+            android:entryValues="@array/roster_layout_options_values"
+            android:key="roster_layout"
+            android:title="Roster layout" />
+        <ListPreference
+            android:defaultValue="status"
+            android:entries="@array/roster_sorting_options"
+            android:entryValues="@array/roster_sorting_options_values"
+            android:key="roster_sorting"
+            android:title="Roster sorting" />
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="enter_to_send"
+            android:summary="@string/pref_entertosend_summary"
+            android:title="@string/pref_entertosend_title" />
+    </PreferenceCategory>
+    -->
+    <PreferenceCategory
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:key="gui_notifications"
+        android:title="@string/pref_login_notifications_section_title" >
+        <RingtonePreference
+            android:defaultValue="content://settings/system/notification_sound"
+            android:key="notification_sound"
+            android:ringtoneType="notification"
+            android:showDefault="true"
+            android:showSilent="true"
+            android:title="@string/pref_notification_sound_title" >
+        </RingtonePreference>
+
+        <ListPreference
+            android:defaultValue="default"
+            android:entries="@array/pref_notification_vibrate_values_entries"
+            android:entryValues="@array/pref_notification_vibrate_values"
+            android:key="notification_vibrate"
+            android:title="@string/pref_notification_vibrate_title" />
+
+        <PreferenceScreen
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            android:key="notification_advanced"
+            android:title="@string/pref_notification_advanced_section_title" >
+            <RingtonePreference
+                android:defaultValue="content://settings/system/notification_sound"
+                android:key="notification_chat_sound"
+                android:ringtoneType="notification"
+                android:showDefault="true"
+                android:showSilent="true"
+                android:title="@string/pref_notification_sound_chat_title" >
+            </RingtonePreference>
+            <RingtonePreference
+                android:defaultValue="content://settings/system/notification_sound"
+                android:key="notification_muc_sound"
+                android:ringtoneType="notification"
+                android:showDefault="true"
+                android:showSilent="true"
+                android:title="@string/pref_notification_sound_muc_title" >
+            </RingtonePreference>
+        </PreferenceScreen>
+    </PreferenceCategory>
+
+    <PreferenceScreen
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:key="advanced_data"
+        android:summary="@string/pref_advanced_section_summary"
+        android:title="@string/pref_advanced_section_title" >
+
+        <!--
+             <org.tigase.messenger.phone.pro.preferences.EditIntegerPreference
+            android:defaultValue="5"
+            android:dialogTitle="@string/pref_reconnect_time_dialog"
+            android:key="reconnect_time"
+            android:summary="@string/pref_reconnect_time_summary"
+            android:title="@string/pref_reconnect_time_title" />
+        -->
+        <!--
+              <org.tigase.messenger.phone.pro.preferences.EditIntegerPreference
+            android:defaultValue="5"
+            android:dialogTitle="@string/pref_default_priority_dialog"
+            android:key="default_priority"
+            android:summary="@string/pref_default_priority_summary"
+            android:title="@string/pref_default_priority_title" />
+        <org.tigase.messenger.phone.pro.preferences.EditIntegerPreference
+            android:defaultValue="0"
+            android:dialogTitle="@string/pref_auto_away_priority_dialog"
+            android:key="away_priority"
+            android:summary="@string/pref_auto_away_priority_summary"
+            android:title="@string/pref_auto_away_priority_title" />
+        -->
+        <org.tigase.messenger.phone.pro.preferences.EditIntegerPreference
+            android:defaultValue="3"
+            android:dialogTitle="@string/pref_keepalive_time_dialog"
+            android:key="keepalive_time"
+            android:summary="@string/pref_keepalive_time_summary"
+            android:title="@string/pref_keepalive_time_title" />
+    </PreferenceScreen>
+
+</PreferenceScreen>

@@ -1,12 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-<string-array name="free_account_hostnames">
-<item>sure.im</item>
-<item>jabber.me</item>
-<item>tigase.im</item>
-<item>other...</item>
-</string-array>
-<string-array name="free_account_create_hostnames">
-<item>sure.im</item>
-</string-array>
+
+    <string-array name="free_account_hostnames">
+        <item>sure.im</item>
+        <item>jabber.me</item>
+        <item>tigase.im</item>
+        <item>other...</item>
+    </string-array>
+    <string-array name="free_account_create_hostnames">
+        <item>sure.im</item>
+    </string-array>
+    <string-array name="presence_queue_timeout">
+        <item>3 min</item>
+        <item>6 min</item>
+        <item>9 min</item>
+        <item>12 min</item>
+        <item>15 min</item>
+    </string-array>
+    <string-array name="geolocation_precision">
+        <item>Country</item>
+        <item>City</item>
+        <item>Street</item>
+        <item>Latitude/Longitude</item>
+    </string-array>
+    <string-array name="pref_notification_vibrate_values_entries">
+        <item>Default</item>
+        <item>Yes</item>
+        <item>No</item>
+    </string-array>
+    <string-array name="pref_notification_vibrate_values">
+        <item>default</item>
+        <item>yes</item>
+        <item>no</item>
+    </string-array>
+
 </resources>

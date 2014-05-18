@@ -48,7 +48,7 @@ import android.util.Log;
 
 public class RosterProvider extends ContentProvider {
 
-	public static final String AUTHORITY = "org.tigase.mobile.db.providers.RosterProvider";
+	public static final String AUTHORITY = "org.tigase.messenger.phone.pro.db.providers.RosterProvider";
 
 	public static final String CONTENT_URI = "content://" + AUTHORITY + "/roster";
 

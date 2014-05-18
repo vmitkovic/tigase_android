@@ -25,7 +25,7 @@ import org.tigase.messenger.phone.pro.db.VCardsCacheTableMetaData;
 import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
 
 
-//import org.tigase.mobile.sync.SyncAdapter;
+//import org.tigase.messenger.phone.pro.sync.SyncAdapter;
 import tigase.jaxmpp.core.client.BareJID;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;

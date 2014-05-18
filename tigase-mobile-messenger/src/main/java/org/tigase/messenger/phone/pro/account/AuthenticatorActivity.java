@@ -23,15 +23,16 @@ import java.util.Map;
 
 
 
-import org.tigase.messenger.phone.pro.JaxmppService;
-//import org.tigase.mobile.Constants;
-//import org.tigase.mobile.Features;
+
+//import org.tigase.messenger.phone.pro.Constants;
+//import org.tigase.messenger.phone.pro.Features;
 import org.tigase.messenger.phone.pro.R;
-//import org.tigase.mobile.TrustCertDialog;
-//import org.tigase.mobile.db.AccountsTableMetaData;
-//import org.tigase.mobile.preferences.AccountAdvancedPreferencesActivity;
+//import org.tigase.messenger.phone.pro.TrustCertDialog;
+//import org.tigase.messenger.phone.pro.db.AccountsTableMetaData;
+//import org.tigase.messenger.phone.pro.preferences.AccountAdvancedPreferencesActivity;
 import org.tigase.messenger.phone.pro.security.SecureTrustManagerFactory;
 import org.tigase.messenger.phone.pro.security.SecureTrustManagerFactory.DataCertificateException;
+import org.tigase.messenger.phone.pro.service.JaxmppService;
 
 import tigase.jaxmpp.android.Jaxmpp;
 import tigase.jaxmpp.core.client.AsyncCallback;
@@ -329,7 +330,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 		}
 	}
 
-	public static final String ACCOUNT_MODIFIED_MSG = "org.tigase.mobile.ACCOUNT_MODIFIED_MSG";
+	public static final String ACCOUNT_MODIFIED_MSG = "org.tigase.messenger.phone.pro.ACCOUNT_MODIFIED_MSG";
 
 	private static final int CERTIFICATE_TRUST_DIALOG = 4;
 

@@ -32,24 +32,26 @@
         android:name="org.tigase.messenger.phone.pro.MessengerApplication"
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
-        android:logo="@drawable/ic_actionbar_icon"
         android:label="@string/app_name"
+        android:logo="@drawable/ic_actionbar_icon"
         android:theme="@style/AppTheme" >
         <activity
             android:name="MainActivity"
             android:label="@string/title_activity_main" >
-			<intent-filter>
-            	<action android:name="android.intent.action.MAIN" />
-            	<category android:name="android.intent.category.LAUNCHER" />
-        	</intent-filter>            
-        </activity>
-		<activity
-            android:name="org.tigase.messenger.phone.pro.account.AuthenticatorActivity"
-            android:configChanges="orientation"	
-            android:excludeFromRecents="true"
-            android:label="@string/ui_authenticator_activity_title">
             <intent-filter>
-                <action android:name="org.tigase.mobile.account.preference.MAIN" />
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="org.tigase.messenger.phone.pro.account.AuthenticatorActivity"
+            android:configChanges="orientation"
+            android:excludeFromRecents="true"
+            android:label="@string/ui_authenticator_activity_title" >
+            <intent-filter>
+                <action android:name="org.tigase.messenger.phone.pro.account.preference.MAIN" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
@@ -57,37 +59,66 @@
             android:name=".chat.ChatActivity"
             android:label="@string/app_name"
             android:windowSoftInputMode="stateHidden|adjustResize" >
-        </activity>                
-        <service
-            android:name="org.tigase.messenger.phone.pro.JaxmppService"
-            android:process=":JaxmppService" >
-		</service>
-		<service android:name=".account.AuthenticatorService">
-    		<intent-filter>
-        		<action android:name="android.accounts.AccountAuthenticator" />
-    		</intent-filter>
-    		<meta-data android:name="android.accounts.AccountAuthenticator"
-            	   android:resource="@xml/authenticator" />
-		</service>        
-		<provider 
-		    android:name=".db.providers.RosterProvider"
-    		android:multiprocess="true"
-    		android:authorities="org.tigase.mobile.db.providers.RosterProvider" >		    
-		</provider>
-		<provider
-            android:name=".db.providers.ChatHistoryProvider"
-            android:multiprocess="true"
-            android:authorities="org.tigase.mobile.db.providers.ChatHistoryProvider" >
-        </provider>
-		<provider
-            android:name=".db.providers.OpenChatsProvider"
-            android:multiprocess="true"
-            android:authorities="org.tigase.mobile.db.providers.OpenChatsProvider" >
-        </provider>
-        <receiver 
-            android:name=".receivers.AvatarUpdatedReceiver">
+        </activity>
+        <activity
+            android:name=".preferences.MessengerPreferenceActivity"
+            android:label="@string/preferencesTitle" >
             <intent-filter>
-                <action android:name="org.tigase.messenger.phone.pro.AvatarUpdated"/>
+                <action android:name="org.tigase.messenger.phone.pro.MessengerPreferenceActivity" />
+
+                <category android:name="android.intent.category.PREFERENCE" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".preferences.AccountAdvancedPreferencesActivity"
+            android:configChanges="orientation"
+            android:excludeFromRecents="true"
+            android:label="@string/account_advanced_preferences" >
+            <intent-filter>
+                <action android:name="org.tigase.messenger.phone.pro.account.advancedPreferences.EDIT" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".preferences.AccountPreferenceActivity"
+            android:configChanges="orientation"
+            android:label="@string/account_advanced_preferences" >
+        </activity>
+
+        <service
+            android:name="org.tigase.messenger.phone.pro.service.JaxmppService"
+            android:process=":JaxmppService" >
+        </service>
+        <service android:name=".account.AuthenticatorService" >
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/authenticator" />
+        </service>
+
+        <provider
+            android:name=".db.providers.RosterProvider"
+            android:authorities="org.tigase.messenger.phone.pro.db.providers.RosterProvider"
+            android:multiprocess="true" >
+        </provider>
+        <provider
+            android:name=".db.providers.ChatHistoryProvider"
+            android:authorities="org.tigase.messenger.phone.pro.db.providers.ChatHistoryProvider"
+            android:multiprocess="true" >
+        </provider>
+        <provider
+            android:name=".db.providers.OpenChatsProvider"
+            android:authorities="org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider"
+            android:multiprocess="true" >
+        </provider>
+
+        <receiver android:name=".receivers.AvatarUpdatedReceiver" >
+            <intent-filter>
+                <action android:name="org.tigase.messenger.phone.pro.AvatarUpdated" />
             </intent-filter>
         </receiver>
     </application>

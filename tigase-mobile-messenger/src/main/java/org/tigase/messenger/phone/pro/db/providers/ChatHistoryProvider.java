@@ -18,7 +18,7 @@ import android.net.Uri;
 
 public class ChatHistoryProvider extends ContentProvider {
 
-	public static final String AUTHORITY = "org.tigase.mobile.db.providers.ChatHistoryProvider";
+	public static final String AUTHORITY = "org.tigase.messenger.phone.pro.db.providers.ChatHistoryProvider";
 
 	protected static final int CHAT_ITEM_URI_INDICATOR = 2;
 

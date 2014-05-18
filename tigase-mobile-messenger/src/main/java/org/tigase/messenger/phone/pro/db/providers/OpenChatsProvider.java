@@ -21,7 +21,7 @@ import android.net.Uri;
 
 public class OpenChatsProvider extends ContentProvider {
 
-	public static final String AUTHORITY = "org.tigase.mobile.db.providers.OpenChatsProvider";
+	public static final String AUTHORITY = "org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider";
 
 	public static final String OPEN_CHATS_URI = "content://" + AUTHORITY + "/open_chats";	
 	
