@@ -72,7 +72,6 @@ public class RosterProviderExt extends tigase.jaxmpp.android.roster.RosterProvid
 	}
 	
 	public boolean checkVCardHash(SessionObject sessionObject, BareJID jid, String hash) {
-		SQLiteDatabase db = dbHelper.getReadableDatabase();
 		boolean ok = false;
 		Cursor c = dbHelper.getReadableDatabase().query(
 				VCardsCacheTableMetaData.TABLE_NAME,

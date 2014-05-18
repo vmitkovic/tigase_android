@@ -21,6 +21,8 @@ import org.tigase.messenger.phone.pro.db.providers.RosterProviderExt;
 import org.tigase.messenger.phone.pro.roster.CPresence;
 import org.tigase.messenger.phone.pro.roster.RosterUpdateCallback;
 import org.tigase.messenger.phone.pro.security.SecureTrustManagerFactory;
+import org.tigase.messenger.phone.pro.ui.NotificationHelper;
+import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 
 import tigase.jaxmpp.android.Jaxmpp;
 import tigase.jaxmpp.android.chat.AndroidChatManager;
@@ -333,50 +335,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		public void onMessageReceived(SessionObject sessionObject, Chat chat,
 				tigase.jaxmpp.core.client.xmpp.stanzas.Message msg) {
 			try {
-				// for now let's ignore messages without body element
-				if (msg.getBody() == null)
-					return;
-				
-				Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/" + chat.getJid().getBareJid().toString());
-	
-				ContentValues values = new ContentValues();
-				values.put(ChatTableMetaData.FIELD_AUTHOR_JID, chat.getJid().getBareJid().toString());
-				values.put(ChatTableMetaData.FIELD_JID, chat.getJid().getBareJid().toString());
-
-				XmppDelay delay = XmppDelay.extract(msg);
-				values.put(ChatTableMetaData.FIELD_TIMESTAMP, (delay == null ? new Date() : delay.getStamp()).getTime());
-				if (msg.getType() == StanzaType.error) {
-					ErrorElement error = ErrorElement.extract(msg);
-					String body = "Error: ";
-					if (error != null) {
-						if (error.getText() != null) {
-							body += error.getText();
-						} else {
-							ErrorCondition errorCondition = error
-									.getCondition();
-							if (errorCondition != null) {
-								body += errorCondition.getElementName();
-							}
-						}
-					}
-					if (msg.getBody() != null) {
-						body += " ------ ";
-						body += msg.getBody();
-					}
-					values.put(ChatTableMetaData.FIELD_BODY, body);
-				} else {
-					values.put(ChatTableMetaData.FIELD_BODY, msg.getBody());
-				}
-				values.put(ChatTableMetaData.FIELD_BODY, msg.getBody());
-				values.put(ChatTableMetaData.FIELD_THREAD_ID, chat.getThreadId());
-				values.put(ChatTableMetaData.FIELD_ACCOUNT, sessionObject.getUserBareJid().toString());
-				values.put(ChatTableMetaData.FIELD_STATE, ChatTableMetaData.STATE_INCOMING_UNREAD);			
-				
-				SQLiteDatabase db = dbHelper.getWritableDatabase();
-				long id = db.insert(ChatTableMetaData.TABLE_NAME, null, values);
-				Log.v(TAG, "inserted message - id = " + id);
-				context.getContentResolver().notifyChange(uri, null);
-				//context.getContentResolver().insert(uri, values);
+				storeMessage(sessionObject, chat, msg, true);
 			} catch (Exception ex) {
 				Log.e(TAG, "Exception handling received message", ex);
 			}
@@ -418,6 +377,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	}
 	
 	public static final int SEND_MESSAGE = 1;
+	public static final String CLIENT_FOCUS = "org.tigase.messenger.phone.pro.CLIENT_FOCUS";
 
 	private static final String TAG = "JaxmppService";
 	private static final StanzaExecutor executor = new StanzaExecutor();
@@ -435,13 +395,16 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private int usedNetworkType = -1;	
 	
 	private AccountModifyReceiver accountModifyReceiver = new AccountModifyReceiver();
+	private ClientFocusReceiver clientFocusReceiver = new ClientFocusReceiver();
 	private DatabaseHelper dbHelper = null;
 	private MessageHandler messageHandler = null;
+	private NotificationHelper notificationHelper = null;
 	private PresenceHandler presenceHandler = null;
 	private RosterProviderExt rosterProvider = null;
 	private ChatProvider chatProvider = null;
 	
 	private boolean reconnect = true;
+	private JID activeChatJid = null;
 	
 	private class AccountModifyReceiver extends BroadcastReceiver {
 
@@ -454,6 +417,17 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
                     connectJaxmpp((Jaxmpp) j, (Long) null);
                 }
             }			
+		}
+		
+	}
+	
+	private class ClientFocusReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			// TODO Auto-generated method stub
+			String chatJid = intent.getStringExtra("chat");
+			activeChatJid = chatJid == null ? null : JID.jidInstance(chatJid);
 		}
 		
 	}
@@ -519,12 +493,22 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	public void onCreate() {
 		context = this;
 		
+        // workaround for https://code.google.com/p/android/issues/detail?id=20915
+        try {
+            Class.forName("android.os.AsyncTask");
+        } catch (ClassNotFoundException e) {
+        }
+		
+        AvatarHelper.initilize(context);
+        
 		setUsedNetworkType(-1);
 		
 		this.connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 		this.connReceiver = new ConnReceiver();
 		IntentFilter filter = new IntentFilter("android.net.conn.CONNECTIVITY_CHANGE");
 		registerReceiver(connReceiver, filter);
+		filter = new IntentFilter(CLIENT_FOCUS);
+		registerReceiver(clientFocusReceiver, filter);
 		filter = new IntentFilter(AccountManager.LOGIN_ACCOUNTS_CHANGED_ACTION);
 		registerReceiver(accountModifyReceiver, filter);
 
@@ -552,6 +536,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				context.getContentResolver().notifyChange(uri, null);
 			}			
 		});
+		
+		notificationHelper = NotificationHelper.createIntstance(context);
 		
 		multiJaxmpp.addHandler(JaxmppCore.ConnectedHandler.ConnectedEvent.class, this);
 		multiJaxmpp.addHandler(JaxmppCore.DisconnectedHandler.DisconnectedEvent.class, this);
@@ -581,6 +567,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			unregisterReceiver(connReceiver);
 		if (accountModifyReceiver != null)
 			unregisterReceiver(accountModifyReceiver);
+		if (clientFocusReceiver != null)
+			unregisterReceiver(clientFocusReceiver);
 		
 		disconnectAllJaxmpp(true);
 		setUsedNetworkType(-1);
@@ -936,6 +924,69 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 					});
 		} catch (Exception e) {
 			Log.e("tigase", "WTF?", e);
+		}
+	}
+	
+	private void storeMessage(SessionObject sessionObject, Chat chat, tigase.jaxmpp.core.client.xmpp.stanzas.Message msg, boolean showNotification) throws XMLException {
+		// for now let's ignore messages without body element
+		if (msg.getBody() == null && msg.getType() != StanzaType.error)
+			return;
+		BareJID authorJid = msg.getFrom() == null ? sessionObject.getUserBareJid() : msg.getFrom().getBareJid();
+		String author = authorJid.toString();
+		String jid = null;
+		if (chat != null) {
+			jid = chat.getJid().getBareJid().toString();
+		}
+		else {
+			jid = (sessionObject.getUserBareJid().equals(authorJid) ? msg.getTo().getBareJid() : authorJid).toString();
+		}
+		
+		Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/" + Uri.encode(jid));
+
+		ContentValues values = new ContentValues();
+		values.put(ChatTableMetaData.FIELD_AUTHOR_JID, author);
+		values.put(ChatTableMetaData.FIELD_JID, jid);
+
+		XmppDelay delay = XmppDelay.extract(msg);
+		values.put(ChatTableMetaData.FIELD_TIMESTAMP, (delay == null ? new Date() : delay.getStamp()).getTime());
+		if (msg.getType() == StanzaType.error) {
+			ErrorElement error = ErrorElement.extract(msg);
+			String body = "Error: ";
+			if (error != null) {
+				if (error.getText() != null) {
+					body += error.getText();
+				} else {
+					ErrorCondition errorCondition = error
+							.getCondition();
+					if (errorCondition != null) {
+						body += errorCondition.getElementName();
+					}
+				}
+			}
+			if (msg.getBody() != null) {
+				body += " ------ ";
+				body += msg.getBody();
+			}
+			values.put(ChatTableMetaData.FIELD_BODY, body);
+		} else {
+			values.put(ChatTableMetaData.FIELD_BODY, msg.getBody());
+		}
+		if (chat != null) {
+			values.put(ChatTableMetaData.FIELD_THREAD_ID, chat.getThreadId());
+		}
+		values.put(ChatTableMetaData.FIELD_ACCOUNT, sessionObject.getUserBareJid().toString());
+		values.put(ChatTableMetaData.FIELD_STATE, sessionObject.getUserBareJid().equals(authorJid) 
+				? ChatTableMetaData.STATE_OUT_SENT : ChatTableMetaData.STATE_INCOMING_UNREAD);			
+		
+		SQLiteDatabase db = dbHelper.getWritableDatabase();
+		long id = db.insert(ChatTableMetaData.TABLE_NAME, null, values);
+		Log.v(TAG, "inserted message - id = " + id);
+		context.getContentResolver().notifyChange(uri, null);
+		//context.getContentResolver().insert(uri, values);		
+		
+		if (!sessionObject.getUserBareJid().equals(authorJid) && showNotification 
+				&& (this.activeChatJid == null || !this.activeChatJid.getBareJid().equals(authorJid))) {
+			notificationHelper.notifyNewChatMessage(sessionObject, msg);
 		}
 	}
 }

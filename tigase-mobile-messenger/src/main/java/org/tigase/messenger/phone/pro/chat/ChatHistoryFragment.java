@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.tigase.messenger.phone.pro.CustomHeader;
 import org.tigase.messenger.phone.pro.IJaxmppService;
+import org.tigase.messenger.phone.pro.JaxmppService;
 import org.tigase.messenger.phone.pro.MessengerApplication;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.MainActivity;
@@ -210,8 +211,8 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 					c.close();
 				}					
 			}
-			else if (getArguments().containsKey("recipient")) {
-				String recipient = getArguments().getString("recipient");
+			else if (getArguments().containsKey("recipient") || getArguments().containsKey("jid")) {
+				String recipient = getArguments().containsKey("recipient") ? getArguments().getString("recipient") : getArguments().getString("jid");
 				this.recipient = JID.jidInstance(recipient);
 				this.account = getArguments().getString("account");
 				// fix thread id
@@ -451,14 +452,13 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		return true;
 	}
 
-//	@Override
-//	public void onPause() {
-//		Intent intent = new Intent();
-//		intent.setAction(MainActivity.CLIENT_FOCUS_MSG);
-//		intent.putExtra("page", 0);
-//		getActivity().sendBroadcast(intent);
-//		super.onPause();
-//	}
+	@Override
+	public void onPause() {
+		Intent intent = new Intent();
+		intent.setAction(JaxmppService.CLIENT_FOCUS);
+		getActivity().sendBroadcast(intent);
+		super.onPause();
+	}
 
 	@Override
 	public void onPrepareOptionsMenu(Menu menu) {
@@ -482,11 +482,17 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		updatePresence();
 		layout.updateClientIndicator();
 
-//		Intent intent = new Intent();
-//		intent.setAction(MainActivity.CLIENT_FOCUS_MSG);
-//		intent.putExtra("page", 1);
-//		intent.putExtra("chatId", chat.getId());
-//		getActivity().sendBroadcast(intent);
+		Intent intent = new Intent();
+		intent.setAction(JaxmppService.CLIENT_FOCUS);
+		if (this.recipient != null)
+			intent.putExtra("chat", this.recipient.toString());
+		getActivity().sendBroadcast(intent);
+		
+		Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/" + Uri.encode(recipient.getBareJid().toString()));
+		ContentValues values = new ContentValues();
+		values.put(ChatTableMetaData.FIELD_AUTHOR_JID, recipient.getBareJid().toString());
+		values.put(ChatTableMetaData.FIELD_STATE, ChatTableMetaData.STATE_INCOMING);
+		getActivity().getContentResolver().update(uri, values, null, null);		
 	}
 
 	@Override

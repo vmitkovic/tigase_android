@@ -20,17 +20,20 @@ package org.tigase.messenger.phone.pro.utils;
 import java.lang.ref.WeakReference;
 
 import tigase.jaxmpp.core.client.BareJID;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.widget.ImageView;
 
 public class BitmapWorkerTask extends AsyncTask<BareJID, Void, Bitmap> {
 
+	private final Context context;
 	protected BareJID data = null;
 	private final WeakReference<ImageView> imageViewReference;
 	private final Integer size;
 
-	public BitmapWorkerTask(ImageView imageView, Integer size) {
+	public BitmapWorkerTask(Context context, ImageView imageView, Integer size) {
+		this.context = context;
 		// Use a WeakReference to ensure the ImageView can be garbage collected
 		imageViewReference = new WeakReference<ImageView>(imageView);
 		this.size = size;
@@ -40,7 +43,7 @@ public class BitmapWorkerTask extends AsyncTask<BareJID, Void, Bitmap> {
 	@Override
 	protected Bitmap doInBackground(BareJID... params) {
 		data = params[0];
-		return size == null ? AvatarHelper.loadAvatar(data) : AvatarHelper.loadAvatar(data, size);
+		return size == null ? AvatarHelper.loadAvatar(context, data, false) : AvatarHelper.loadAvatar(context, data, size);
 	}
 
 	// Once complete, see if ImageView is still around and set bitmap.

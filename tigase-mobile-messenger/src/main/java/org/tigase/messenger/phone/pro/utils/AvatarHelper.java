@@ -18,9 +18,13 @@
 package org.tigase.messenger.phone.pro.utils;
 
 import java.io.InputStream;
+
 import org.tigase.messenger.phone.pro.R;
+import org.tigase.messenger.phone.pro.db.DatabaseHelper;
 import org.tigase.messenger.phone.pro.db.VCardsCacheTableMetaData;
 import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
+
+
 //import org.tigase.mobile.sync.SyncAdapter;
 import tigase.jaxmpp.core.client.BareJID;
 import android.annotation.SuppressLint;
@@ -97,9 +101,13 @@ public class AvatarHelper {
 	}
 
 	public static Bitmap getAvatar(BareJID jid) {
-		Bitmap bmp = avatarCache.get(jid);
+		return getAvatar(context, jid, false);
+	}
+	
+	public static Bitmap getAvatar(Context context, BareJID jid, boolean noCache) {
+		Bitmap bmp = noCache ? null : avatarCache.get(jid);
 		if (bmp == null) {
-			bmp = loadAvatar(jid);
+			bmp = loadAvatar(context, jid, noCache);
 		}
 		return bmp;
 	}
@@ -164,17 +172,19 @@ public class AvatarHelper {
 		}
 	}
 
-	protected static Bitmap loadAvatar(BareJID jid) {
-		Bitmap bmp = loadAvatar(jid, defaultAvatarSize);
-		if (bmp == null) {
-			avatarCache.put(jid, mPlaceHolderBitmap);
-		} else {
-			avatarCache.put(jid, bmp);
+	protected static Bitmap loadAvatar(Context context, BareJID jid, boolean noCache) {
+		Bitmap bmp = loadAvatar(context, jid, defaultAvatarSize);
+		if (!noCache) {
+			if (bmp == null) {
+				avatarCache.put(jid, mPlaceHolderBitmap);
+			} else {
+				avatarCache.put(jid, bmp);
+			}
 		}
 		return bmp;
 	}
 
-	protected static Bitmap loadAvatar(BareJID jid, int size) {
+	protected static Bitmap loadAvatar(Context context, BareJID jid, int size) {
 		Bitmap bmp = null;
 
 		Log.v(TAG, "loading avatar with size " + size);
@@ -240,7 +250,7 @@ public class AvatarHelper {
 		}
 
 		if (cancelPotentialWork(jid, imageView)) {
-			final BitmapWorkerTask task = new BitmapWorkerTask(imageView, null);
+			final BitmapWorkerTask task = new BitmapWorkerTask(context, imageView, null);
 			final AsyncDrawable asyncDrawable = new AsyncDrawable(context.getResources(), mPlaceHolderBitmap, task);
 			imageView.setImageDrawable(asyncDrawable);
 			try {
@@ -254,7 +264,7 @@ public class AvatarHelper {
 
 	public static void setAvatarToImageView(BareJID jid, ImageView imageView, int size) {
 		if (cancelPotentialWork(jid, imageView)) {
-			final BitmapWorkerTask task = new BitmapWorkerTask(imageView, (int) Math.ceil(size * density));
+			final BitmapWorkerTask task = new BitmapWorkerTask(context, imageView, (int) Math.ceil(size * density));
 			final AsyncDrawable asyncDrawable = new AsyncDrawable(context.getResources(), mPlaceHolderBitmap, task);
 			imageView.setImageDrawable(asyncDrawable);
 			try {

@@ -134,6 +134,8 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 		
 	};
 	
+	public static final String NEW_MESSAGE_ACTION = "org.tigase.messenger.phone.pro.NEW_MESSAGE_ACTION";
+	
 	protected DrawerLayout drawerLayout;
 	protected ListView drawerList;
 	protected ActionBarDrawerToggle drawerToggle;
@@ -205,6 +207,11 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 		unbindService(jaxmppServiceConnection);
 	}
 
+	public void onNewIntent(final Intent intent) {
+		super.onNewIntent(intent);
+		processNotificationIntent(intent);
+	}
+	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 	    // Pass the event to ActionBarDrawerToggle, if it returns
@@ -296,5 +303,25 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 		ft.replace(R.id.content_frame, newFragment, tag);
 		ft.addToBackStack(RosterFragment.FRAG_TAG);
 		ft.commit();		
+	}
+	
+	private void processNotificationIntent(final Intent intent) {
+		if (intent == null)
+			return;
+		
+		drawerList.post(new Runnable() {
+			@Override
+			public void run() {
+				if (NEW_MESSAGE_ACTION.equals(intent.getAction())) {
+					String type = intent.getStringExtra("type");
+					if ("chat".equals(type)) {
+						Fragment chatFragment = new ChatHistoryFragment();
+						chatFragment.setArguments(intent.getExtras());
+						switchFragments(chatFragment, ChatHistoryFragment.FRAG_TAG);	
+						return;
+					}
+				}
+			}
+		});
 	}
 }
