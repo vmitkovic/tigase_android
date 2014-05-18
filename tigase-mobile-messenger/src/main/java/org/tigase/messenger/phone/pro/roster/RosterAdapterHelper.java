@@ -147,7 +147,7 @@ public class RosterAdapterHelper {
 			if (status != null) {
 				holder.itemDescription.setText(Html.fromHtml(status));
 			} else {
-//				status = "";
+				status = "";
 //				// TODO: is it fast enough?
 //				GeolocationModule geoModule = jaxmpp.getModule(GeolocationModule.class);
 //				if (geoModule != null) {
@@ -166,7 +166,7 @@ public class RosterAdapterHelper {
 //						}
 //					}
 //				}
-//				holder.itemDescription.setText(status);
+				holder.itemDescription.setText(status);
 			}
 		}
 		AvatarHelper.setAvatarToImageView(jid, holder.itemAvatar);

@@ -4,6 +4,9 @@ import org.tigase.messenger.phone.pro.roster.CPresence;
 import org.tigase.messenger.phone.pro.roster.RosterUpdateCallback;
 
 interface IJaxmppService {
+	
+	boolean connect(String accountJid);
+	boolean disconnect(String accountJid);
 
 	boolean isConnected(String accountJid);
 

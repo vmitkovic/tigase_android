@@ -13,6 +13,7 @@ import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -217,7 +218,25 @@ public class RosterFragment extends Fragment {
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		if (item.getItemId() == R.id.contactAdd) {
+		if (item.getItemId() == R.id.connectButton) {
+			try {
+				Log.v(TAG, "Connecting..");
+				((MainActivity) getActivity()).getJaxmppService().connect("");
+				Log.v(TAG, "Connected.");
+			} catch (RemoteException ex) {
+				Log.v(TAG, "Exception connecting JaxmppService", ex);
+			}
+		}
+		else if (item.getItemId() == R.id.disconnectButton) {
+			try {
+				Log.v(TAG, "Disconnecting..");
+				((MainActivity) getActivity()).getJaxmppService().disconnect("");
+				Log.v(TAG, "Disconnected.");
+			} catch (RemoteException ex) {
+				Log.v(TAG, "Exception disconnecting JaxmppService", ex);
+			}			
+		}
+		else if (item.getItemId() == R.id.contactAdd) {
 			ContactEditFragment frag = new ContactEditFragment();
 			((MainActivity) getActivity()).switchFragments(frag, ContactEditFragment.FRAG_TAG);
 			return true;

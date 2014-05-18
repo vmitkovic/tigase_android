@@ -22,6 +22,8 @@ import java.util.Map;
 
 
 
+
+import org.tigase.messenger.phone.pro.JaxmppService;
 //import org.tigase.mobile.Constants;
 //import org.tigase.mobile.Features;
 import org.tigase.messenger.phone.pro.R;
@@ -104,7 +106,19 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 			final InBandRegistrationModule reg = contact.getModule(InBandRegistrationModule.class);
 			contact.getProperties().setUserProperty(InBandRegistrationModule.IN_BAND_REGISTRATION_MODE_KEY, Boolean.TRUE);
 			contact.getProperties().setUserProperty(SessionObject.DOMAIN_NAME, BareJID.bareJIDInstance(params[0]).getDomain());
-			contact.getProperties().setUserProperty(Connector.TRUST_MANAGERS_KEY, SecureTrustManagerFactory.getTrustManagers());
+			
+			if (JaxmppService.context == null) {
+				try {
+					JaxmppService.context = (AuthenticatorActivity.this);
+					contact.getProperties().setUserProperty(Connector.TRUST_MANAGERS_KEY, SecureTrustManagerFactory.getTrustManagers());
+				}
+				finally {
+					JaxmppService.context = null;
+				}
+			}
+			else {
+				contact.getProperties().setUserProperty(Connector.TRUST_MANAGERS_KEY, SecureTrustManagerFactory.getTrustManagers());
+			}
 
 			reg.addNotSupportedErrorHandler(new InBandRegistrationModule.NotSupportedErrorHandler() {
 				@Override
@@ -256,7 +270,18 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 		protected String doInBackground(String... params) {
 			contact.getProperties().setUserProperty(SessionObject.USER_BARE_JID, BareJID.bareJIDInstance(params[0]));
 			contact.getProperties().setUserProperty(SessionObject.PASSWORD, params[1]);
-			contact.getProperties().setUserProperty(Connector.TRUST_MANAGERS_KEY, SecureTrustManagerFactory.getTrustManagers());
+			if (JaxmppService.context == null) {
+				try {
+					JaxmppService.context = (AuthenticatorActivity.this);
+					contact.getProperties().setUserProperty(Connector.TRUST_MANAGERS_KEY, SecureTrustManagerFactory.getTrustManagers());
+				}
+				finally {
+					JaxmppService.context = null;
+				}
+			}
+			else {
+				contact.getProperties().setUserProperty(Connector.TRUST_MANAGERS_KEY, SecureTrustManagerFactory.getTrustManagers());
+			}
 
 			try {
 				contact.login(true);

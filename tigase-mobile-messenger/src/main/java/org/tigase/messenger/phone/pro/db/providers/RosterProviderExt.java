@@ -60,6 +60,17 @@ public class RosterProviderExt extends tigase.jaxmpp.android.roster.RosterProvid
 		}
 	}
 	
+	public void resetStatus(SessionObject sessionObject) {
+		SQLiteDatabase db = dbHelper.getWritableDatabase();
+		ContentValues values = new ContentValues();
+		values.put(RosterItemsCacheTableExtMetaData.FIELD_STATUS, CPresence.OFFLINE);
+		db.update(RosterItemsCacheTableMetaData.TABLE_NAME, values, RosterItemsCacheTableMetaData.FIELD_ACCOUNT + " = ?", 
+				new String[] { sessionObject.getUserBareJid().toString() });		
+		if (listener != null) {
+			listener.onChange(null);
+		}
+	}
+	
 	public boolean checkVCardHash(SessionObject sessionObject, BareJID jid, String hash) {
 		SQLiteDatabase db = dbHelper.getReadableDatabase();
 		boolean ok = false;

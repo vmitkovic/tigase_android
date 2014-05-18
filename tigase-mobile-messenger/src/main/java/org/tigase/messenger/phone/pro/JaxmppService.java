@@ -97,6 +97,40 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private class Stub extends IJaxmppService.Stub {
 
 		@Override
+		public boolean connect(String accountJidStr) throws RemoteException {
+			if (accountJidStr == null || accountJidStr.length() == 0) {
+				Log.v(TAG, "Connecting all accounts..");
+				connectAllJaxmpp(10L);
+				return true;
+			}
+			BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+			Log.v(TAG, "Checking account " + accountJidStr);
+			Jaxmpp jaxmpp = multiJaxmpp.get(accountJid);
+			if (jaxmpp == null || jaxmpp.isConnected())
+				return false;
+			Log.v(TAG, "Connecting account " + accountJidStr);
+			connectJaxmpp(jaxmpp, 10L);
+			return true;
+		}
+
+		@Override
+		public boolean disconnect(String accountJidStr) throws RemoteException {
+			if (accountJidStr == null || accountJidStr.length() == 0) {
+				Log.v(TAG, "Disconnecting all accounts..");
+				disconnectAllJaxmpp(true);
+				return true;
+			}
+			BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+			Log.v(TAG, "Checking account " + accountJidStr);
+			Jaxmpp jaxmpp = multiJaxmpp.get(accountJid);
+			if (jaxmpp == null || !jaxmpp.isConnected())
+				return false;
+			Log.v(TAG, "Disconnecting account " + accountJidStr);
+			disconnectJaxmpp(jaxmpp, true);
+			return true;
+		}		
+		
+		@Override
 		public boolean isConnected(String accountJidStr) throws RemoteException {
 			BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
 			JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
@@ -407,6 +441,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private RosterProviderExt rosterProvider = null;
 	private ChatProvider chatProvider = null;
 	
+	private boolean reconnect = true;
+	
 	private class AccountModifyReceiver extends BroadcastReceiver {
 
 		@Override
@@ -418,6 +454,16 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
                     connectJaxmpp((Jaxmpp) j, (Long) null);
                 }
             }			
+		}
+		
+	}
+	
+	private class ConnReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			NetworkInfo netInfo = ((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
+			onNetworkChange(netInfo);
 		}
 		
 	}
@@ -467,6 +513,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	
 	final Messenger messenger = new Messenger(new IncomingHandler());
 
+	private ConnReceiver connReceiver;
+
 	@Override
 	public void onCreate() {
 		context = this;
@@ -474,8 +522,10 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		setUsedNetworkType(-1);
 		
 		this.connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-		
-		IntentFilter filter = new IntentFilter(AccountManager.LOGIN_ACCOUNTS_CHANGED_ACTION);
+		this.connReceiver = new ConnReceiver();
+		IntentFilter filter = new IntentFilter("android.net.conn.CONNECTIVITY_CHANGE");
+		registerReceiver(connReceiver, filter);
+		filter = new IntentFilter(AccountManager.LOGIN_ACCOUNTS_CHANGED_ACTION);
 		registerReceiver(accountModifyReceiver, filter);
 
 		this.dbHelper = new DatabaseHelper(this);
@@ -527,6 +577,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		stopForeground(true);
 		timer.cancel();
 		
+		if (connReceiver != null)
+			unregisterReceiver(connReceiver);
+		if (accountModifyReceiver != null)
+			unregisterReceiver(accountModifyReceiver);
+		
 		disconnectAllJaxmpp(true);
 		setUsedNetworkType(-1);
 		
@@ -561,6 +616,13 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	
 	@Override
 	public void onDisconnected(SessionObject sessionObject) {
+		if (reconnect && getUsedNetworkType() != -1) {
+			Jaxmpp jaxmpp = multiJaxmpp.get(sessionObject);
+			if (jaxmpp != null) {
+				this.connectJaxmpp(jaxmpp, 5*1000L);
+			}
+		}
+		
 		NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
 		builder.setSmallIcon(R.drawable.ic_launcher);
 		builder.setContentTitle("Connection").setContentText("" + sessionObject.getUserBareJid().toString() + " - Disconnected");
@@ -569,10 +631,25 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		mNotificationManager.notify(10, builder.build());
 	}
 
+	private void onNetworkChange(final NetworkInfo netInfo) {
+		if (netInfo != null && netInfo.isConnected()) {
+			setReconnect(true);
+			connectAllJaxmpp(5000l);
+		}
+		else {
+			setReconnect(false);
+			disconnectAllJaxmpp(false);
+		}
+	}
+	
     protected final State getState(SessionObject object) {
         State state = multiJaxmpp.get(object).getSessionObject().getProperty(Connector.CONNECTOR_STAGE_KEY);
         return state == null ? State.disconnected : state;
     }	
+    
+    private void setReconnect(boolean val) {
+    	this.reconnect = val;
+    }
     
     private void updateJaxmppInstances() {
     	Resources resources = this.getResources();
@@ -618,7 +695,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     			
     			jaxmpp = new Jaxmpp(sessionObject);
     			jaxmpp.setExecutor(executor);
-
+    			
     			RosterModule.setRosterStore(sessionObject, new AndroidRosterStore(this.rosterProvider));
     			jaxmpp.getModulesManager().register(new RosterModule(this.rosterProvider));
     			PresenceModule.setPresenceStore(sessionObject, new J2SEPresenceStore());
@@ -652,6 +729,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     						jaxmpp.disconnect();
     						// clear presences for account?
     						// app.clearPresences(jaxmpp.getSessionObject(), false);
+                            // is this needed any more??
+    						//JaxmppService.this.rosterProvider.resetStatus(jaxmpp.getSessionObject());
     					}
     					catch (Exception ex) {
     						Log.e(TAG, "Can't disconnect", ex);
@@ -663,6 +742,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     }
     
     private void connectAllJaxmpp(Long delay) {
+    	setUsedNetworkType(getActiveNetworkType());
     	for (final JaxmppCore jaxmpp : multiJaxmpp.get()) {
     		Log.v(TAG, "connecting account " + jaxmpp.getSessionObject().getUserBareJid());
     		connectJaxmpp((Jaxmpp) jaxmpp, delay);
@@ -723,22 +803,28 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     	connectJaxmpp(jaxmpp, delay == null ? null : new Date(delay + System.currentTimeMillis()));
     }
     
+    private void disconnectJaxmpp(final Jaxmpp jaxmpp, final boolean cleaning) {
+        (new Thread() {
+            @Override
+            public void run() {
+                    try {
+//                            GeolocationFeature.updateLocation(j, null, null);
+                            ((Jaxmpp) jaxmpp).disconnect(false);
+                            // is this needed any more??
+                            //JaxmppService.this.rosterProvider.resetStatus(jaxmpp.getSessionObject());
+//                            app.clearPresences(j.getSessionObject(), !cleaning);
+                    } catch (Exception e) {
+                            Log.e(TAG, "cant; disconnect account " + jaxmpp.getSessionObject().getUserBareJid(), e);
+                    }
+            }
+        }).start();    	
+    }
+    
     private void disconnectAllJaxmpp(final boolean cleaning) {
         setUsedNetworkType(-1);
         final MessengerApplication app = (MessengerApplication) getApplicationContext();
         for (final JaxmppCore j : multiJaxmpp.get()) {
-                (new Thread() {
-                        @Override
-                        public void run() {
-                                try {
-//                                        GeolocationFeature.updateLocation(j, null, null);
-                                        ((Jaxmpp) j).disconnect(false);
-//                                        app.clearPresences(j.getSessionObject(), !cleaning);
-                                } catch (Exception e) {
-                                        Log.e(TAG, "cant; disconnect account " + j.getSessionObject().getUserBareJid(), e);
-                                }
-                        }
-                }).start();
+        	disconnectJaxmpp((Jaxmpp) j, cleaning);
         }
         
 //        synchronized (connectionErrorsCounter) {
