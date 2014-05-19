@@ -116,6 +116,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		public boolean connect(String accountJidStr) throws RemoteException {
 			if (accountJidStr == null || accountJidStr.length() == 0) {
 				Log.v(TAG, "Connecting all accounts..");
+				JaxmppService.this.startService(new Intent(JaxmppService.this, JaxmppService.class));
 				connectAllJaxmpp(10L);
 				return true;
 			}
@@ -134,6 +135,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			if (accountJidStr == null || accountJidStr.length() == 0) {
 				Log.v(TAG, "Disconnecting all accounts..");
 				disconnectAllJaxmpp(true);
+				JaxmppService.this.stopService(new Intent(JaxmppService.this, JaxmppService.class));
 				return true;
 			}
 			BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
@@ -378,7 +380,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	}
 	
 	private class PresenceHandler implements PresenceModule.ContactAvailableHandler, 
-		PresenceModule.ContactUnavailableHandler, PresenceModule.ContactChangedPresenceHandler {
+		PresenceModule.ContactUnavailableHandler, PresenceModule.ContactChangedPresenceHandler,
+		PresenceModule.BeforePresenceSendHandler {
 
 		private final JaxmppService jaxmppService;
 		
@@ -407,6 +410,19 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			updateRosterItem(sessionObject, stanza);
 			rosterProvider.updateStatus(sessionObject, jid);
 		}
+
+		@Override
+		public void onBeforePresenceSend(SessionObject sessionObject,
+				Presence presence) throws JaxmppException {
+			presence.setStatus(userStatusMessage);
+			if (focused) {
+				presence.setShow(userStatusShow);
+				presence.setPriority(prefs.getInt(Preferences.DEFAULT_PRIORITY_KEY, 5));
+			} else {
+				presence.setShow(Show.away);
+				presence.setPriority(prefs.getInt(Preferences.AWAY_PRIORITY_KEY, 0));
+			}
+		}
 		
 	}
 	
@@ -417,6 +433,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private static final String TAG = "JaxmppService";
 	private static final StanzaExecutor executor = new StanzaExecutor();
 	
+	protected static Show userStatusShow = Show.online;
+	protected static String userStatusMessage = null;
 	public static Context context = null;
 	
 	protected final Timer timer = new Timer();
@@ -432,6 +450,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private AccountModifyReceiver accountModifyReceiver = new AccountModifyReceiver();
 	private ClientFocusReceiver clientFocusReceiver = new ClientFocusReceiver();
 	private DatabaseHelper dbHelper = null;
+	private boolean focused = true;
 	private MessageHandler messageHandler = null;
 	private MobileModeFeature mobileModeFeature = null;
 	private NotificationHelper notificationHelper = null;
@@ -463,7 +482,20 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		public void onReceive(Context context, Intent intent) {
 			// TODO Auto-generated method stub
 			String chatJid = intent.getStringExtra("chat");
-			activeChatJid = chatJid == null ? null : JID.jidInstance(chatJid);
+			if (chatJid != null) {
+				activeChatJid = chatJid.length() == 0 ? null : JID.jidInstance(chatJid);
+			}
+			if (intent.hasExtra("focus")) {
+				focused = intent.getBooleanExtra("focus", false);
+				if (focused) {
+					int pr = prefs.getInt(Preferences.DEFAULT_PRIORITY_KEY, 0);
+					sendAutoPresence(userStatusShow, userStatusMessage, pr, false);
+				}
+				else {
+					int pr = prefs.getInt(Preferences.AWAY_PRIORITY_KEY, 0);
+					sendAutoPresence(Show.away, "Auto away", pr, true);
+				}
+			}
 		}
 		
 	}
@@ -543,6 +575,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private SharedPreferences prefs;
 	private int keepaliveInterval;
 	private ScreenStateReceiver screenStateReceiver;
+	private boolean started = false;
+	private TimerTask autoPresenceTask;
 
 	public MultiJaxmpp getMulti() {
 		return multiJaxmpp;
@@ -628,6 +662,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		multiJaxmpp.addHandler(PresenceModule.ContactAvailableHandler.ContactAvailableEvent.class, presenceHandler);
 		multiJaxmpp.addHandler(PresenceModule.ContactUnavailableHandler.ContactUnavailableEvent.class, presenceHandler);
 		multiJaxmpp.addHandler(PresenceModule.ContactChangedPresenceHandler.ContactChangedPresenceEvent.class, presenceHandler);
+		multiJaxmpp.addHandler(PresenceModule.BeforePresenceSendHandler.BeforePresenceSendEvent.class, presenceHandler);
 		multiJaxmpp.addHandler(MessageModule.MessageReceivedHandler.MessageReceivedEvent.class, messageHandler);
 		
 		updateJaxmppInstances();
@@ -671,7 +706,10 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 //		}
 //		else {
 		if (intent != null && "connect-all".equals(intent.getAction())) {
-			connectAllJaxmpp(null);
+			if (!started) {
+				connectAllJaxmpp(null);
+				started = true;
+			}
 		}
 		else if (intent != null && ACTION_KEEPALIVE.equals(intent.getAction())) {
 			keepAlive();
@@ -1046,6 +1084,54 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			Log.e("tigase", "WTF?", e);
 		}
 	}
+	
+	private void sendAutoPresence(final Show show, final String status, final int priority, final boolean delayed) {
+		if (autoPresenceTask != null) {
+			autoPresenceTask.cancel();
+			autoPresenceTask = null;
+		}
+
+		if (delayed) {
+			autoPresenceTask = new TimerTask() {
+
+				@Override
+				public void run() {
+					autoPresenceTask = null;
+					try {
+						for (JaxmppCore jaxmpp : getMulti().get()) {
+							final PresenceModule presenceModule = jaxmpp
+									.getModule(PresenceModule.class);
+							if (jaxmpp.getSessionObject().getProperty(
+									Connector.CONNECTOR_STAGE_KEY) == Connector.State.connected)
+								presenceModule.setPresence(show, status,
+										priority);
+						}
+					} catch (Exception e) {
+						Log.e(TAG, "Can't send auto presence!", e);
+					}
+				}
+			};
+			timer.schedule(autoPresenceTask, 1000 * 60);
+		} else {
+			(new Thread() {
+				@Override
+				public void run() {
+					try {
+						for (JaxmppCore jaxmpp : getMulti().get()) {
+							final PresenceModule presenceModule = jaxmpp
+									.getModule(PresenceModule.class);
+							if (jaxmpp.getSessionObject().getProperty(
+									Connector.CONNECTOR_STAGE_KEY) == Connector.State.connected)
+								presenceModule.setPresence(show, status,
+										priority);
+						}
+					} catch (Exception e) {
+						Log.e(TAG, "Can't send auto presence!", e);
+					}
+				}
+			}).start();
+		}
+	}	
 	
 	private void startKeepAlive() {
 		Intent i = new Intent();

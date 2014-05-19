@@ -104,8 +104,7 @@
             android:summary="@string/pref_reconnect_time_summary"
             android:title="@string/pref_reconnect_time_title" />
         -->
-        <!--
-              <org.tigase.messenger.phone.pro.preferences.EditIntegerPreference
+        <org.tigase.messenger.phone.pro.preferences.EditIntegerPreference
             android:defaultValue="5"
             android:dialogTitle="@string/pref_default_priority_dialog"
             android:key="default_priority"
@@ -117,7 +116,6 @@
             android:key="away_priority"
             android:summary="@string/pref_auto_away_priority_summary"
             android:title="@string/pref_auto_away_priority_title" />
-        -->
         <org.tigase.messenger.phone.pro.preferences.EditIntegerPreference
             android:defaultValue="3"
             android:dialogTitle="@string/pref_keepalive_time_dialog"

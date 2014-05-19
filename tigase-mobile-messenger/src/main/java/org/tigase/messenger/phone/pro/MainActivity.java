@@ -241,6 +241,24 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 			this.startActivityForResult(intent, 0);
 		}
 	}
+	
+	@Override
+	public void onPause() {
+		super.onPause();
+		Intent intent = new Intent();
+		intent.setAction(JaxmppService.CLIENT_FOCUS);
+		intent.putExtra("focus", false);
+		sendBroadcast(intent);
+	}
+	
+	@Override
+	public void onResume() {
+		super.onResume();
+		Intent intent = new Intent();
+		intent.setAction(JaxmppService.CLIENT_FOCUS);
+		intent.putExtra("focus", true);
+		sendBroadcast(intent);		
+	}
 
 	@Override
 	public void onRosterItemClicked(String action, String account, BareJID jid) {

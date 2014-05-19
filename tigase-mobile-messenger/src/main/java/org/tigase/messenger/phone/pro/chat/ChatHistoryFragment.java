@@ -456,6 +456,7 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 	public void onPause() {
 		Intent intent = new Intent();
 		intent.setAction(JaxmppService.CLIENT_FOCUS);
+		intent.putExtra("chat", "");
 		getActivity().sendBroadcast(intent);
 		super.onPause();
 	}

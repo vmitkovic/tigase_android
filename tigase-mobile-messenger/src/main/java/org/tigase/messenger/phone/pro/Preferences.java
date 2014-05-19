@@ -4,6 +4,10 @@ public class Preferences {
 
 	public static final String AUTOSTART_KEY = "autostart";
 	
+	public static final String AWAY_PRIORITY_KEY = "away_priority";
+	
+	public static final String DEFAULT_PRIORITY_KEY = "default_priority";
+	
 	public static final String KEEPALIVE_TIME_KEY = "keepalive_time";
 	
 	public static final String NOTIFICATION_CHAT_KEY = "notification_chat";
