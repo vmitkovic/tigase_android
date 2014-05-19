@@ -196,7 +196,7 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
         //getSupportFragmentManager().beginTransaction().replace(R.id.content_frame, new RosterFragment()).commit();
         getSupportFragmentManager().beginTransaction().replace(R.id.content_frame, new ChatsListFragment(), ChatsListFragment.FRAG_TAG).commit();
         
-		startService(new Intent(this, JaxmppService.class));
+		//startService(new Intent(this, JaxmppService.class));
 		Intent intent = new Intent(this, JaxmppService.class);
 		intent.putExtra("ID", "AIDL");
 		bindService(intent, jaxmppServiceConnection, Context.BIND_AUTO_CREATE);

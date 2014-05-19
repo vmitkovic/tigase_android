@@ -2,6 +2,8 @@ package org.tigase.messenger.phone.pro;
 
 public class Preferences {
 
+	public static final String AUTOSTART_KEY = "autostart";
+	
 	public static final String KEEPALIVE_TIME_KEY = "keepalive_time";
 	
 	public static final String NOTIFICATION_CHAT_KEY = "notification_chat";
@@ -18,6 +20,8 @@ public class Preferences {
 	
 	public static final String ROSTER_VERSION_KEY = "roster_version";
 
+	public static final String SERVICE_ACTIVATED = "service_activated";
+	
 	public static final String SHOW_OFFLINE = "show_offline";
 	
 }
