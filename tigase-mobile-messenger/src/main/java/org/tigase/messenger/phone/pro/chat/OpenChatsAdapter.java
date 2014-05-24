@@ -48,7 +48,7 @@ public class OpenChatsAdapter extends SimpleCursorAdapter {
 			holder.itemAvatar = (ImageView) view.findViewById(R.id.avatar);
 			holder.itemPresence = (ImageView) view.findViewById(R.id.status);
 		}
-
+		
 		int unreadCount = cursor.getInt(cursor.getColumnIndex(OpenChatsProvider.FIELD_UNREAD_COUNT));
 
 		holder.itemName.setTransformationMethod(SingleLineTransformationMethod.getInstance());

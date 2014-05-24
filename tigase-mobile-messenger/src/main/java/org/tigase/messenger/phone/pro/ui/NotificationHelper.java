@@ -81,7 +81,7 @@ public abstract class NotificationHelper {
 //		return intentReject;
 //	}
 
-	public static NotificationHelper createIntstance(Context context) {
+	public static NotificationHelper createInstance(Context context) {
 		if (Build.VERSION_CODES.JELLY_BEAN <= Build.VERSION.SDK_INT) {
 			return new NotificationHelperJellyBean(context);
 		} else if (Build.VERSION_CODES.ICE_CREAM_SANDWICH <= Build.VERSION.SDK_INT) {

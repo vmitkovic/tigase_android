@@ -7,6 +7,8 @@ import org.tigase.messenger.phone.pro.account.AccountAuthenticator;
 import org.tigase.messenger.phone.pro.chat.ChatActivity;
 import org.tigase.messenger.phone.pro.chat.ChatHistoryFragment;
 import org.tigase.messenger.phone.pro.chat.ChatsListFragment;
+import org.tigase.messenger.phone.pro.muc.JoinMucDialog;
+import org.tigase.messenger.phone.pro.muc.MucRoomFragment;
 import org.tigase.messenger.phone.pro.preferences.MessengerPreferenceActivity;
 import org.tigase.messenger.phone.pro.roster.ContactFragment;
 import org.tigase.messenger.phone.pro.roster.RosterFragment;
@@ -16,9 +18,11 @@ import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.JID;
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -146,6 +150,8 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 	private IJaxmppService jaxmppService;
 	
 	private MainActivityHelper helper = MainActivityHelper.createInstance(this);
+
+	private BroadcastReceiver mucRoomJoinedReceiver;
 	
 //	@Override
 //	public void onBackPressed() {
@@ -201,11 +207,31 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 		intent.putExtra("ID", "AIDL");
 		bindService(intent, jaxmppServiceConnection, Context.BIND_AUTO_CREATE);
 		
+		IntentFilter filter = new IntentFilter();
+		filter.addAction("org.tigase.messenger.phone.pro.MUC_ROOM_JOINED");
+		mucRoomJoinedReceiver = new BroadcastReceiver() {
+			@Override
+			public void onReceive(Context context, Intent intent) {
+				final Bundle arguments = intent.getExtras();
+				drawerLayout.post(new Runnable() {
+					@Override
+					public void run() {
+						MucRoomFragment fragment = new MucRoomFragment();
+						fragment.setArguments(arguments);
+						switchFragments(fragment, "muc-room");						
+					}				
+				});
+			}
+			
+		};
+		this.registerReceiver(mucRoomJoinedReceiver, filter);
+		
 //		helper.updateActionBar();        
 	}
 	
 	public void onDestroy() {
 		super.onDestroy();
+		this.unregisterReceiver(mucRoomJoinedReceiver);
 		unbindService(jaxmppServiceConnection);
 	}
 

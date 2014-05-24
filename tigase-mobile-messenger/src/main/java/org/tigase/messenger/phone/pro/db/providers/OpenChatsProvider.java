@@ -53,6 +53,7 @@ public class OpenChatsProvider extends ContentProvider {
 					+ " AND " + ChatTableMetaData.FIELD_JID + " = open_chats." + OpenChatTableMetaData.FIELD_JID 
 					+ " ORDER BY " + ChatTableMetaData.FIELD_TIMESTAMP + " DESC LIMIT 1) as " + OpenChatsProvider.FIELD_LAST_MESSAGE);
 			put(OpenChatTableMetaData.FIELD_THREAD_ID, "open_chats." + OpenChatTableMetaData.FIELD_THREAD_ID + " as " + OpenChatTableMetaData.FIELD_THREAD_ID);
+			put(OpenChatTableMetaData.FIELD_NICKNAME, "open_chats." + OpenChatTableMetaData.FIELD_NICKNAME + " as " + OpenChatTableMetaData.FIELD_NICKNAME);
 		}
 	};	
 	private DatabaseHelper dbHelper;

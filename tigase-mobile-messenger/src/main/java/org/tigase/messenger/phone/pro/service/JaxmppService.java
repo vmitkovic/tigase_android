@@ -1,6 +1,7 @@
 package org.tigase.messenger.phone.pro.service;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,12 +36,14 @@ import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 import tigase.jaxmpp.android.Jaxmpp;
 import tigase.jaxmpp.android.chat.AndroidChatManager;
 import tigase.jaxmpp.android.chat.ChatProvider;
+import tigase.jaxmpp.android.muc.AndroidRoomsManager;
 import tigase.jaxmpp.android.roster.AndroidRosterStore;
 import tigase.jaxmpp.android.roster.RosterProvider;
 import tigase.jaxmpp.core.client.AsyncCallback;
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.Base64;
 import tigase.jaxmpp.core.client.Connector;
+import tigase.jaxmpp.core.client.Connector.StanzaReceivedHandler;
 import tigase.jaxmpp.core.client.Connector.State;
 import tigase.jaxmpp.core.client.JID;
 import tigase.jaxmpp.core.client.JaxmppCore;
@@ -60,6 +63,8 @@ import tigase.jaxmpp.core.client.xmpp.modules.chat.AbstractChatManager;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.Chat;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageModule;
 import tigase.jaxmpp.core.client.xmpp.modules.disco.DiscoveryModule;
+import tigase.jaxmpp.core.client.xmpp.modules.muc.MucModule;
+import tigase.jaxmpp.core.client.xmpp.modules.muc.Room;
 import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceModule;
 import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceStore;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterModule;
@@ -363,6 +368,81 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			}
 			return false;
 		}
+
+		@Override
+		public boolean joinRoom(String accountJidStr, String roomJidStr,
+				String nickname, String password, String action)
+				throws RemoteException {
+			try {
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+				JID roomJid = JID.jidInstance(roomJidStr);			
+				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				MucModule mucModule = jaxmpp.getModule(MucModule.class);	
+				Room room = mucModule.getRoom(roomJid.getBareJid());
+				boolean chatExists = room != null;
+				if (!chatExists) {
+					room = mucModule.join(roomJid.getLocalpart(), roomJid.getDomain(), nickname, password);
+					Intent intent = new Intent(action);
+					intent.putExtra("account", accountJidStr);
+					intent.putExtra("jid", roomJid.toString());
+					// is this ok? should be ok!
+					intent.putExtra("roomId", room.getId());
+					JaxmppService.this.sendBroadcast(intent);
+					return true;
+				}
+				return false;
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "EXCEPTION", e);
+			}
+			return false;
+		}
+
+		@Override
+		public boolean leaveRoom(String accountJidStr, String roomJidStr)
+				throws RemoteException {
+			try {
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+				JID roomJid = JID.jidInstance(roomJidStr);			
+				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				MucModule mucModule = jaxmpp.getModule(MucModule.class);
+				Room room = mucModule.getRoom(roomJid.getBareJid());
+				boolean chatExists = room != null;
+				if (chatExists) {
+					mucModule.leave(room);
+					return true;
+				}
+				return false;
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "EXCEPTION", e);
+			}				
+			return false;
+		}
+		
+		@Override
+		public boolean sendRoomMessage(String accountJidStr, String roomJidStr, String msg) {
+			try {
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+				JID roomJid = JID.jidInstance(roomJidStr);			
+				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				MucModule mucModule = jaxmpp.getModule(MucModule.class);
+				Room room = mucModule.getRoom(roomJid.getBareJid());
+				boolean chatExists = room != null;
+				if (chatExists) {
+					room.sendMessage(msg);
+					return true;
+				}
+				return false;
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "EXCEPTION", e);
+			}				
+			return false;			
+		}
 	}
 	
 	private class MessageHandler implements MessageModule.MessageReceivedHandler {
@@ -375,6 +455,73 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			} catch (Exception ex) {
 				Log.e(TAG, "Exception handling received message", ex);
 			}
+		}
+		
+	}
+	
+	private class MucHandler implements MucModule.MucMessageReceivedHandler, MucModule.YouJoinedHandler, 
+			MucModule.MessageErrorHandler, MucModule.StateChangeHandler {
+
+		@Override
+		public void onMucMessageReceived(SessionObject sessionObject,
+				tigase.jaxmpp.core.client.xmpp.stanzas.Message msg,
+				Room room, String nickname, Date timestamp) {
+			try {
+				if (msg == null || msg.getBody() == null || room == null)
+					return;
+				String body = msg.getBody();
+				Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/" + Uri.encode(room.getRoomJid().toString()));
+				
+				ContentValues values = new ContentValues();
+				values.put(ChatTableMetaData.FIELD_JID, room.getRoomJid().toString());
+				values.put(ChatTableMetaData.FIELD_AUTHOR_NICKNAME, nickname);
+				values.put(ChatTableMetaData.FIELD_TIMESTAMP, timestamp.getTime());
+				values.put(ChatTableMetaData.FIELD_BODY, body);
+				values.put(ChatTableMetaData.FIELD_STATE, 0);
+				values.put(ChatTableMetaData.FIELD_ACCOUNT, sessionObject.getUserBareJid().toString());
+				
+				getContentResolver().insert(uri, values);
+				
+				// showMucNotification();!!!
+			} catch (Exception ex) {
+				Log.e(TAG, "Exception handling received MUC message", ex);
+			}
+			
+		}
+
+		@Override
+		public void onMessageError(SessionObject sessionObject,
+				tigase.jaxmpp.core.client.xmpp.stanzas.Message message,
+				Room room, String nickname, Date timestamp) {
+			try {
+				Log.e(TAG, "Error from room " + room.getRoomJid() + ", error = " + message.getAsString());
+			} catch (XMLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		@Override
+		public void onYouJoined(SessionObject sessionObject, Room room,
+				String asNickname) {
+			// TODO Auto-generated method stub
+			Log.v(TAG, "joined room " + room.getRoomJid() + " as " + asNickname);
+		}
+
+		@Override
+		public void onStateChange(SessionObject sessionObject, Room room,
+				tigase.jaxmpp.core.client.xmpp.modules.muc.Room.State oldState,
+				tigase.jaxmpp.core.client.xmpp.modules.muc.Room.State newState) {
+			Log.v(TAG, "room " + room.getRoomJid()  + " changed state from " + oldState + " to " + newState);
+			int state = CPresence.OFFLINE;
+			switch (newState) {
+				case joined:
+					state = CPresence.ONLINE;
+					break;
+				default:
+					state = CPresence.OFFLINE;
+			}
+			chatProvider.updateRoomState(sessionObject, room.getRoomJid(), state);
 		}
 		
 	}
@@ -453,6 +600,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private boolean focused = true;
 	private MessageHandler messageHandler = null;
 	private MobileModeFeature mobileModeFeature = null;
+	private MucHandler mucHandler = null;
 	private NotificationHelper notificationHelper = null;
 	private PresenceHandler presenceHandler = null;
 	private RosterProviderExt rosterProvider = null;
@@ -654,8 +802,10 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				context.getContentResolver().notifyChange(uri, null);
 			}			
 		});
+		chatProvider.resetRoomState(CPresence.OFFLINE);
+		this.mucHandler = new MucHandler();
 		
-		notificationHelper = NotificationHelper.createIntstance(context);
+		notificationHelper = NotificationHelper.createInstance(context);
 		
 		multiJaxmpp.addHandler(JaxmppCore.ConnectedHandler.ConnectedEvent.class, this);
 		multiJaxmpp.addHandler(JaxmppCore.DisconnectedHandler.DisconnectedEvent.class, this);
@@ -664,6 +814,30 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		multiJaxmpp.addHandler(PresenceModule.ContactChangedPresenceHandler.ContactChangedPresenceEvent.class, presenceHandler);
 		multiJaxmpp.addHandler(PresenceModule.BeforePresenceSendHandler.BeforePresenceSendEvent.class, presenceHandler);
 		multiJaxmpp.addHandler(MessageModule.MessageReceivedHandler.MessageReceivedEvent.class, messageHandler);
+		multiJaxmpp.addHandler(MucModule.MucMessageReceivedHandler.MucMessageReceivedEvent.class, mucHandler);
+		multiJaxmpp.addHandler(MucModule.MessageErrorHandler.MessageErrorEvent.class, mucHandler);
+		multiJaxmpp.addHandler(MucModule.YouJoinedHandler.YouJoinedEvent.class, mucHandler);
+		multiJaxmpp.addHandler(MucModule.StateChangeHandler.StateChangeEvent.class, mucHandler);
+		
+		multiJaxmpp.addHandler(Connector.StanzaSendingHandler.StanzaSendingEvent.class, new Connector.StanzaSendingHandler() {
+			@Override
+			public void onStanzaSending(SessionObject sessionObject,
+					Element stanza) throws JaxmppException {
+				Log.v("STREAM", "sending stanza = " + stanza.getAsString());
+			}			
+		});
+		multiJaxmpp.addHandler(StanzaReceivedHandler.StanzaReceivedEvent.class, new Connector.StanzaReceivedHandler() {
+			@Override
+			public void onStanzaReceived(SessionObject sessionObject,
+					Element stanza) {
+				try {
+					Log.v("STREAM", "received stanza = " + stanza.getAsString());
+				} catch (XMLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}			
+		});
 		
 		updateJaxmppInstances();
 		startKeepAlive();	
@@ -726,6 +900,18 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			mobileModeFeature.accountConnected(jaxmpp);
 		} catch (JaxmppException e) {
 			Log.e(TAG, "Exception processing MobileModeFeature on connect for account " + sessionObject.getUserBareJid().toString());
+		}
+		
+		try {
+			Jaxmpp jaxmpp = multiJaxmpp.get(sessionObject);
+			MucModule mucModule = jaxmpp.getModule(MucModule.class);
+			for (Room room : mucModule.getRooms()) {
+				if (room.getState() != Room.State.joined) {
+					room.rejoin();
+				}
+			}
+		} catch (JaxmppException e) {
+			Log.e(TAG, "Exception while rejoining to rooms on connect for account " + sessionObject.getUserBareJid().toString());
 		}
 		
 		// TODO Auto-generated method stub
@@ -824,6 +1010,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     			PresenceModule.setPresenceStore(sessionObject, new J2SEPresenceStore());
     			jaxmpp.getModulesManager().register(new PresenceModule());
     			jaxmpp.getModulesManager().register(new MessageModule(new AndroidChatManager(this.chatProvider)));
+    			jaxmpp.getModulesManager().register(new MucModule(new AndroidRoomsManager(this.chatProvider)));
     			jaxmpp.getModulesManager().register(new VCardModule());
     			
     			Log.v(TAG, "registering account " + accountJid.toString());

@@ -3,8 +3,12 @@ package org.tigase.messenger.phone.pro.chat;
 import org.tigase.messenger.phone.pro.MainActivity;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider;
+import org.tigase.messenger.phone.pro.muc.JoinMucDialog;
+import org.tigase.messenger.phone.pro.muc.MucRoomFragment;
 import org.tigase.messenger.phone.pro.roster.RosterFragment;
 
+import tigase.jaxmpp.android.chat.OpenChatTableMetaData;
+import tigase.jaxmpp.core.client.JID;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -139,8 +143,8 @@ public class ChatsListFragment extends Fragment {
 			listView.setOnItemClickListener(new OnItemClickListener() {
 
 				@Override
-				public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-					Log.i(TAG, "Clicked on chat with id=" + id);
+				public void onItemClick(AdapterView<?> parent, View view, int position, long chatId) {
+					Log.i(TAG, "Clicked on chat with id=" + chatId);
 
 //					Intent intent = new Intent(getActivity(), ChatActivity.class);
 //					intent.putExtra("chatId", id);
@@ -149,8 +153,27 @@ public class ChatsListFragment extends Fragment {
 //					intent.putExtra("id", id);
 //
 //					getActivity().getApplicationContext().sendBroadcast(intent);
+					String jid = null;
+					String account = null;
+					int type = 0;
+					Cursor c = getActivity().getContentResolver().query(Uri.parse(OpenChatsProvider.OPEN_CHATS_URI), 
+							new String[] { OpenChatTableMetaData.FIELD_ACCOUNT, OpenChatTableMetaData.FIELD_JID, OpenChatTableMetaData.FIELD_TYPE }, 
+							"open_chats."+OpenChatTableMetaData.FIELD_ID + "= ?", new String[] { String.valueOf(chatId) }, null);
+					try {
+						Log.v(TAG, "found " + c.getCount() + " for chatId = " + chatId);
+						if (c.moveToNext()) {
+							account = c.getString(0);
+							jid = c.getString(1);
+							type = c.getInt(2);
+						}
+					} finally {
+						c.close();
+					}	
+					
+					Fragment fragment = null;
 					Bundle arguments = new Bundle();
-					arguments.putLong("chatId", id);
+					if (type == OpenChatTableMetaData.TYPE_CHAT) {
+						arguments.putLong("chatId", chatId);
 //					if (getIntent().getLongExtra("chatId", 0) != 0) {
 //						arguments.putLong("chatId", getIntent().getLongExtra("chatId",0));
 //					}
@@ -158,7 +181,12 @@ public class ChatsListFragment extends Fragment {
 //						arguments.putString("recipient", getIntent().getStringExtra("recipient"));
 //						arguments.putString("account", getIntent().getStringExtra("account"));
 //					}
-					ChatHistoryFragment fragment = new ChatHistoryFragment();
+						fragment = new ChatHistoryFragment();
+					}
+					else if (type == OpenChatTableMetaData.TYPE_MUC) {
+						arguments.putLong("roomId", chatId);
+						fragment = new MucRoomFragment();
+					}
 					fragment.setArguments(arguments);					
 					((MainActivity) getActivity()).switchFragments(fragment, ChatHistoryFragment.FRAG_TAG);
 				}
@@ -206,6 +234,9 @@ public class ChatsListFragment extends Fragment {
 		}
 		else if (item.getItemId() == R.id.newGroupChat) {
 			Log.v(TAG, "new group chat button not supported yet");
+			JoinMucDialog mucDialog = JoinMucDialog.newInstance();
+			mucDialog.setJaxmppService(((MainActivity)getActivity()).getJaxmppService());
+			mucDialog.show(getActivity().getSupportFragmentManager(), "dialog");
 		}
 		return super.onOptionsItemSelected(item);
 	}

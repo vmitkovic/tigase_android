@@ -8,6 +8,8 @@ public class Preferences {
 	
 	public static final String DEFAULT_PRIORITY_KEY = "default_priority";
 	
+	public static final String ENTER_TO_SEND_KEY = "enter_to_send";
+	
 	public static final String KEEPALIVE_TIME_KEY = "keepalive_time";
 	
 	public static final String NOTIFICATION_CHAT_KEY = "notification_chat";

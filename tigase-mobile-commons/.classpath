@@ -8,6 +8,7 @@
 			<attribute name="javadoc_location" value="jar:file:/home/andrzej/.m2/repository/junit/junit/3.8.2/junit-3.8.2-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/jaxmpp-muc"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/jaxmpp-chat"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/jaxmpp-presence"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/jaxmpp-roster"/>
