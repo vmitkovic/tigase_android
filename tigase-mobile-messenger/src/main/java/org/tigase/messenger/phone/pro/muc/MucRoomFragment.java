@@ -79,7 +79,7 @@ public class MucRoomFragment extends Fragment implements LoaderCallbacks<Cursor>
 	}
 	
 	private static final boolean DEBUG = false;
-
+	public static final String FRAG_TAG = "MucRoomFragment";
 	private static final String TAG = "MUC";
 
 	public static Fragment newInstance(String account, JID roomJid) {

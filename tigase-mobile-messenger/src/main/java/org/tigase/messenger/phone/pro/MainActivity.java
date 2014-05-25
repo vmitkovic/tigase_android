@@ -370,6 +370,12 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
 						switchFragments(chatFragment, ChatHistoryFragment.FRAG_TAG);	
 						return;
 					}
+					else if ("muc".equals(type)) {
+						Fragment mucFragment = new MucRoomFragment();
+						mucFragment.setArguments(intent.getExtras());
+						switchFragments(mucFragment, MucRoomFragment.FRAG_TAG);
+						return;
+					}
 				}
 			}
 		});

@@ -482,7 +482,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				
 				getContentResolver().insert(uri, values);
 				
-				// showMucNotification();!!!
+				if (activeChatJid == null || !activeChatJid.getBareJid().equals(room.getRoomJid())) {
+					if (body.toLowerCase().contains(room.getNickname().toLowerCase())) {
+						notificationHelper.notifyNewMucMessage(sessionObject, msg);
+					}
+				}
 			} catch (Exception ex) {
 				Log.e(TAG, "Exception handling received MUC message", ex);
 			}

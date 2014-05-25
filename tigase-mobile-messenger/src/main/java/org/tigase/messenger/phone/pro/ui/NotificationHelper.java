@@ -320,31 +320,29 @@ public abstract class NotificationHelper {
 		notificationManager.notify("chatId:" + chatId, CHAT_NOTIFICATION_ID, notification);
 	}
 
-//	public void notifyNewMucMessage(MucEvent event) throws XMLException {
-//		int ico = R.drawable.ic_stat_message;
-//
-//		String n = RosterDisplayTools.getDisplayName(event.getSessionObject(), event.getMessage().getFrom().getBareJid());
-//		if (n == null)
-//			n = event.getMessage().getFrom().getBareJid().toString();
-//
-//		String notificationTitle = n;
-//		String notificationText = context.getResources().getString(R.string.service_mentioned_you_in_message,
-//				event.getMessage().getFrom().getResource());
-//
-//		Intent intent = new Intent(context, TigaseMobileMessengerActivity.class);
-//		intent.setAction(TigaseMobileMessengerActivity.MUC_MESSAGE_ACTION);
-//		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-//		intent.putExtra("roomJid", "" + event.getRoom().getRoomJid().toString());
-//		if (event.getRoom() != null)
-//			intent.putExtra("roomId", event.getRoom().getId());
-//
-//		PendingIntent pendingIntent = PendingIntent.getActivity(context, (int) System.currentTimeMillis(), intent, 0);
-//
-//		Notification notification = prepareChatNotification(ico, notificationTitle, notificationText, pendingIntent, event);
-//
-//		notificationManager.notify("roomId:" + event.getRoom().getId(), CHAT_NOTIFICATION_ID, notification);
-//
-//	}
+	public void notifyNewMucMessage(SessionObject sessionObject, tigase.jaxmpp.core.client.xmpp.stanzas.Message msg) throws XMLException {
+		int ico = R.drawable.ic_stat_message;
+
+		String n = msg.getFrom().getBareJid().toString();
+
+		String notificationTitle = n;
+		String notificationText = context.getResources().getString(R.string.service_mentioned_you_in_message,
+				msg.getFrom().getResource());
+
+		Intent intent = new Intent(context, MainActivity.class);
+		intent.setAction(MainActivity.NEW_MESSAGE_ACTION);
+		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+		intent.putExtra("account", sessionObject.getUserBareJid().toString());
+		intent.putExtra("jid", "" + msg.getFrom().getBareJid().toString());
+		intent.putExtra("type", "muc");
+
+		PendingIntent pendingIntent = PendingIntent.getActivity(context, (int) System.currentTimeMillis(), intent, 0);
+
+		Notification notification = prepareChatNotification(ico, notificationTitle, notificationText, pendingIntent, sessionObject, msg);
+
+		notificationManager.notify("roomId:" + msg.getFrom().getBareJid().hashCode(), CHAT_NOTIFICATION_ID, notification);
+
+	}
 //
 //	public void notifySubscribeRequest(PresenceEvent be) {
 //		String notiticationTitle = be.getJid().toString(); /*
