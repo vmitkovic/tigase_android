@@ -1,12 +1,14 @@
 package org.tigase.messenger.phone.pro.service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -61,6 +63,8 @@ import tigase.jaxmpp.core.client.xmpp.modules.StreamFeaturesModule;
 import tigase.jaxmpp.core.client.xmpp.modules.capabilities.CapabilitiesModule;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.AbstractChatManager;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.Chat;
+import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageCarbonsModule;
+import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageCarbonsModule.CarbonEventType;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageModule;
 import tigase.jaxmpp.core.client.xmpp.modules.disco.DiscoveryModule;
 import tigase.jaxmpp.core.client.xmpp.modules.muc.MucModule;
@@ -71,6 +75,7 @@ import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterModule;
 import tigase.jaxmpp.core.client.xmpp.modules.vcard.VCard;
 import tigase.jaxmpp.core.client.xmpp.modules.vcard.VCardModule;
 import tigase.jaxmpp.core.client.xmpp.stanzas.ErrorElement;
+import tigase.jaxmpp.core.client.xmpp.stanzas.IQ;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Presence;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Presence.Show;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Stanza;
@@ -445,7 +450,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		}
 	}
 	
-	private class MessageHandler implements MessageModule.MessageReceivedHandler {
+	private class MessageHandler implements MessageModule.MessageReceivedHandler, MessageCarbonsModule.CarbonReceivedHandler {
 
 		@Override
 		public void onMessageReceived(SessionObject sessionObject, Chat chat,
@@ -455,6 +460,19 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			} catch (Exception ex) {
 				Log.e(TAG, "Exception handling received message", ex);
 			}
+		}
+
+		@Override
+		public void onCarbonReceived(
+				SessionObject sessionObject,
+				CarbonEventType carbonType,
+				tigase.jaxmpp.core.client.xmpp.stanzas.Message msg,
+				Chat chat) {
+			try {
+				storeMessage(sessionObject, chat, msg, false);
+			} catch (Exception ex) {
+				Log.e(TAG, "Exception handling received carbon message", ex);
+			}			
 		}
 		
 	}
@@ -572,6 +590,60 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			} else {
 				presence.setShow(Show.away);
 				presence.setPriority(prefs.getInt(Preferences.AWAY_PRIORITY_KEY, 0));
+			}
+		}
+		
+	}
+	
+	private class StreamHandler implements DiscoveryModule.ServerFeaturesReceivedHandler {
+
+		@Override
+		public void onServerFeaturesReceived(final SessionObject sessionObject,
+				IQ stanza, String[] featuresArr) {
+			Set<String> features = new HashSet<String>(Arrays.asList(featuresArr));
+			if (features.contains(MessageCarbonsModule.XMLNS_MC)) {
+				MessageCarbonsModule mc = multiJaxmpp.get(sessionObject).getModule(MessageCarbonsModule.class);
+				// if we decide to disable MessageCarbons for some account we may not create module 
+				// instance at all, so better be prepared for null here
+				if (mc != null) {
+					try {
+						mc.enable(new AsyncCallback() {
+							@Override
+							public void onError(Stanza responseStanza,
+									ErrorCondition error)
+									throws JaxmppException {
+								Log.v(TAG,
+										"MessageCarbons for account "
+												+ sessionObject
+														.getUserBareJid()
+														.toString()
+												+ " activation failed = "
+												+ error.toString());
+							}
+
+							@Override
+							public void onSuccess(Stanza responseStanza)
+									throws JaxmppException {
+								Log.v(TAG, "MessageCarbons for account "
+										+ sessionObject.getUserBareJid()
+												.toString()
+										+ " activation succeeded");
+							}
+
+							@Override
+							public void onTimeout() throws JaxmppException {
+								Log.v(TAG, "MessageCarbons for account "
+										+ sessionObject.getUserBareJid()
+												.toString()
+										+ " activation timeout");
+							}
+
+						});
+					} catch (JaxmppException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
 			}
 		}
 		
@@ -729,6 +801,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private ScreenStateReceiver screenStateReceiver;
 	private boolean started = false;
 	private TimerTask autoPresenceTask;
+	private StreamHandler streamHandler;
 
 	public MultiJaxmpp getMulti() {
 		return multiJaxmpp;
@@ -808,16 +881,19 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		});
 		chatProvider.resetRoomState(CPresence.OFFLINE);
 		this.mucHandler = new MucHandler();
+		this.streamHandler = new StreamHandler();
 		
 		notificationHelper = NotificationHelper.createInstance(context);
 		
 		multiJaxmpp.addHandler(JaxmppCore.ConnectedHandler.ConnectedEvent.class, this);
 		multiJaxmpp.addHandler(JaxmppCore.DisconnectedHandler.DisconnectedEvent.class, this);
+		multiJaxmpp.addHandler(DiscoveryModule.ServerFeaturesReceivedHandler.ServerFeaturesReceivedEvent.class, streamHandler);
 		multiJaxmpp.addHandler(PresenceModule.ContactAvailableHandler.ContactAvailableEvent.class, presenceHandler);
 		multiJaxmpp.addHandler(PresenceModule.ContactUnavailableHandler.ContactUnavailableEvent.class, presenceHandler);
 		multiJaxmpp.addHandler(PresenceModule.ContactChangedPresenceHandler.ContactChangedPresenceEvent.class, presenceHandler);
 		multiJaxmpp.addHandler(PresenceModule.BeforePresenceSendHandler.BeforePresenceSendEvent.class, presenceHandler);
 		multiJaxmpp.addHandler(MessageModule.MessageReceivedHandler.MessageReceivedEvent.class, messageHandler);
+		multiJaxmpp.addHandler(MessageCarbonsModule.CarbonReceivedHandler.CarbonReceivedEvent.class, messageHandler);
 		multiJaxmpp.addHandler(MucModule.MucMessageReceivedHandler.MucMessageReceivedEvent.class, mucHandler);
 		multiJaxmpp.addHandler(MucModule.MessageErrorHandler.MessageErrorEvent.class, mucHandler);
 		multiJaxmpp.addHandler(MucModule.YouJoinedHandler.YouJoinedEvent.class, mucHandler);
@@ -1014,6 +1090,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     			PresenceModule.setPresenceStore(sessionObject, new J2SEPresenceStore());
     			jaxmpp.getModulesManager().register(new PresenceModule());
     			jaxmpp.getModulesManager().register(new MessageModule(new AndroidChatManager(this.chatProvider)));
+    			try {
+    				jaxmpp.getModulesManager().register(new MessageCarbonsModule());
+    			} catch (JaxmppException ex) {
+    				Log.v(TAG, "Exception creating instance of MessageCarbonsModule", ex);
+    			}
     			jaxmpp.getModulesManager().register(new MucModule(new AndroidRoomsManager(this.chatProvider)));
     			jaxmpp.getModulesManager().register(new VCardModule());
     			
