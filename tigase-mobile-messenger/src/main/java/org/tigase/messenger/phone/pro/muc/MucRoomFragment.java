@@ -71,7 +71,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 public class MucRoomFragment extends Fragment implements LoaderCallbacks<Cursor>, CustomHeader {
-
+	
 	private class Holder {
 		TextView description;
 		ImageView status;
@@ -82,6 +82,8 @@ public class MucRoomFragment extends Fragment implements LoaderCallbacks<Cursor>
 	public static final String FRAG_TAG = "MucRoomFragment";
 	private static final String TAG = "MUC";
 
+	protected static final int SHOW_OCCUPANTS = 1021;
+	
 	public static Fragment newInstance(String account, JID roomJid) {
 		MucRoomFragment f = new MucRoomFragment();
 
@@ -261,12 +263,12 @@ public class MucRoomFragment extends Fragment implements LoaderCallbacks<Cursor>
 
 	@Override
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
-//		if (requestCode == TigaseMobileMessengerActivity.SHOW_OCCUPANTS && resultCode == Activity.RESULT_OK) {
-//			String n = data.getStringExtra("nickname");
-//			if (n != null) {
-//				addNicknameToEdit(n);
-//			}
-//		}
+		if (requestCode == SHOW_OCCUPANTS && resultCode == Activity.RESULT_OK) {
+			String n = data.getStringExtra("nickname");
+			if (n != null) {
+				addNicknameToEdit(n);
+			}
+		}
 		super.onActivityResult(requestCode, resultCode, data);
 	}
 
@@ -381,13 +383,13 @@ public class MucRoomFragment extends Fragment implements LoaderCallbacks<Cursor>
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-//		if (item.getItemId() == R.id.showOccupantsButton) {
-//			Intent chatListActivity = new Intent(getActivity(), OccupantsListActivity.class);
-//			chatListActivity.putExtra("roomId", room.getId());
-//			chatListActivity.putExtra("roomJid", room.getRoomJid().toString());
-//			chatListActivity.putExtra("account", room.getSessionObject().getUserBareJid().toString());
-//
-//			this.startActivityForResult(chatListActivity, TigaseMobileMessengerActivity.SHOW_OCCUPANTS);
+		if (item.getItemId() == R.id.showOccupantsButton) {
+			Intent chatListActivity = new Intent(getActivity(), OccupantsListActivity.class);
+			//chatListActivity.putExtra("roomId", room.getId());
+			chatListActivity.putExtra("jid", room.toString());
+			chatListActivity.putExtra("account", account);
+
+			this.startActivityForResult(chatListActivity, SHOW_OCCUPANTS);
 //		} else if (item.getItemId() == R.id.showChatsButton) {
 ////			Intent chatListActivity = new Intent(getActivity(), ChatListActivity.class);
 ////			this.getActivity().startActivityForResult(chatListActivity, TigaseMobileMessengerActivity.REQUEST_CHAT);
@@ -398,8 +400,7 @@ public class MucRoomFragment extends Fragment implements LoaderCallbacks<Cursor>
 //			else {
 //				slidingPaneLayout.openPane();
 //			}			
-//		} else 
-		if (item.getItemId() == R.id.closeChatButton) {
+		} else if (item.getItemId() == R.id.closeChatButton) {
 			cancelEdit();
 
 			final IJaxmppService jaxmppService = ((MainActivity) getActivity()).getJaxmppService();		

@@ -85,6 +85,10 @@
             android:configChanges="orientation"
             android:label="@string/account_advanced_preferences" >
         </activity>
+        <activity android:name=".muc.OccupantsListActivity"
+            android:configChanges="orientation"
+            android:label="@string/muc_occupants_list_title">
+        </activity>
 
         <service
             android:name="org.tigase.messenger.phone.pro.service.JaxmppService"

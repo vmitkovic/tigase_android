@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <GridView
+        android:id="@+id/occupants_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:divider="#e5e4e5"
+        android:dividerHeight="1px"
+        android:numColumns="auto_fit"
+        android:columnWidth="280dp"
+        android:saveEnabled="true" >
+
+    </GridView>
+
+</RelativeLayout>

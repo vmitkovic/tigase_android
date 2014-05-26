@@ -29,6 +29,7 @@ import org.tigase.messenger.phone.pro.db.DatabaseHelper;
 import org.tigase.messenger.phone.pro.db.VCardsCacheTableMetaData;
 import org.tigase.messenger.phone.pro.db.providers.ChatHistoryProvider;
 import org.tigase.messenger.phone.pro.db.providers.RosterProviderExt;
+import org.tigase.messenger.phone.pro.muc.Occupant;
 import org.tigase.messenger.phone.pro.roster.CPresence;
 import org.tigase.messenger.phone.pro.roster.RosterUpdateCallback;
 import org.tigase.messenger.phone.pro.security.SecureTrustManagerFactory;
@@ -447,6 +448,31 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				Log.e(TAG, "EXCEPTION", e);
 			}				
 			return false;			
+		}
+
+		@Override
+		public Occupant[] getRoomOccupants(String accountJidStr, String roomJidStr)
+				throws RemoteException {
+			try {
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+				JID roomJid = JID.jidInstance(roomJidStr);			
+				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				MucModule mucModule = jaxmpp.getModule(MucModule.class);
+				Room room = mucModule.getRoom(roomJid.getBareJid());
+				Collection<tigase.jaxmpp.core.client.xmpp.modules.muc.Occupant> roomOccupants = room.getPresences().values();
+				Occupant[] occupants = new Occupant[roomOccupants.size()];
+				int i=0;
+				for (tigase.jaxmpp.core.client.xmpp.modules.muc.Occupant ro : roomOccupants) {
+					occupants[i] = new Occupant(ro);
+					i++;
+				}
+				return occupants;
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "EXCEPTION", e);
+			}				
+			return new Occupant[0];
 		}
 	}
 	
