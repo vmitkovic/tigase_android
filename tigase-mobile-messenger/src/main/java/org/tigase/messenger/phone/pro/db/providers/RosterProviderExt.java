@@ -132,4 +132,8 @@ public class RosterProviderExt extends tigase.jaxmpp.android.roster.RosterProvid
 	public static long createId(SessionObject sessionObject, BareJID jid) {
 		return (sessionObject.getUserBareJid() + "::" + jid).hashCode();
 	}	
+	
+	public static long createId(BareJID account, BareJID jid) {
+		return (account + "::" + jid).hashCode();
+	}		
 }

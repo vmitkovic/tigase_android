@@ -30,7 +30,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.tigase.messenger.phone.pro.Constants;
 import org.tigase.messenger.phone.pro.db.DatabaseHelper;
+import org.tigase.messenger.phone.pro.db.RosterItemsCacheTableExtMetaData;
 import org.tigase.messenger.phone.pro.db.VCardsCacheTableMetaData;
+import org.tigase.messenger.phone.pro.db.providers.RosterProviderExt;
 
 import tigase.jaxmpp.android.roster.RosterItemsCacheTableMetaData;
 import tigase.jaxmpp.core.client.BareJID;
@@ -90,51 +92,51 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 		}
 	}
 
-//	private static class PresenceUpdater implements Runnable {
-//
-//		private final Context context;
-//
-//		private boolean scheduled = false;
-//
-//		public PresenceUpdater(Context context) {
-//			this.context = context;
-//		}
-//
-//		public boolean isScheduled() {
-//			return scheduled;
-//		}
-//
-//		@Override
-//		public void run() {
+	private static class PresenceUpdater implements Runnable {
+
+		private final Context context;
+
+		private boolean scheduled = false;
+
+		public PresenceUpdater(Context context) {
+			this.context = context;
+		}
+
+		public boolean isScheduled() {
+			return scheduled;
+		}
+
+		@Override
+		public void run() {
 //			final MultiJaxmpp multiJaxmpp = ((MessengerApplication) context.getApplicationContext()).getMultiJaxmpp();
-//			final ContentResolver resolver = context.getContentResolver();
-//			BatchOperation batchOperation = new BatchOperation(context, resolver);
-//			PresenceEvent be = null;
-//
-//			AccountManager accountManager = AccountManager.get(context);
-//			Account[] accounts = accountManager.getAccountsByType(Constants.ACCOUNT_TYPE);
-//			Set<BareJID> syncEnabledAccounts = new HashSet<BareJID>();
-//			if (accounts != null) {
-//				for (Account acc : accounts) {
-//					if (ContentResolver.getSyncAutomatically(acc, "com.android.contacts")) {
-//						syncEnabledAccounts.add(BareJID.bareJIDInstance(acc.name));
-//					}
-//				}
-//			}
-//			
-//			// we should schedule next event from now on
-//			scheduled = false;
-//
-//			synchronized (SyncAdapter.class) {
-//			while ((be = presenceEventQueue.poll()) != null) {
+			final ContentResolver resolver = context.getContentResolver();
+			BatchOperation batchOperation = new BatchOperation(context, resolver);
+			PresenceEvent be = null;
+
+			AccountManager accountManager = AccountManager.get(context);
+			Account[] accounts = accountManager.getAccountsByType(Constants.ACCOUNT_TYPE);
+			Set<BareJID> syncEnabledAccounts = new HashSet<BareJID>();
+			if (accounts != null) {
+				for (Account acc : accounts) {
+					if (ContentResolver.getSyncAutomatically(acc, "com.android.contacts")) {
+						syncEnabledAccounts.add(BareJID.bareJIDInstance(acc.name));
+					}
+				}
+			}
+			
+			// we should schedule next event from now on
+			scheduled = false;
+
+			synchronized (SyncAdapter.class) {
+			while ((be = presenceEventQueue.poll()) != null) {
 //				try {
-//					BareJID buddyJid = be.getJid().getBareJid();
-//					if (!syncEnabledAccounts.contains(be.getSessionObject().getUserBareJid())) {
-//						if (DEBUG)
-//							Log.v(TAG, "not setting status for " + buddyJid.toString() + ", reason = sync disabled");
-//						continue;
-//					}
-//					
+					BareJID buddyJid = be.jid;
+					if (!syncEnabledAccounts.contains(be.account)) {
+						if (DEBUG)
+							Log.v(TAG, "not setting status for " + buddyJid.toString() + ", reason = sync disabled");
+						continue;
+					}
+					
 //					JaxmppCore jaxmpp = multiJaxmpp.get(be.getSessionObject());
 //					if (jaxmpp == null) {
 //						if (DEBUG)
@@ -149,67 +151,68 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 //							Log.v(TAG, "not setting status for " + buddyJid.toString() + ", reason = no roster item");
 //						continue;
 //					}
-//
-//					long rawContactId = lookupRawContact(resolver, ri.getId());
-//					if (rawContactId == 0) {
-//						if (buddyJid.equals(be.getSessionObject().getUserBareJid()))
-//							continue;
-//					
-//						if (DEBUG)
-//							Log.v(TAG, "not setting status for " + buddyJid.toString() + ", reason = contact not synchronized");
-//						forceContactsSync.add(jaxmpp.getSessionObject().getUserBareJid());					
-//						continue;
-//					}
-//
-//					Presence p = jaxmpp.getPresence().getBestPresence(buddyJid);
-//					
-//					ContactOperations.syncStatus(context, be.getSessionObject().getUserBareJid().toString(), rawContactId,
-//							buddyJid, p, batchOperation);
-//
-//					// counter++;
-//					// if (counter >= 1) {
-//					if (DEBUG)
-//						Log.v(TAG, "updating status for " + buddyJid.toString() + "");
-//					// batchOperation.execute();
-//					// counter = 0;
-//					// }
-//					if (batchOperation.size() >= 50) {
-//						int counter = batchOperation.size();
-//						batchOperation.execute();
-//						Log.d(TAG, "updated " + counter + " contacts at once");
-//					}
+
+					long ri = RosterProviderExt.createId(be.account, buddyJid);
+					long rawContactId = lookupRawContact(resolver, ri);
+					if (rawContactId == 0) {
+						if (buddyJid.equals(be.account))
+							continue;
+					
+						if (DEBUG)
+							Log.v(TAG, "not setting status for " + buddyJid.toString() + ", reason = contact not synchronized");
+						forceContactsSync.add(be.account);					
+						continue;
+					}
+
+					Presence p = be.p;
+					
+					ContactOperations.syncStatus(context, be.account.toString(), rawContactId,
+							buddyJid, p, batchOperation);
+
+					// counter++;
+					// if (counter >= 1) {
+					if (DEBUG)
+						Log.v(TAG, "updating status for " + buddyJid.toString() + "");
+					// batchOperation.execute();
+					// counter = 0;
+					// }
+					if (batchOperation.size() >= 50) {
+						int counter = batchOperation.size();
+						batchOperation.execute();
+						Log.d(TAG, "updated " + counter + " contacts at once");
+					}
 //				} catch (XMLException e) {
 //					Log.e(TAG, "WTF??", e);
 //				}
-//			}
-//
-//			int counter = batchOperation.size();
-//			batchOperation.execute();
-//			
-//			Log.d(TAG, "updated " + counter + " contacts at once");
-//			}
-//			
-//			if (!forceContactsSync.isEmpty()) {
-//				for (Account account : accounts) {
-//					BareJID accountJid = BareJID.bareJIDInstance(account.name);
-//					if (syncEnabledAccounts.contains(accountJid) && forceContactsSync.contains(accountJid)) {
-//						ContentResolver.requestSync(account, "com.android.contacts", new Bundle());
-//					}
-//				}
-//			}
-//		}
-//
-//		public void setScheduled(boolean value) {
-//			this.scheduled = value;
-//		}
-//
-//	}
+			}
+
+			int counter = batchOperation.size();
+			batchOperation.execute();
+			
+			Log.d(TAG, "updated " + counter + " contacts at once");
+			}
+			
+			if (!forceContactsSync.isEmpty()) {
+				for (Account account : accounts) {
+					BareJID accountJid = BareJID.bareJIDInstance(account.name);
+					if (syncEnabledAccounts.contains(accountJid) && forceContactsSync.contains(accountJid)) {
+						ContentResolver.requestSync(account, "com.android.contacts", new Bundle());
+					}
+				}
+			}
+		}
+
+		public void setScheduled(boolean value) {
+			this.scheduled = value;
+		}
+
+	}
 
 	public static final boolean DEBUG = false;
 
-//	private static BlockingQueue<PresenceEvent> presenceEventQueue = null;
+	private static BlockingQueue<PresenceEvent> presenceEventQueue = null;
 
-//	private static PresenceUpdater presenceUpdater = null;
+	private static PresenceUpdater presenceUpdater = null;
 
 	private static ScheduledThreadPoolExecutor scheduledExecutor = null;
 	private static final String SYNC_MARKER_KEY = "org.tigase.mobile.sync.marker";
@@ -282,28 +285,42 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 		}
 		return id;
 	}
+	
+	private static class PresenceEvent {
+		private final BareJID account;
+		private final BareJID jid;
+		private final Presence p;
+		
+		public PresenceEvent(BareJID account, BareJID jid, Presence p) {
+			this.account = account;
+			this.jid = jid;
+			this.p = p;
+		}
+		
+	}
 
-//	public static void syncContactStatus(Context context, PresenceEvent pe) {
-//		synchronized (TAG) {
-//			if (scheduledExecutor == null) {
-//				scheduledExecutor = new ScheduledThreadPoolExecutor(1);
-//				presenceEventQueue = new LinkedBlockingQueue<PresenceEvent>();
-//				presenceUpdater = new PresenceUpdater(context);
-//			}
-//		}
-//
-//		presenceEventQueue.offer(pe);
-//
-//		synchronized (presenceUpdater) {
-//			if (!presenceUpdater.isScheduled()) {
-//				presenceUpdater.setScheduled(true);
-//				// if
-//				// (!scheduledExecutor.getQueue().contains(presenceUpdater))
-//				// {
-//				scheduledExecutor.schedule(presenceUpdater, 1, TimeUnit.SECONDS);
-//			}
-//		}
-//	}
+	public static void syncContactStatus(Context context, BareJID account, BareJID jid, Presence p) {
+		synchronized (TAG) {
+			if (scheduledExecutor == null) {
+				scheduledExecutor = new ScheduledThreadPoolExecutor(1);
+				presenceEventQueue = new LinkedBlockingQueue<PresenceEvent>();
+				presenceUpdater = new PresenceUpdater(context);
+			}
+		}
+
+		PresenceEvent pe = new PresenceEvent(account, jid, p);
+		presenceEventQueue.offer(pe);
+
+		synchronized (presenceUpdater) {
+			if (!presenceUpdater.isScheduled()) {
+				presenceUpdater.setScheduled(true);
+				// if
+				// (!scheduledExecutor.getQueue().contains(presenceUpdater))
+				// {
+				scheduledExecutor.schedule(presenceUpdater, 1, TimeUnit.SECONDS);
+			}
+		}
+	}
 
 	private static void updateContact(Context context, ContentResolver resolver, Account account, String jid, String fullName,
 			byte[] avatar, String group, boolean inSync, long rawContactId, long userId, BatchOperation batchOperation) {

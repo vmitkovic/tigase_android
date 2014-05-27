@@ -33,6 +33,7 @@ import org.tigase.messenger.phone.pro.muc.Occupant;
 import org.tigase.messenger.phone.pro.roster.CPresence;
 import org.tigase.messenger.phone.pro.roster.RosterUpdateCallback;
 import org.tigase.messenger.phone.pro.security.SecureTrustManagerFactory;
+import org.tigase.messenger.phone.pro.sync.SyncAdapter;
 import org.tigase.messenger.phone.pro.ui.NotificationHelper;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 
@@ -595,6 +596,12 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		@Override
 		public void onContactUnavailable(SessionObject sessionObject,
 				Presence stanza, JID jid, String status) {
+			try {
+				updateRosterItem(sessionObject, stanza);
+			}
+			catch (JaxmppException ex) {
+				Log.v(TAG, "Exception updating roster item presence", ex);
+			}
 			rosterProvider.updateStatus(sessionObject, jid);		
 		}
 
@@ -1317,7 +1324,10 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		}
 
 		// Synchronize contact status
-		//SyncAdapter.syncContactStatus(getApplicationContext(), be);
+		BareJID from = p.getFrom().getBareJid();
+		PresenceStore store = PresenceModule.getPresenceStore(sessionObject);
+		Presence bestPresence = store.getBestPresence(from);
+		SyncAdapter.syncContactStatus(getApplicationContext(), sessionObject.getUserBareJid(), from, bestPresence);
 	}
 
 	private void keepAlive() {
