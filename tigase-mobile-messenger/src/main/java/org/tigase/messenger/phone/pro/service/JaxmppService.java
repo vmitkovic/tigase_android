@@ -827,6 +827,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private ScreenStateReceiver screenStateReceiver;
 	private boolean started = false;
 	private TimerTask autoPresenceTask;
+	private SSLSocketFactory sslSocketFactory;
 	private StreamHandler streamHandler;
 
 	public MultiJaxmpp getMulti() {
@@ -844,6 +845,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
         }
 		
         AvatarHelper.initilize(context);
+
+		// Android from API v8 contains optimized SSLSocketFactory
+		// which reduces network usage for handshake
+		SSLSessionCache sslSessionCache = new SSLSessionCache(this);
+		sslSocketFactory = SSLCertificateSocketFactory.getDefault(0, sslSessionCache);
         
         mobileModeFeature = new MobileModeFeature(this);
         
@@ -1102,10 +1108,6 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     			
     			sessionObject.setUserProperty(SessionObject.USER_BARE_JID, accountJid);
     			
-    			// Android from API v8 contains optimized SSLSocketFactory
-    			// which reduces network usage for handshake
-    			SSLSessionCache sslSessionCache = new SSLSessionCache(this);
-    			SSLSocketFactory sslSocketFactory = SSLCertificateSocketFactory.getDefault(0, sslSessionCache);
     			sessionObject.setUserProperty(SocketConnector.SSL_SOCKET_FACTORY_KEY, sslSocketFactory);    			
     			
     			jaxmpp = new Jaxmpp(sessionObject);
@@ -1315,7 +1317,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		}
 
 		// Synchronize contact status
-		// SyncAdapter.syncContactStatus(getApplicationContext(), be);
+		//SyncAdapter.syncContactStatus(getApplicationContext(), be);
 	}
 
 	private void keepAlive() {
