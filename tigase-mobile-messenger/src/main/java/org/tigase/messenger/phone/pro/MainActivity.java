@@ -200,7 +200,11 @@ public class MainActivity extends FragmentActivity implements RosterFragment.OnC
         });		
 
         //getSupportFragmentManager().beginTransaction().replace(R.id.content_frame, new RosterFragment()).commit();
-        getSupportFragmentManager().beginTransaction().replace(R.id.content_frame, new ChatsListFragment(), ChatsListFragment.FRAG_TAG).commit();
+        if (savedInstanceState == null) {
+        	// we need to add this fragment only if we are not being restored from previous state
+        	// as in other case we might end up with overlapping fragments
+        	getSupportFragmentManager().beginTransaction().replace(R.id.content_frame, new ChatsListFragment(), ChatsListFragment.FRAG_TAG).commit();
+        }
         
 		//startService(new Intent(this, JaxmppService.class));
 		Intent intent = new Intent(this, JaxmppService.class);
