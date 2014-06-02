@@ -34,6 +34,7 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -44,7 +45,7 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-public class MainActivity extends FragmentActivity implements RosterFragment.OnClickListener {
+public class MainActivity extends ActionBarActivity implements RosterFragment.OnClickListener {
 	
     private class DrawerMenuAdapter extends ArrayAdapter<DrawerMenuItem> {
 

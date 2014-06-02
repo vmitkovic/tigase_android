@@ -20,10 +20,15 @@ package org.tigase.messenger.phone.pro;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.ActionBar;
+import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 
 public class MainActivityHelper {
 
+	protected static final String TAG = "MainActivityHelper";
+	
 	public static MainActivityHelper createInstance(MainActivity activity) {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
 			return new MainActivityHelperHoneycomb(activity);
@@ -51,7 +56,44 @@ public class MainActivityHelper {
 	};
 
 	public void updateActionBar(Fragment frag) {
+
+		boolean isMain = activity.isMainView();
+
+		Log.v(TAG, "updating ActionBar - isMain: " + isMain);
+
+		ActionBar actionBar = activity.getSupportActionBar();
+		actionBar.setDisplayHomeAsUpEnabled(true);// isMain);
+		if (isMain) {
+			activity.drawerLayout.setDrawerListener(activity.drawerToggle);
+		} else {
+			activity.drawerLayout.setDrawerListener(null);
+		}
+
+		// // if (currentPage != 1 && !isXLarge()) {
+		// activity.drawerLayout.setDrawerListener(null);
+		// activity.drawerToggle.setDrawerIndicatorEnabled(false);
+		// } else {
+		// activity.drawerLayout.setDrawerListener(activity.drawerToggle);
+		activity.drawerToggle.setDrawerIndicatorEnabled(isMain);
+		// }
+		actionBar.setBackgroundDrawable(activity.getResources().getDrawable(
+				R.drawable.actionbar_background));
+
+		if (frag instanceof CustomHeader) {
+			CustomHeader cheader = (CustomHeader) frag;
+			View cview = actionBar.getCustomView();
+			actionBar.setDisplayShowCustomEnabled(true);
+			int id = cheader.getHeaderViewId();
+			if (cview == null || cview.getId() != id) {
+				actionBar.setCustomView(id);
+				cview = actionBar.getCustomView();
+			}
+			cheader.updateHeaderView(cview);
+		} else {
+			actionBar.setDisplayShowCustomEnabled(false);
+		}
 	}
+
 
 	public void updateActionBar(int itemHashCode) {
 	}

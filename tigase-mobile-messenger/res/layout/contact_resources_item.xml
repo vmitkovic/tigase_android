@@ -28,15 +28,15 @@
     </LinearLayout>
 
     <ImageButton
-        android:id="@+id/button1"
-        style="?android:attr/buttonStyleSmall"
+        android:id="@+id/chat_btn"
+        style="?android:attr/borderlessButtonStyle"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:src="@drawable/ic_menu_start_conversation" />
 
     <ImageButton
-        android:id="@+id/button2"
-        style="?android:attr/buttonStyleSmall"
+        android:id="@+id/share_btn"
+        style="?android:attr/borderlessButtonStyle"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:src="@android:drawable/ic_menu_share" />

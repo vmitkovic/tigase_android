@@ -5,7 +5,7 @@
     class="org.tigase.mobile.chat.ChatView"
     android:orientation="vertical" >
 
-    <RelativeLayout
+<!--    <RelativeLayout
         android:id="@+id/topBar"
         android:layout_width="fill_parent"
         android:layout_height="26dp"
@@ -58,7 +58,7 @@
             android:paddingRight="5dp"
             android:scaleType="centerInside"
             android:visibility="invisible" />
-    </RelativeLayout>
+    </RelativeLayout> -->
 
     <ListView
         android:id="@+id/chat_conversation_history"

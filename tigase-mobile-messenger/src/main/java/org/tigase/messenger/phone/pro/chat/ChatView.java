@@ -205,7 +205,6 @@ public class ChatView extends RelativeLayout {
 			}
 		});
 
-		itemPresence = (ImageView) findViewById(R.id.user_presence);
 		clientTypeIndicator = (ImageView) findViewById(R.id.client_type_indicator);
 		
 		Intent intent = new Intent(getContext(), JaxmppService.class);

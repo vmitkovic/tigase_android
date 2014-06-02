@@ -307,9 +307,6 @@ public class MucRoomFragment extends Fragment implements LoaderCallbacks<Cursor>
 
 		this.view = inflater.inflate(R.layout.muc_conversation, container, false);
 
-		this.stateImage = (ImageView) view.findViewById(R.id.user_presence);
-		this.progressBar = (ProgressBar) view.findViewById(R.id.progressBar1);
-
 		this.ed = (EditText) view.findViewById(R.id.chat_message_entry);
 		this.ed.setOnKeyListener(new OnKeyListener() {
 
