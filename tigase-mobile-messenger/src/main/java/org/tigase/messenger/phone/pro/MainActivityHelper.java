@@ -76,8 +76,8 @@ public class MainActivityHelper {
 		// activity.drawerLayout.setDrawerListener(activity.drawerToggle);
 		activity.drawerToggle.setDrawerIndicatorEnabled(isMain);
 		// }
-		actionBar.setBackgroundDrawable(activity.getResources().getDrawable(
-				R.drawable.actionbar_background));
+		//actionBar.setBackgroundDrawable(activity.getResources().getDrawable(
+		//		R.drawable.actionbar_background));
 
 		if (frag instanceof CustomHeader) {
 			CustomHeader cheader = (CustomHeader) frag;

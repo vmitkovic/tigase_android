@@ -15,6 +15,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.view.MenuItemCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -66,6 +67,8 @@ public class ChatsListFragment extends Fragment {
 		// menu.clear();
 
 		inflater.inflate(R.menu.chat_list_menu, menu);
+		MenuItemCompat.setShowAsAction(menu.findItem(R.id.newChat), MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
+		MenuItemCompat.setShowAsAction(menu.findItem(R.id.newGroupChat), MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
 		super.onCreateOptionsMenu(menu, inflater);
 	}
 	

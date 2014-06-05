@@ -64,6 +64,7 @@ import android.support.v4.app.NavUtils;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.SlidingPaneLayout;
 import android.text.ClipboardManager;
@@ -324,6 +325,8 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 
 		inflater.inflate(R.menu.chat_main_menu, menu);
 
+		MenuItemCompat.setShowAsAction(menu.findItem(R.id.closeChatButton), MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
+		MenuItemCompat.setShowAsAction(menu.findItem(R.id.showContact), MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
 //		MenuItem showChats = menu.findItem(R.id.showChatsButton);
 //		if (showChats != null) {
 //			showChats.setVisible(getActivity() instanceof ChatActivity);

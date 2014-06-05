@@ -30,4 +30,6 @@ public class Preferences {
 	
 	public static final String SHOW_OFFLINE = "show_offline";
 	
+	public static final String MAIN_WINDOW_TABS = "main_window_tabs";
+	
 }

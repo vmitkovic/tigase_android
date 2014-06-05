@@ -13,6 +13,7 @@ import org.tigase.messenger.phone.pro.preferences.MessengerPreferenceActivity;
 import org.tigase.messenger.phone.pro.roster.ContactFragment;
 import org.tigase.messenger.phone.pro.roster.RosterFragment;
 import org.tigase.messenger.phone.pro.service.JaxmppService;
+import org.tigase.messenger.phone.pro.ui.MainTabsFragment;
 
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.JID;
@@ -28,6 +29,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Messenger;
 import android.os.RemoteException;
+import android.preference.PreferenceManager;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -154,6 +156,7 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 
 	private BroadcastReceiver mucRoomJoinedReceiver;
 	
+	private boolean showMainWindowTabs = false;
 //	@Override
 //	public void onBackPressed() {
 //	  super.onBackPressed();
@@ -174,7 +177,10 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 		
         // creating list of items available in drawer menu
         final List<DrawerMenuItem> drawerMenuItems = new ArrayList<DrawerMenuItem>();
-        drawerMenuItems.add(new DrawerMenuItem(R.id.rosterList, R.string.contacts, R.drawable.ic_launcher));
+        showMainWindowTabs = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(Preferences.MAIN_WINDOW_TABS, true);
+        if (!showMainWindowTabs) {
+        	drawerMenuItems.add(new DrawerMenuItem(R.id.rosterList, R.string.contacts, R.drawable.ic_launcher));
+        }
 //        drawerMenuItems.add(new DrawerMenuItem(R.id.accountsList, R.string.accounts, R.drawable.ic_menu_account_list));
 //        drawerMenuItems.add(new DrawerMenuItem(R.id.joinMucRoom, R.string.join_muc_room, R.drawable.group_chat, true));
 //        drawerMenuItems.add(new DrawerMenuItem(R.id.bookmarksShow, R.string.bookmarks_show, android.R.drawable.star_off, true));
@@ -204,7 +210,11 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
         if (savedInstanceState == null) {
         	// we need to add this fragment only if we are not being restored from previous state
         	// as in other case we might end up with overlapping fragments
-        	getSupportFragmentManager().beginTransaction().replace(R.id.content_frame, new ChatsListFragment(), ChatsListFragment.FRAG_TAG).commit();
+        	if (showMainWindowTabs) {
+        		getSupportFragmentManager().beginTransaction().replace(R.id.content_frame, new MainTabsFragment(), MainTabsFragment.FRAG_TAG).commit();
+        	} else {
+        		getSupportFragmentManager().beginTransaction().replace(R.id.content_frame, new ChatsListFragment(), ChatsListFragment.FRAG_TAG).commit();
+        	}
         }
         
 		//startService(new Intent(this, JaxmppService.class));
@@ -338,7 +348,7 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 	}
 	
 	public boolean isMainView() {
-		Fragment frag = getSupportFragmentManager().findFragmentByTag(ChatsListFragment.FRAG_TAG);
+		Fragment frag = getSupportFragmentManager().findFragmentByTag(showMainWindowTabs ? MainTabsFragment.FRAG_TAG : ChatsListFragment.FRAG_TAG);
 		return (frag != null && !frag.isHidden() && !frag.isDetached() && frag.isMenuVisible() && !frag.isRemoving());// && frag.isInLayout());
 	}
 	
