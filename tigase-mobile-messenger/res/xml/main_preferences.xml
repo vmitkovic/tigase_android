@@ -31,13 +31,13 @@
             android:defaultValue="true"
             android:key="main_window_tabs"
             android:title="Show tabs on main window"/>
-    <!--        <ListPreference
+        <ListPreference
             android:defaultValue="flat"
             android:entries="@array/roster_layout_options"
             android:entryValues="@array/roster_layout_options_values"
             android:key="roster_layout"
             android:title="Roster layout" />
-        <ListPreference
+        <!-- <ListPreference
             android:defaultValue="status"
             android:entries="@array/roster_sorting_options"
             android:entryValues="@array/roster_sorting_options_values"

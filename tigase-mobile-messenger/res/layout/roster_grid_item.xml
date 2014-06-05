@@ -4,19 +4,11 @@
     android:layout_height="120dp"
     android:padding="0sp" >
 
-    <FrameLayout
-        android:id="@+id/openChatNotifier"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:background="@drawable/roster_grid_item_border" >
-    </FrameLayout>
-
     <RelativeLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/item_content"
         android:layout_width="120dp"
         android:layout_height="120dp"
-        android:padding="5sp" >
+        android:padding="0sp" >
 
         <ImageView
             android:id="@+id/imageView1"

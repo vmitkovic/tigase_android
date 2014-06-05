@@ -33,5 +33,13 @@
         <item>yes</item>
         <item>no</item>
     </string-array>
+    <string-array name="roster_layout_options">
+        <item>Flat</item>
+        <item>Grid</item>
+    </string-array>
+    <string-array name="roster_layout_options_values">
+        <item>flat</item>
+        <item>grid</item>
+    </string-array>
 
 </resources>

@@ -42,7 +42,7 @@ public class RosterFragment extends Fragment {
 		RosterFragment f = new RosterFragment();
 
 		Bundle args = new Bundle();
-		args.putString("layout", layout);
+		//args.putString("layout", layout);
 		f.setArguments(args);
 
 		return f;
@@ -79,10 +79,11 @@ public class RosterFragment extends Fragment {
 
 		if (getArguments() != null) {
 			this.action = getArguments().getString("action");
-			this.rosterLayout = getArguments().getString("layout");
+			//this.rosterLayout = getArguments().getString("layout");
 		}
 		
 		this.mPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+		rosterLayout = this.mPreferences.getString(Preferences.ROSTER_LAYOUT_KEY, "flat");
 		//this.mPreferences.registerOnSharedPreferenceChangeListener(prefChangeListener);
 
 	}
@@ -94,20 +95,21 @@ public class RosterFragment extends Fragment {
 
 		setHasOptionsMenu(true);
 		
-		if (getArguments() != null) {
-			this.rosterLayout = getArguments().getString("layout");
-		}
+//		if (getArguments() != null) {
+//			this.rosterLayout = getArguments().getString("layout");
+//		}
 
 		View layout;
 //		if ("groups".equals(this.rosterLayout)) {
 //			layout = inflater.inflate(R.layout.roster_list, null);
-//		} else if ("flat".equals(this.rosterLayout)) {
-		layout = inflater.inflate(R.layout.roster_list_flat, null);
-//		} else if ("grid".equals(this.rosterLayout)) {
-//			layout = inflater.inflate(R.layout.roster_list_grid, null);
-//		} else {
-//			throw new RuntimeException("Unknown roster layout");
-//		}
+//		} else 
+		if ("flat".equals(this.rosterLayout)) {
+			layout = inflater.inflate(R.layout.roster_list_flat, null);
+		} else if ("grid".equals(this.rosterLayout)) {
+			layout = inflater.inflate(R.layout.roster_list_grid, null);
+		} else {
+			throw new RuntimeException("Unknown roster layout");
+		}
 
 		listView = (AbsListView) layout.findViewById(R.id.rosterList);
 		listView.setTextFilterEnabled(true);
