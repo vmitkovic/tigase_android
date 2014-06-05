@@ -41,5 +41,13 @@
         <item>flat</item>
         <item>grid</item>
     </string-array>
+    <string-array name="roster_sorting_options">
+        <item>Name</item>
+        <item>Status</item>
+    </string-array>
+    <string-array name="roster_sorting_options_values">
+        <item>name</item>
+        <item>status</item>
+    </string-array>
 
 </resources>
