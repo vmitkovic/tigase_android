@@ -14,6 +14,7 @@ import org.tigase.messenger.phone.pro.roster.ContactFragment;
 import org.tigase.messenger.phone.pro.roster.RosterFragment;
 import org.tigase.messenger.phone.pro.service.JaxmppService;
 import org.tigase.messenger.phone.pro.ui.MainTabsFragment;
+import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.JID;
@@ -43,19 +44,23 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.BaseExpandableListAdapter;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.ExpandableListAdapter;
+import android.widget.ExpandableListView;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
 public class MainActivity extends ActionBarActivity implements RosterFragment.OnClickListener {
 	
-    private class DrawerMenuAdapter extends ArrayAdapter<DrawerMenuItem> {
+    private class DrawerMenuAdapter extends BaseExpandableListAdapter {
 
     	private final Context context;
             private final List<DrawerMenuItem> items;
 
             public DrawerMenuAdapter(Context context, int textViewResourceId, List<DrawerMenuItem> items) {
-                    super(context, textViewResourceId, items);
                     this.context = context;
                     this.items = items;
             }
@@ -65,36 +70,157 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
                     return false;
             }
 
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                    LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    View rowView = inflater.inflate(R.layout.main_left_drawer_item, parent, false);
-                    TextView textView = (TextView) rowView.findViewById(R.id.main_left_drawer_item_text);
-                    ImageView imageView = (ImageView) rowView.findViewById(R.id.main_left_drawer_item_icon);
+//            @Override
+//            public View getView(int position, View convertView, ViewGroup parent) {
+//                    LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+//                    View rowView = inflater.inflate(R.layout.main_left_drawer_item, parent, false);
+//                    TextView textView = (TextView) rowView.findViewById(R.id.main_left_drawer_item_text);
+//                    ImageView imageView = (ImageView) rowView.findViewById(R.id.main_left_drawer_item_icon);
+//
+//                    DrawerMenuItem item = items.get(position);
+//
+//                    textView.setText(item.text);
+//                    imageView.setImageResource(item.icon);
+//
+//                    return rowView;
+//            }
+//
+//            @Override
+//            public boolean isEnabled(int pos) {
+//                    DrawerMenuItem item = getItem(pos);
+//                    boolean connected = false;
+//
+//                    Account[] accounts = AccountManager.get(MainActivity.this).getAccountsByType(AccountAuthenticator.ACCOUNT_TYPE);
+//                    for (Account account : accounts) {
+//                            try {
+//								connected |= jaxmppService != null && jaxmppService.isConnected(account.name);
+//							} catch (RemoteException e) {
+//							}
+//                    }
+//
+//                    return super.isEnabled(pos) && (!item.connectionRequired || connected);
+//            }
 
-                    DrawerMenuItem item = items.get(position);
+			@Override
+			public int getGroupCount() {
+				return items.size();
+			}
 
-                    textView.setText(item.text);
-                    imageView.setImageResource(item.icon);
+			@Override
+			public int getChildrenCount(int groupPosition) {
+				return items.get(groupPosition).size();
+			}
 
-                    return rowView;
-            }
+			@Override
+			public Object getGroup(int groupPosition) {
+				return items.get(groupPosition);
+			}
 
-            @Override
-            public boolean isEnabled(int pos) {
-                    DrawerMenuItem item = getItem(pos);
-                    boolean connected = false;
+			@Override
+			public Object getChild(int groupPosition, int childPosition) {
+				DrawerMenuItem item = items.get(groupPosition);
+				if (item != null) {
+					List<DrawerMenuItem> children = item.getChildren();
+					if (children != null) {
+						return children.get(childPosition);
+					}
+				}
+				return null;
+			}
 
-                    Account[] accounts = AccountManager.get(MainActivity.this).getAccountsByType(AccountAuthenticator.ACCOUNT_TYPE);
-                    for (Account account : accounts) {
-                            try {
-								connected |= jaxmppService != null && jaxmppService.isConnected(account.name);
-							} catch (RemoteException e) {
-							}
-                    }
+			@Override
+			public long getGroupId(int groupPosition) {
+				return getGroup(groupPosition).hashCode();
+			}
 
-                    return super.isEnabled(pos) && (!item.connectionRequired || connected);
-            }
+			@Override
+			public long getChildId(int groupPosition, int childPosition) {
+				return getChild(groupPosition, childPosition).hashCode();
+			}
+
+			@Override
+			public boolean hasStableIds() {
+				return false;
+			}
+
+			@Override
+			public View getGroupView(int groupPosition, boolean isExpanded,
+					View convertView, ViewGroup parent) {
+                LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                View rowView = inflater.inflate(R.layout.main_left_drawer_item, parent, false);
+                TextView textView = (TextView) rowView.findViewById(R.id.main_left_drawer_item_text);
+                ImageView imageView = (ImageView) rowView.findViewById(R.id.main_left_drawer_item_icon);
+
+                DrawerMenuItem item = (DrawerMenuItem) getGroup(groupPosition);
+
+                if (item.text != 0) { 
+                	textView.setText(item.text);
+                } else {
+                	textView.setText(item.textStr);
+                }
+                imageView.setImageResource(item.icon);
+
+                return rowView;
+			}
+
+			@Override
+			public View getChildView(int groupPosition, int childPosition,
+					boolean isLastChild, View convertView, ViewGroup parent) {
+				int viewId = R.layout.main_left_drawer_item;
+                final DrawerMenuItem item = (DrawerMenuItem) getChild(groupPosition, childPosition);
+				if (item instanceof AccountDrawerMenuItem) {
+					viewId = R.layout.main_left_drawer_item_account;
+				}
+                LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                View rowView = inflater.inflate(viewId, parent, false);
+                TextView textView = (TextView) rowView.findViewById(R.id.main_left_drawer_item_text);
+                ImageView imageView = (ImageView) rowView.findViewById(R.id.main_left_drawer_item_icon);
+
+                imageView.setImageResource(item.icon);
+                
+                if (item.text != 0) { 
+                	textView.setText(item.text);
+                } else {
+                	textView.setText(item.textStr);
+                	AvatarHelper.setAvatarToImageView(BareJID.bareJIDInstance(item.textStr), imageView);
+                }
+                if (item instanceof AccountDrawerMenuItem) {
+                	AccountManager am = AccountManager.get(MainActivity.this);
+                	for (Account account : am.getAccountsByType(AccountAuthenticator.ACCOUNT_TYPE)) {
+                		if (item.textStr.equals(account.name)) {
+                			CompoundButton state = (CompoundButton) rowView.findViewById(R.id.main_left_drawer_item_switch);
+                			Boolean value = Boolean.valueOf(am.getUserData(account, "DISABLED"));
+                			state.setChecked(value == null || !value);
+                			state.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+								@Override
+								public void onCheckedChanged(
+										CompoundButton buttonView,
+										boolean isChecked) {
+									AccountManager am = AccountManager.get(MainActivity.this);
+									for (Account account : am.getAccountsByType(AccountAuthenticator.ACCOUNT_TYPE)) {
+				                		if (item.textStr.equals(account.name)) {
+				                			am.setUserData(account, "DISABLED", String.valueOf(!isChecked));
+				                			String pass = am.getPassword(account);
+				                			am.setPassword(account, pass);
+				                		}
+									}
+								}
+                				
+                			});;
+                		}
+                	}
+                }
+
+                return rowView;
+			}
+
+			@Override
+			public boolean isChildSelectable(int groupPosition,
+					int childPosition) {
+				// TODO Auto-generated method stub
+				return true;
+			}
     }
 
     private class DrawerMenuItem {
@@ -102,7 +228,17 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
             final int icon;
             final int id;
             final int text;
+            final String textStr;
+            List<DrawerMenuItem> children = null;
 
+            public DrawerMenuItem(int id, String text, int icon) {
+                this.id = id;
+                this.text = 0;
+                this.icon = icon;
+                this.connectionRequired = false;
+                this.textStr = text;
+            }
+            
             public DrawerMenuItem(int id, int text, int icon) {
                     this(id, text, icon, false);
             }
@@ -112,8 +248,40 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
                     this.text = text;
                     this.icon = icon;
                     this.connectionRequired = connectionRequired;
+                    this.textStr = null;
             }
-    }	
+            
+            public List<DrawerMenuItem> getChildren() {
+            	return children;
+            }
+            
+            public void addChild(DrawerMenuItem item) {
+            	if (children == null)
+            		children = new ArrayList<DrawerMenuItem>();
+            	children.add(item);
+            }
+            
+            public void removeChild(DrawerMenuItem item) {
+            	if (children == null)
+            		return;
+            	children.remove(item);
+            }
+            
+            public int size() {
+            	return children == null ? 0 : children.size();
+            }
+    }
+    
+    private class AccountDrawerMenuItem extends DrawerMenuItem {
+
+    	final int viewId;
+    	
+		public AccountDrawerMenuItem(int id, String text, int icon, int viewId) {
+			super(id, text, icon);
+			this.viewId = viewId;
+		}
+    	
+    }
 	
 	private ServiceConnection messengerConnection = new ServiceConnection() {
 
@@ -146,7 +314,8 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 	public static final String NEW_MESSAGE_ACTION = "org.tigase.messenger.phone.pro.NEW_MESSAGE_ACTION";
 	
 	protected DrawerLayout drawerLayout;
-	protected ListView drawerList;
+	protected ExpandableListView drawerList;
+	protected DrawerMenuItem accountsDrawerItem;
 	protected ActionBarDrawerToggle drawerToggle;
 	
 	private Messenger messenger;
@@ -172,14 +341,23 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main_activity);
 		
-		this.drawerList = (ListView) findViewById(R.id.left_drawer);
+		this.drawerList = (ExpandableListView) findViewById(R.id.left_drawer);
+		drawerList.setGroupIndicator(null);
 		this.drawerLayout = (DrawerLayout) findViewById(R.id.main_activity);
 		
         // creating list of items available in drawer menu
         final List<DrawerMenuItem> drawerMenuItems = new ArrayList<DrawerMenuItem>();
+        accountsDrawerItem = new DrawerMenuItem(R.id.accounts_flipper, "Accounts", R.drawable.ic_menu_account_list);
+        
+        AccountManager am = AccountManager.get(this);
+        for (Account account : am.getAccountsByType(AccountAuthenticator.ACCOUNT_TYPE)) {
+        	accountsDrawerItem.addChild(new AccountDrawerMenuItem(account.hashCode(), account.name, R.drawable.user_avatar, R.id.main_left_drawer_item_account));
+        }
+        drawerMenuItems.add(accountsDrawerItem);
+        
         showMainWindowTabs = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(Preferences.MAIN_WINDOW_TABS, true);
         if (!showMainWindowTabs) {
-        	drawerMenuItems.add(new DrawerMenuItem(R.id.rosterList, R.string.contacts, R.drawable.ic_launcher));
+        	drawerMenuItems.add(new DrawerMenuItem(R.id.rosterList, R.string.contacts, R.drawable.ic_menu_allfriends));
         }
 //        drawerMenuItems.add(new DrawerMenuItem(R.id.accountsList, R.string.accounts, R.drawable.ic_menu_account_list));
 //        drawerMenuItems.add(new DrawerMenuItem(R.id.joinMucRoom, R.string.join_muc_room, R.drawable.group_chat, true));
@@ -195,17 +373,34 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
                         R.string.accept);
 	
         drawerLayout.setDrawerListener(this.drawerToggle);
-        this.drawerList.setOnItemClickListener(new ListView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView parent, View view, int position, long id) {
-                        DrawerMenuItem item = drawerMenuItems.get(position);
-                        if (item != null) {
-                                drawerLayout.closeDrawers();
-                                onOptionsItemSelected(item.id);
-                        }
-                }
-        });		
+//        this.drawerList.setOnItemClickListener(new ListView.OnItemClickListener() {
+//                @Override
+//                public void onItemClick(AdapterView parent, View view, int position, long id) {
+//                		ExpandableListAdapter adapter = (ExpandableListAdapter) parent;
+//                		long pos = drawerList.getExpandableListPosition(position);
+//                		int group = drawerList.getPackedPositionGroup(pos);
+//                		int child = drawerList.getPackedPositionChild(pos);
+//                        DrawerMenuItem item = (DrawerMenuItem) (child == -1 ? adapter.getGroup(group) : adapter.getChild(group, child));
+//                        if (item != null) {
+//                                drawerLayout.closeDrawers();
+//                                onOptionsItemSelected(item.id);
+//                        }
+//                }
+//        });		
 
+        this.drawerList.setOnGroupClickListener(new ExpandableListView.OnGroupClickListener() {
+			@Override
+			public boolean onGroupClick(ExpandableListView parent, View v,
+					int groupPosition, long id) {
+                DrawerMenuItem item = (DrawerMenuItem) parent.getExpandableListAdapter().getGroup(groupPosition);
+                if (item != null && item != accountsDrawerItem) {
+                        drawerLayout.closeDrawers();
+                        onOptionsItemSelected(item.id);
+                }
+                return false;
+			}
+        });		
+        
         //getSupportFragmentManager().beginTransaction().replace(R.id.content_frame, new RosterFragment()).commit();
         if (savedInstanceState == null) {
         	// we need to add this fragment only if we are not being restored from previous state

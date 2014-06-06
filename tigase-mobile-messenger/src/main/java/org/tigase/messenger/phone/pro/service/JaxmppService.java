@@ -1146,6 +1146,18 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     		sessionObject.setUserProperty(SessionObject.RESOURCE, resource);
 
     		MobileModeFeature.updateSettings(account, jaxmpp, context);
+    		Boolean disabled = Boolean.valueOf(am.getUserData(account, "DISABLED"));
+    		sessionObject.setUserProperty("CC:DISABLED", disabled);
+    		if (disabled != null && disabled) {
+    			if (jaxmpp.isConnected()) {
+    				this.disconnectJaxmpp(jaxmpp, true);
+    			}
+    		}
+    		else {
+    			if (!jaxmpp.isConnected()) {
+    				this.connectJaxmpp(jaxmpp, 1L);
+    			}
+    		}
     		
     		accountsJids.remove(accountJid);
     	}
