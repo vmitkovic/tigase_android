@@ -68,6 +68,8 @@ import tigase.jaxmpp.core.client.xmpp.modules.chat.Chat;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageCarbonsModule;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageCarbonsModule.CarbonEventType;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageModule;
+import tigase.jaxmpp.core.client.xmpp.modules.chat.xep0085.ChatState;
+import tigase.jaxmpp.core.client.xmpp.modules.chat.xep0085.ChatStateExtension;
 import tigase.jaxmpp.core.client.xmpp.modules.disco.DiscoveryModule;
 import tigase.jaxmpp.core.client.xmpp.modules.muc.MucModule;
 import tigase.jaxmpp.core.client.xmpp.modules.muc.Room;
@@ -253,7 +255,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				JID jid = JID.jidInstance(jidStr);
 				Chat chat = messageModule.getChatManager().getChat(jid, threadId);
 				if (chat != null) {
-					chat.sendMessage(body);
+					messageModule.sendMessage(chat, body);
 					return true;
 				}
 				return false;
@@ -475,9 +477,61 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			}				
 			return new Occupant[0];
 		}
+
+		@Override
+		public String getRecipientChatState(String accountJidStr, String jidStr, String threadId)
+				throws RemoteException {
+			try {
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+				JID jid = JID.jidInstance(jidStr);			
+				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);	
+				Chat chat = messageModule.getChatManager().getChat(jid, threadId);
+				if (chat != null) {
+					ChatStateExtension ext = messageModule.getExtensionChain().getExtension(ChatStateExtension.class);
+					if (ext != null) {
+						ChatState state = ext.getRecipientChatState(chat);
+						if (state != null) 
+							return state.name();
+					}
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "EXCEPTION", e);
+			}		
+			return "";
+		}
+
+		@Override
+		public void setOwnChatState(String accountJidStr, String jidStr, String threadId, String chatStateStr)
+				throws RemoteException {
+			// TODO Auto-generated method stub
+			try {
+				if (chatStateStr == null)
+					return;
+				ChatState state = ChatState.valueOf(chatStateStr);
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+				JID jid = JID.jidInstance(jidStr);			
+				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);	
+				Chat chat = messageModule.getChatManager().getChat(jid, threadId);
+				if (chat != null) {
+					ChatStateExtension ext = messageModule.getExtensionChain().getExtension(ChatStateExtension.class);
+					if (ext != null) {
+						ext.setOwnChatState(chat, state);
+					}
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "EXCEPTION", e);
+			}			
+		}
 	}
 	
-	private class MessageHandler implements MessageModule.MessageReceivedHandler, MessageCarbonsModule.CarbonReceivedHandler {
+	private class MessageHandler implements MessageModule.MessageReceivedHandler, MessageCarbonsModule.CarbonReceivedHandler, 
+			ChatStateExtension.ChatStateChangedHandler {
 
 		@Override
 		public void onMessageReceived(SessionObject sessionObject, Chat chat,
@@ -499,6 +553,20 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				storeMessage(sessionObject, chat, msg, false);
 			} catch (Exception ex) {
 				Log.e(TAG, "Exception handling received carbon message", ex);
+			}			
+		}
+
+		@Override
+		public void onChatStateChanged(SessionObject sessionObject, Chat chat,
+				ChatState state) {
+			try {
+				Log.v(TAG, "received chat state chaged event for " + chat.getJid().toString() + ", new state = " + state);
+				Uri uri = chat != null
+						? Uri.parse(org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider.OPEN_CHATS_URI + "/" + chat.getId())
+						: Uri.parse(org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider.OPEN_CHATS_URI);
+				context.getContentResolver().notifyChange(uri, null);				
+			} catch (Exception ex) {
+				Log.e(TAG, "Exception handling received chat state change event", ex);
 			}			
 		}
 		
@@ -778,7 +846,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 					final String body = data.getString("message");
 					JaxmppCore jaxmpp = multiJaxmpp.get(account);
 					Log.v(TAG, "for account " + account.toString() + " got " + (jaxmpp == null ? "null" : jaxmpp.toString()));
-					MessageModule messageModule = jaxmpp.getModule(MessageModule.class);
+					final MessageModule messageModule = jaxmpp.getModule(MessageModule.class);
 					Chat chat = chats.get(to.getBareJid());
 					if (chat == null) {
 						try {
@@ -795,7 +863,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 						@Override
 						public void run() {
 							try {
-								ch.sendMessage(body);
+								messageModule.sendMessage(ch, body);
 							} catch (JaxmppException e) {
 								e.printStackTrace();
 							}							
@@ -866,6 +934,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			@Override
 			public void onSharedPreferenceChanged(
 					SharedPreferences sharedPreferences, String key) {
+				// is this code called?
 				Log.v(TAG, "key = " + key);
 				if (Preferences.KEEPALIVE_TIME_KEY.equals(key)) {
 					Log.v(TAG, "keepalive timout changed");
@@ -875,6 +944,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 					keepAlive();
 					startKeepAlive();
 				}
+				Log.v("STREAM", "got preference change = " + key);
+				if (Preferences.ENABLE_CHAT_STATE_SUPPORT_KEY.equals(key)) {
+					Log.v(TAG, "changed chat state support - calling update of jaxmpp states");
+					updateJaxmppInstances();
+				}				
 			}
 		};		
 		this.prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -933,6 +1007,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		multiJaxmpp.addHandler(PresenceModule.BeforePresenceSendHandler.BeforePresenceSendEvent.class, presenceHandler);
 		multiJaxmpp.addHandler(MessageModule.MessageReceivedHandler.MessageReceivedEvent.class, messageHandler);
 		multiJaxmpp.addHandler(MessageCarbonsModule.CarbonReceivedHandler.CarbonReceivedEvent.class, messageHandler);
+		multiJaxmpp.addHandler(ChatStateExtension.ChatStateChangedHandler.ChatStateChangedEvent.class, messageHandler);
 		multiJaxmpp.addHandler(MucModule.MucMessageReceivedHandler.MucMessageReceivedEvent.class, mucHandler);
 		multiJaxmpp.addHandler(MucModule.MessageErrorHandler.MessageErrorEvent.class, mucHandler);
 		multiJaxmpp.addHandler(MucModule.YouJoinedHandler.YouJoinedEvent.class, mucHandler);
@@ -1079,7 +1154,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     	this.reconnect = val;
     }
     
-    private void updateJaxmppInstances() {
+	private void updateJaxmppInstances() {
     	Resources resources = this.getResources();
     	final HashSet<BareJID> accountsJids = new HashSet<BareJID>();
     	for (JaxmppCore jaxmpp : multiJaxmpp.get()) {
@@ -1124,12 +1199,16 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     			jaxmpp.getModulesManager().register(new RosterModule(this.rosterProvider));
     			PresenceModule.setPresenceStore(sessionObject, new J2SEPresenceStore());
     			jaxmpp.getModulesManager().register(new PresenceModule());
-    			jaxmpp.getModulesManager().register(new MessageModule(new AndroidChatManager(this.chatProvider)));
+    			AndroidChatManager chatManager = new AndroidChatManager(this.chatProvider);
+    			MessageModule messageModule = new MessageModule(chatManager);
+    			jaxmpp.getModulesManager().register(messageModule);
+    			messageModule.addExtension(new ChatStateExtension(chatManager));
     			try {
     				jaxmpp.getModulesManager().register(new MessageCarbonsModule());
     			} catch (JaxmppException ex) {
     				Log.v(TAG, "Exception creating instance of MessageCarbonsModule", ex);
     			}
+    			
     			jaxmpp.getModulesManager().register(new MucModule(new AndroidRoomsManager(this.chatProvider)));
     			jaxmpp.getModulesManager().register(new VCardModule());
     			
@@ -1148,6 +1227,30 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     		MobileModeFeature.updateSettings(account, jaxmpp, context);
     		Boolean disabled = Boolean.valueOf(am.getUserData(account, "DISABLED"));
     		sessionObject.setUserProperty("CC:DISABLED", disabled);
+    		
+    		boolean needToSendPresence = false;
+    		
+    		// updating settings for Chat State Notification
+    		final boolean value = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(Preferences.ENABLE_CHAT_STATE_SUPPORT_KEY, true);
+    		Log.v(TAG, "updating chat state support to =  " + value);
+    		needToSendPresence |= (ChatStateExtension.isDisabled(sessionObject) != (value));
+    		jaxmpp.getModule(MessageModule.class).getExtensionChain().getExtension(ChatStateExtension.class).setDisabled(!value);
+    		
+    		// if we need to send presence (features changed), then go for it
+    		// maybe we should clear CAPS module, or reset it?
+    		if (needToSendPresence && jaxmpp.isConnected()) {
+    			final JaxmppCore tjaxmpp = jaxmpp;
+    			new Thread() {
+    				public void run() {
+    					try {
+							tjaxmpp.getModule(PresenceModule.class).setPresence(userStatusShow, userStatusMessage, null);
+						} catch (JaxmppException e) {
+							Log.e(TAG, e.getMessage());
+						}
+    				}
+    			}.start();
+    		}
+    		
     		if (disabled != null && disabled) {
     			if (jaxmpp.isConnected()) {
     				this.disconnectJaxmpp(jaxmpp, true);

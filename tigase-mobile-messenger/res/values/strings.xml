@@ -86,6 +86,8 @@
     <string name="pref_advanced_section_summary">Advanced settings</string>
     <string name="pref_autostart_title">Autostart</string>
     <string name="pref_autostart_summary">Connects after phone starts</string>
+	<string name="pref_chat_state_enabled_summary">Receive and send notification about chat state</string>
+	<string name="pref_chat_state_enabled_title">Chat state notification</string>    
     <string name="pref_default_priority_summary">Online priority is %1$s</string>
     <string name="pref_default_priority_title">Online priority</string>
     <string name="pref_default_priority_dialog">Enter online priority</string>

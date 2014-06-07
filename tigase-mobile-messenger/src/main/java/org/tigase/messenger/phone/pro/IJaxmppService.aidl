@@ -19,6 +19,9 @@ interface IJaxmppService {
 	boolean openChat(String accountJid, String jid);
 	boolean sendMessage(String accountJid, String jid, String thread, String message);
 	void closeChat(String accountJid, String jid, String thread);
+	String getRecipientChatState(String accountJid, String jid, String thread);
+	void setOwnChatState(String accountJid, String jid, String thread, String chatState);
+	
 	
 	boolean joinRoom(String accountJid, String roomJid, String nickname, String password, String action);
 	boolean leaveRoom(String accountJid, String roomJid);
