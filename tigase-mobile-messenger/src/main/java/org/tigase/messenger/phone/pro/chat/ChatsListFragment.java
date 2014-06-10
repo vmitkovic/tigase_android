@@ -128,7 +128,7 @@ public class ChatsListFragment extends Fragment {
 //				getActivity().stopManagingCursor(c);
 //			}
 			this.c = inflater.getContext().getContentResolver().query(Uri.parse(OpenChatsProvider.OPEN_CHATS_URI), null, null, null,
-					null);
+					OpenChatsProvider.FIELD_NAME);
 
 //			getActivity().startManagingCursor(c);
 			// FlatRosterAdapter.staticContext = inflater.getContext();
