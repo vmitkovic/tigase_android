@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.tigase.messenger.phone.pro.IJaxmppService;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
@@ -32,16 +33,25 @@ import tigase.jaxmpp.core.client.BareJID;
 //import tigase.jaxmpp.core.client.Connector;
 //import tigase.jaxmpp.core.client.Connector.ConnectorEvent;
 import tigase.jaxmpp.core.client.JID;
+import tigase.jaxmpp.core.client.xml.ElementWrapper;
 //import tigase.jaxmpp.core.client.exceptions.JaxmppException;
 //import tigase.jaxmpp.core.client.observer.Listener;
 import tigase.jaxmpp.core.client.xml.XMLException;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterCacheProvider;
+import tigase.jaxmpp.core.client.xmpp.modules.vcard.VCard;
 //import tigase.jaxmpp.core.client.xmpp.modules.chat.Chat;
 //import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceModule;
 //import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceModule.PresenceEvent;
 //import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterItem;
 //import tigase.jaxmpp.core.client.xmpp.stanzas.Presence;
 import tigase.jaxmpp.j2se.Jaxmpp;
+import tigase.jaxmpp.j2se.connectors.socket.StreamListener;
+import tigase.jaxmpp.j2se.connectors.socket.XMPPDomBuilderHandler;
+import tigase.jaxmpp.j2se.xml.J2seElement;
+import tigase.xml.DomBuilderHandler;
+import tigase.xml.Element;
+import tigase.xml.SimpleParser;
+import tigase.xml.SingletonFactory;
 import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
@@ -51,8 +61,11 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.MenuItemCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -66,6 +79,7 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -172,6 +186,9 @@ public class ContactFragment extends Fragment {
 	private ImageView avatarView;
 	private TextView nameTextView;
 	
+	private TextView titleView;
+	private TextView organizationView;
+	
 	private String account;
 	private BareJID jid;
 	private String name;
@@ -186,6 +203,46 @@ public class ContactFragment extends Fragment {
 
 	private Button chatBtn;
 	private Button shareBtn;
+
+	private ProgressBar progressBar;
+
+	private View phonesLayout;
+
+	private View emailsLayout;
+
+	private View phoneHomeLayout;
+
+	private View phoneWorkLayout;
+
+	private TextView phoneHomeNumber;
+
+	private TextView phoneWorkNumber;
+
+	private View emailHomeLayout;
+
+	private TextView emailHomeNumber;
+
+	private View emailWorkLayout;
+
+	private TextView emailWorkNumber;
+
+	private View addressesLayout;
+
+	private View addressHomeLayout;
+
+	private TextView addressHomeNumber;
+
+	private View addressWorkLayout;
+
+	private TextView addressWorkNumber;
+
+	private OnClickListener dialOnClickListener;
+
+	private OnClickListener emailOnClickListener;
+
+	private OnClickListener addressOnClickListener;
+
+	private OnClickListener smsOnClickListener;
 	
 //	private Listener<Connector.ConnectorEvent> accountStatusListener;
 	
@@ -251,6 +308,8 @@ public class ContactFragment extends Fragment {
 	@Override
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 		inflater.inflate(R.menu.contact_menu, menu);
+		MenuItem refreshItem = menu.findItem(R.id.refreshVCard);
+		MenuItemCompat.setShowAsAction(refreshItem, MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
 		super.onCreateOptionsMenu(menu, inflater);
 	}
 	
@@ -262,6 +321,10 @@ public class ContactFragment extends Fragment {
 		
 		this.avatarView = (ImageView) this.layout.findViewById(R.id.avatar);
 		this.nameTextView = (TextView) this.layout.findViewById(R.id.name);
+		this.progressBar = (ProgressBar) this.layout.findViewById(R.id.progressBar);
+		
+		this.titleView = (TextView) this.layout.findViewById(R.id.title);
+		this.organizationView = (TextView) this.layout.findViewById(R.id.org);
 //		this.resourcesView = (ListView) this.layout.findViewById(R.id.resources_view);
 		
 		this.chatClickListener = new OnClickListener() {
@@ -280,6 +343,76 @@ public class ContactFragment extends Fragment {
 		this.chatBtn = (Button) layout.findViewById(R.id.chat_btn);
 		chatBtn.setOnClickListener(chatClickListener);
 
+		this.phonesLayout = (View) layout.findViewById(R.id.phone_layout);
+		this.phoneHomeLayout = (View) this.phonesLayout.findViewById(R.id.phonenumber_home_layout);
+		this.phoneHomeNumber = (TextView) this.phoneHomeLayout.findViewById(R.id.number);
+		this.phoneWorkLayout = (View) this.phonesLayout.findViewById(R.id.phonenumber_work_layout);
+		this.phoneWorkNumber = (TextView) this.phoneWorkLayout.findViewById(R.id.number);
+		
+		this.emailsLayout = (View) layout.findViewById(R.id.email_layout);
+		this.emailHomeLayout = (View) this.emailsLayout.findViewById(R.id.email_home_layout);
+		this.emailHomeNumber = (TextView) this.emailHomeLayout.findViewById(R.id.address);
+		this.emailWorkLayout = (View) this.emailsLayout.findViewById(R.id.email_work_layout);
+		this.emailWorkNumber = (TextView) this.emailWorkLayout.findViewById(R.id.address);		
+
+		this.addressesLayout = (View) layout.findViewById(R.id.locality_layout);
+		this.addressHomeLayout = (View) this.addressesLayout.findViewById(R.id.locality_home_layout);
+		this.addressHomeNumber = (TextView) this.addressHomeLayout.findViewById(R.id.address);
+		this.addressWorkLayout = (View) this.addressesLayout.findViewById(R.id.locality_work_layout);
+		this.addressWorkNumber = (TextView) this.addressWorkLayout.findViewById(R.id.address);		
+		
+		this.dialOnClickListener = new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				TextView tv = (TextView) v.findViewById(R.id.number);
+				Intent intent = new Intent(Intent.ACTION_DIAL);
+				intent.setData(Uri.parse("tel:" + tv.getText()));
+				startActivity(Intent.createChooser(intent, "")); 
+			}		
+		};
+		this.phoneHomeLayout.setOnClickListener(dialOnClickListener);
+		this.phoneWorkLayout.setOnClickListener(dialOnClickListener);
+		
+		this.smsOnClickListener = new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				TextView tv = (TextView) ((View)v.getParent()).findViewById(R.id.number);
+				Intent intent = new Intent(Intent.ACTION_SENDTO);
+				intent.setData(Uri.parse("smsto:" + tv.getText().toString()));
+				intent.setType("text/plain");	
+				startActivity(Intent.createChooser(intent, ""));
+			}
+		};
+		this.phoneHomeLayout.findViewById(R.id.sms_button).setOnClickListener(smsOnClickListener);
+		this.phoneWorkLayout.findViewById(R.id.sms_button).setOnClickListener(smsOnClickListener);
+		
+		this.emailOnClickListener = new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				TextView tv = (TextView) v.findViewById(R.id.address);
+				Intent intent = new Intent(Intent.ACTION_SENDTO);
+				intent.setData(Uri.parse("mailto:"));
+				intent.setType("*/*");	
+				intent.putExtra(Intent.EXTRA_EMAIL, new String[] { tv.getText().toString() });
+				startActivity(Intent.createChooser(intent, ""));
+			}			
+		};
+		this.emailHomeLayout.setOnClickListener(emailOnClickListener);
+		this.emailWorkLayout.setOnClickListener(emailOnClickListener);
+		
+		this.addressOnClickListener = new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				TextView tv = (TextView) v.findViewById(R.id.address);
+				Intent intent = new Intent(Intent.ACTION_VIEW);
+				Uri uri = Uri.parse("geo:0,0?q="+Uri.encode(tv.getText().toString()));
+				intent.setData(uri);
+				startActivity(Intent.createChooser(intent, ""));
+			}
+		};
+		this.addressHomeLayout.setOnClickListener(addressOnClickListener);
+		this.addressWorkLayout.setOnClickListener(addressOnClickListener);
+		
 //		this.shareClickListener = new OnClickListener() {
 //
 //			@Override
@@ -347,10 +480,10 @@ public class ContactFragment extends Fragment {
 //		jaxmpp.addListener(PresenceModule.ContactUnavailable, this.presenceListener);
 //		resourcesView.setAdapter(resourcesAdapter);
 		
-		refresh();
+		refreshView(null);
 	}
 	
-	public void refresh() {
+	public void refreshView(VCard vcard) {
 //		final Jaxmpp jaxmpp = getJaxmpp();
 //		RosterItem ri = jaxmpp.getRoster().get(jid);
 //		String name = RosterDisplayTools.getDisplayName(ri);
@@ -366,6 +499,95 @@ public class ContactFragment extends Fragment {
 		}
 		nameTextView.setText(name);
 		AvatarHelper.setAvatarToImageView(jid, avatarView);
+		
+		titleView.setVisibility(vcard == null || vcard.getTitle() == null ? View.GONE : View.VISIBLE);
+		organizationView.setVisibility(vcard == null || vcard.getOrgName() == null ? View.GONE : View.VISIBLE);
+		
+		// Phones section
+		boolean hasNoHomePhone = vcard == null || vcard.getHomeTelVoice() == null || vcard.getHomeTelVoice().length() == 0;
+		phoneHomeLayout.setVisibility(hasNoHomePhone ? View.GONE : View.VISIBLE);
+		if (!hasNoHomePhone)
+			phoneHomeNumber.setText(vcard.getHomeTelVoice());
+		
+		boolean hasNoWorkPhone = vcard == null || vcard.getWorkTelVoice() == null || vcard.getWorkTelVoice().length() == 0;
+		phoneWorkLayout.setVisibility(hasNoWorkPhone ? View.GONE : View.VISIBLE);
+		if (!hasNoWorkPhone)
+			phoneWorkNumber.setText(vcard.getWorkTelVoice());
+		
+		phonesLayout.setVisibility(!hasNoHomePhone || !hasNoWorkPhone ? View.VISIBLE : View.GONE);
+		
+		// Emails section
+		boolean hasNoHomeEmail = vcard == null || vcard.getHomeEmail() == null || vcard.getHomeEmail().length() == 0;
+		emailHomeLayout.setVisibility(hasNoHomeEmail ? View.GONE : View.VISIBLE);
+		if (!hasNoHomeEmail)
+			emailHomeNumber.setText(vcard.getHomeEmail());
+		
+		boolean hasNoWorkEmail = vcard == null || vcard.getWorkEmail() == null || vcard.getWorkEmail().length() == 0;
+		emailWorkLayout.setVisibility(hasNoWorkEmail ? View.GONE : View.VISIBLE);
+		if (!hasNoWorkEmail)
+			emailWorkNumber.setText(vcard.getWorkEmail());
+		
+		emailsLayout.setVisibility(!hasNoHomeEmail || !hasNoWorkEmail ? View.VISIBLE : View.GONE);		
+		
+		// Locality section
+		String homeAddress = "";
+		if (vcard != null) {
+			if (vcard.getHomeAddressStreet() != null)
+				homeAddress += vcard.getHomeAddressStreet();
+			if (vcard.getHomeAddressPCode() != null && vcard.getHomeAddressPCode().length() > 0) {
+				if (homeAddress.length() > 0)
+					homeAddress += ", ";
+				homeAddress += vcard.getHomeAddressPCode();
+				if (vcard.getHomeAddressLocality() != null && vcard.getHomeAddressLocality().length() > 0) {
+					homeAddress += " " + vcard.getHomeAddressLocality();
+				}
+			}
+			else if (vcard.getHomeAddressLocality() != null && vcard.getHomeAddressLocality().length() > 0) {
+				if (homeAddress.length() > 0)
+					homeAddress += ", ";
+				homeAddress += vcard.getHomeAddressLocality();
+			}
+			if (vcard.getHomeAddressCtry() != null && vcard.getHomeAddressCtry().length() > 0) {
+				if (homeAddress.length() > 0)
+					homeAddress += ", ";
+				homeAddress += vcard.getHomeAddressCtry();
+			}
+		}
+		boolean hasNoHomeAddress = homeAddress.length() == 0;
+		addressHomeLayout.setVisibility(hasNoHomeAddress ? View.GONE : View.VISIBLE);
+		if (!hasNoHomeAddress)
+			addressHomeNumber.setText(homeAddress);
+		
+		String workAddress = "";
+		if (vcard != null) {
+			if (vcard.getWorkAddressStreet() != null)
+				workAddress += vcard.getWorkAddressStreet();
+			if (vcard.getWorkAddressPCode() != null && vcard.getWorkAddressPCode().length() > 0) {
+				if (workAddress.length() > 0)
+					workAddress += ", ";
+				workAddress += vcard.getWorkAddressPCode();
+				if (vcard.getWorkAddressLocality() != null && vcard.getWorkAddressLocality().length() > 0) {
+					workAddress += " " + vcard.getWorkAddressLocality();
+				}
+			}
+			else if (vcard.getWorkAddressLocality() != null && vcard.getWorkAddressLocality().length() > 0) {
+				if (workAddress.length() > 0)
+					workAddress += ", ";
+				workAddress += vcard.getWorkAddressLocality();
+			}
+			if (vcard.getWorkAddressCtry() != null && vcard.getWorkAddressCtry().length() > 0) {
+				if (workAddress.length() > 0)
+					workAddress += ", ";
+				workAddress += vcard.getWorkAddressCtry();
+			}
+		}
+		boolean hasNoWorkAddress = workAddress.length() == 0;
+		addressWorkLayout.setVisibility(hasNoWorkAddress ? View.GONE : View.VISIBLE);
+		if (!hasNoWorkAddress)
+			addressWorkNumber.setText(workAddress);
+		
+		addressesLayout.setVisibility(!hasNoHomeAddress || !hasNoWorkAddress ? View.VISIBLE : View.GONE);		
+//		
 //		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
 //			showActionBar();
 //		}
@@ -389,6 +611,78 @@ public class ContactFragment extends Fragment {
 //			intent.putExtra("jid", jid.toString());
 //			this.startActivityForResult(intent, 0);
 //		} else 
+		if (item.getItemId() == R.id.refreshVCard) {	
+			progressBar.setVisibility(View.VISIBLE);
+			final IJaxmppService jaxmppService = ((MainActivity) getActivity()).getJaxmppService();
+			new Thread() {
+				public void run() {
+					
+			try {
+				jaxmppService.retrieveVCard(account, jid.toString(), new RosterUpdateCallback.Stub() {
+
+					@Override
+					public void onSuccess(final String msg) throws RemoteException {
+						// TODO Auto-generated method stub
+						layout.post(new Runnable() {
+							public void run() {
+								
+						try {
+							progressBar.setVisibility(View.INVISIBLE);
+							
+							XMPPDomBuilderHandler handler = new XMPPDomBuilderHandler(new StreamListener() {
+								@Override
+								public void nextElement(Element element) {
+									try {
+										VCard vcard = VCard.fromElement(new J2seElement(element));
+										refreshView(vcard);
+									} catch (XMLException ex) {
+										ex.printStackTrace();
+									}
+								}
+
+								@Override
+								public void xmppStreamClosed() {
+								}
+
+								@Override
+								public void xmppStreamOpened(Map<String, String> attribs) {
+								}
+								
+							});
+							SimpleParser parser = SingletonFactory.getParserInstance();
+							char[] data = msg.toCharArray();
+							parser.parse(handler, data, 0, data.length);
+							
+						} catch (Exception ex) {
+							ex.printStackTrace();
+						}
+							}
+						});
+					}
+
+					@Override
+					public void onFailure(String msg) throws RemoteException {
+						// TODO Auto-generated method stub
+						layout.post(new Runnable() {
+							public void run() {
+						try {
+							progressBar.setVisibility(View.INVISIBLE);
+						} catch (Exception ex) {
+							ex.printStackTrace();
+						}
+					}
+				});
+					}
+					
+				});
+			} catch (RemoteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				progressBar.setVisibility(View.INVISIBLE);
+			}
+				}
+			}.start();
+		}
 		if (item.getItemId() == R.id.contactEdit) {
 			Fragment frag = new ContactEditFragment();
 			Bundle args = new Bundle();

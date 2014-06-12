@@ -29,4 +29,5 @@ interface IJaxmppService {
 	Occupant[] getRoomOccupants(String accountJid, String roomJid);
 	
 	void updateRosterItem(String accountJid, String jid, String name, in List<String> groups, boolean requestAuth, RosterUpdateCallback callback);
+	void retrieveVCard(String accountJid, String jid, RosterUpdateCallback callback);
 }

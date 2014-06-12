@@ -39,6 +39,7 @@ import org.tigase.messenger.phone.pro.roster.CPresence;
 
 
 
+import org.tigase.messenger.phone.pro.roster.ContactFragment;
 import org.tigase.messenger.phone.pro.roster.RosterAdapterHelper;
 import org.tigase.messenger.phone.pro.service.JaxmppService;
 
@@ -455,11 +456,17 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 //			pickerIntent.setType("video/*");
 //			pickerIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
 //			startActivityForResult(pickerIntent, TigaseMobileMessengerActivity.SELECT_FOR_SHARE);
-//		} else if (item.getItemId() == R.id.showContact) {
+		} else if (item.getItemId() == R.id.showContact) {
 //			Intent intent = new Intent(getActivity(), ContactActivity.class);
 //			intent.putExtra("jid", chat.getJid().getBareJid().toString());
 //			intent.putExtra("account", chat.getSessionObject().getUserBareJid().toString());
 //			startActivity(intent);
+			Bundle args = new Bundle();
+			args.putString("account", account);
+			args.putString("jid", recipient.getBareJid().toString());
+			ContactFragment frag = new ContactFragment();
+			frag.setArguments(args);
+			((MainActivity) getActivity()).switchFragments(frag, ContactFragment.FRAG_TAG);
 		}
 		return true;
 	}
