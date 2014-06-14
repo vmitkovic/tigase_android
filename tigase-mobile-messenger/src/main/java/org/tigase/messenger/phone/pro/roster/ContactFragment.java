@@ -19,12 +19,16 @@ package org.tigase.messenger.phone.pro.roster;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.tigase.messenger.phone.pro.Constants;
 import org.tigase.messenger.phone.pro.IJaxmppService;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
+import org.tigase.messenger.phone.pro.db.providers.RosterProviderExt;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 import org.tigase.messenger.phone.pro.MainActivity;
 
@@ -63,6 +67,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.provider.ContactsContract;
+import android.provider.ContactsContract.Data;
+import android.provider.ContactsContract.RawContacts;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.MenuItemCompat;
@@ -74,6 +81,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -180,6 +188,15 @@ public class ContactFragment extends Fragment {
 //		}
 //		
 //	}
+	private class Item {
+		String value;
+		int type;
+		
+		public Item(String value, int type) {
+			this.value = value;
+			this.type = type;
+		}
+	}
 	
 	private View layout;
 	
@@ -210,31 +227,7 @@ public class ContactFragment extends Fragment {
 
 	private View emailsLayout;
 
-	private View phoneHomeLayout;
-
-	private View phoneWorkLayout;
-
-	private TextView phoneHomeNumber;
-
-	private TextView phoneWorkNumber;
-
-	private View emailHomeLayout;
-
-	private TextView emailHomeNumber;
-
-	private View emailWorkLayout;
-
-	private TextView emailWorkNumber;
-
 	private View addressesLayout;
-
-	private View addressHomeLayout;
-
-	private TextView addressHomeNumber;
-
-	private View addressWorkLayout;
-
-	private TextView addressWorkNumber;
 
 	private OnClickListener dialOnClickListener;
 
@@ -243,6 +236,18 @@ public class ContactFragment extends Fragment {
 	private OnClickListener addressOnClickListener;
 
 	private OnClickListener smsOnClickListener;
+
+	private ListView phoneListLayout;
+
+	private ArrayAdapter<Item> phoneListAdapter;
+
+	private ListView addressListLayout;
+
+	private ArrayAdapter<Item> addressListAdapter;
+
+	private ListView emailListLayout;
+
+	private ArrayAdapter<Item> emailListAdapter;
 	
 //	private Listener<Connector.ConnectorEvent> accountStatusListener;
 	
@@ -313,7 +318,7 @@ public class ContactFragment extends Fragment {
 		super.onCreateOptionsMenu(menu, inflater);
 	}
 	
-	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+	public View onCreateView(final LayoutInflater inflater, ViewGroup container,
 	        Bundle savedInstanceState) {
 		this.setHasOptionsMenu(true);
 		
@@ -344,52 +349,110 @@ public class ContactFragment extends Fragment {
 		chatBtn.setOnClickListener(chatClickListener);
 
 		this.phonesLayout = (View) layout.findViewById(R.id.phone_layout);
-		this.phoneHomeLayout = (View) this.phonesLayout.findViewById(R.id.phonenumber_home_layout);
-		this.phoneHomeNumber = (TextView) this.phoneHomeLayout.findViewById(R.id.number);
-		this.phoneWorkLayout = (View) this.phonesLayout.findViewById(R.id.phonenumber_work_layout);
-		this.phoneWorkNumber = (TextView) this.phoneWorkLayout.findViewById(R.id.number);
+		this.phoneListLayout = (ListView) phonesLayout.findViewById(R.id.listLayout);
+		this.phoneListAdapter = new ArrayAdapter<Item>(this.getActivity(), R.layout.contact_fragment_phone_item) {
+			public View getView (int position, View convertView, ViewGroup parent) {
+				View view;
+				if (convertView == null) {
+					view = inflater.inflate(R.layout.contact_fragment_phone_item, parent, false);
+				} else {
+					view = convertView;
+				}		
+				
+				TextView value = (TextView) view.findViewById(R.id.value);
+				View btn = view.findViewById(R.id.valueLayout);
+				TextView type = (TextView) view.findViewById(R.id.type);
+				View smsBtn = view.findViewById(R.id.sms_button);
+				
+				Item item = getItem(position);
+				value.setText(item.value);
+				type.setText(ContactsContract.CommonDataKinds.Phone.getTypeLabelResource(item.type));
+				
+				btn.setOnClickListener(dialOnClickListener);
+				smsBtn.setOnClickListener(smsOnClickListener);
+				
+				return view;
+			}
+		};
+		this.phoneListLayout.setAdapter(phoneListAdapter);
 		
-		this.emailsLayout = (View) layout.findViewById(R.id.email_layout);
-		this.emailHomeLayout = (View) this.emailsLayout.findViewById(R.id.email_home_layout);
-		this.emailHomeNumber = (TextView) this.emailHomeLayout.findViewById(R.id.address);
-		this.emailWorkLayout = (View) this.emailsLayout.findViewById(R.id.email_work_layout);
-		this.emailWorkNumber = (TextView) this.emailWorkLayout.findViewById(R.id.address);		
+		this.emailsLayout = (View) layout.findViewById(R.id.email_layout);		
+		this.emailListLayout = (ListView) emailsLayout.findViewById(R.id.listLayout);
+		this.emailListAdapter = new ArrayAdapter<Item>(getActivity(), R.layout.contact_fragment_item) {
+			public View getView (int position, View convertView, ViewGroup parent) {
+				View view;
+				if (convertView == null) {
+					view = inflater.inflate(R.layout.contact_fragment_item, parent, false);
+				} else {
+					view = convertView;
+				}		
+				
+				TextView value = (TextView) view.findViewById(R.id.value);
+				View btn = view.findViewById(R.id.valueLayout);
+				TextView type = (TextView) view.findViewById(R.id.type);
+				
+				Item item = getItem(position);
+				value.setText(item.value);
+				type.setText(ContactsContract.CommonDataKinds.Email.getTypeLabelResource(item.type));
+				
+				btn.setOnClickListener(emailOnClickListener);
+				
+				return view;
+			}			
+		};
+		this.emailListLayout.setAdapter(emailListAdapter);
 
-		this.addressesLayout = (View) layout.findViewById(R.id.locality_layout);
-		this.addressHomeLayout = (View) this.addressesLayout.findViewById(R.id.locality_home_layout);
-		this.addressHomeNumber = (TextView) this.addressHomeLayout.findViewById(R.id.address);
-		this.addressWorkLayout = (View) this.addressesLayout.findViewById(R.id.locality_work_layout);
-		this.addressWorkNumber = (TextView) this.addressWorkLayout.findViewById(R.id.address);		
+		this.addressesLayout = (View) layout.findViewById(R.id.locality_layout);	
+		this.addressListLayout = (ListView) addressesLayout.findViewById(R.id.listLayout);
+		this.addressListAdapter = new ArrayAdapter<Item>(getActivity(), R.layout.contact_fragment_item) {
+			public View getView (int position, View convertView, ViewGroup parent) {
+				View view;
+				if (convertView == null) {
+					view = inflater.inflate(R.layout.contact_fragment_item, parent, false);
+				} else {
+					view = convertView;
+				}		
+				
+				TextView value = (TextView) view.findViewById(R.id.value);
+				View btn = view.findViewById(R.id.valueLayout);
+				TextView type = (TextView) view.findViewById(R.id.type);
+				
+				Item item = getItem(position);
+				value.setText(item.value);
+				type.setText(ContactsContract.CommonDataKinds.StructuredPostal.getTypeLabelResource(item.type));
+				
+				btn.setOnClickListener(addressOnClickListener);
+				
+				return view;
+			}			
+		};
+		this.addressListLayout.setAdapter(addressListAdapter);
 		
 		this.dialOnClickListener = new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				TextView tv = (TextView) v.findViewById(R.id.number);
+				TextView tv = (TextView) v.findViewById(R.id.value);
 				Intent intent = new Intent(Intent.ACTION_DIAL);
 				intent.setData(Uri.parse("tel:" + tv.getText()));
 				startActivity(Intent.createChooser(intent, "")); 
 			}		
 		};
-		this.phoneHomeLayout.setOnClickListener(dialOnClickListener);
-		this.phoneWorkLayout.setOnClickListener(dialOnClickListener);
 		
 		this.smsOnClickListener = new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				TextView tv = (TextView) ((View)v.getParent()).findViewById(R.id.number);
+				TextView tv = (TextView) ((View)v.getParent()).findViewById(R.id.value);
 				Intent intent = new Intent(Intent.ACTION_SENDTO);
 				intent.setData(Uri.parse("smsto:" + tv.getText().toString()));
 				intent.setType("text/plain");	
 				startActivity(Intent.createChooser(intent, ""));
 			}
 		};
-		this.phoneHomeLayout.findViewById(R.id.sms_button).setOnClickListener(smsOnClickListener);
-		this.phoneWorkLayout.findViewById(R.id.sms_button).setOnClickListener(smsOnClickListener);
 		
 		this.emailOnClickListener = new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				TextView tv = (TextView) v.findViewById(R.id.address);
+				TextView tv = (TextView) v.findViewById(R.id.value);
 				Intent intent = new Intent(Intent.ACTION_SENDTO);
 				intent.setData(Uri.parse("mailto:"));
 				intent.setType("*/*");	
@@ -397,21 +460,17 @@ public class ContactFragment extends Fragment {
 				startActivity(Intent.createChooser(intent, ""));
 			}			
 		};
-		this.emailHomeLayout.setOnClickListener(emailOnClickListener);
-		this.emailWorkLayout.setOnClickListener(emailOnClickListener);
 		
 		this.addressOnClickListener = new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				TextView tv = (TextView) v.findViewById(R.id.address);
+				TextView tv = (TextView) v.findViewById(R.id.value);
 				Intent intent = new Intent(Intent.ACTION_VIEW);
 				Uri uri = Uri.parse("geo:0,0?q="+Uri.encode(tv.getText().toString()));
 				intent.setData(uri);
 				startActivity(Intent.createChooser(intent, ""));
 			}
 		};
-		this.addressHomeLayout.setOnClickListener(addressOnClickListener);
-		this.addressWorkLayout.setOnClickListener(addressOnClickListener);
 		
 //		this.shareClickListener = new OnClickListener() {
 //
@@ -484,11 +543,152 @@ public class ContactFragment extends Fragment {
 	}
 	
 	public void refreshView(VCard vcard) {
-//		final Jaxmpp jaxmpp = getJaxmpp();
-//		RosterItem ri = jaxmpp.getRoster().get(jid);
-//		String name = RosterDisplayTools.getDisplayName(ri);
-//		if (name == null) name = jid.toString();
-//		nameTextView.setText(name);
+		phoneListAdapter.clear();
+		emailListAdapter.clear();
+		addressListAdapter.clear();
+		
+		long id = RosterProviderExt.createId(BareJID.bareJIDInstance(account), jid);
+		Cursor c3 = this.getActivity().getContentResolver().query(RawContacts.CONTENT_URI, new String[] { RawContacts.CONTACT_ID }, RawContacts.ACCOUNT_TYPE
+			+ "='" + Constants.ACCOUNT_TYPE + "' AND " + RawContacts.SOURCE_ID + " = ?" , new String[] { String.valueOf(id) }, null);
+		try {
+			if (c3.moveToNext()) {
+				id = c3.getInt(0);
+				Log.e(TAG, "got contact id " + id + " for " + jid);
+			}
+			else {
+				id = 0;
+			}
+		} catch (Exception ex) {
+			id = 0;
+			Log.e(TAG, "Exception retrieving Android Contact contact id for " + jid);
+		}
+		finally {
+			c3.close();
+		}
+		Set<String> phones = new HashSet<String>();
+		Set<String> emails = new HashSet<String>();
+		Set<String> addresses = new HashSet<String>();
+		
+		if (id != 0) {
+			Cursor c2 = this.getActivity().getContentResolver().query(Data.CONTENT_URI, 
+				new String[] { "data1", "data2", Data.MIMETYPE }, 
+				Data.CONTACT_ID + " = ? AND " 
+				+ "("+ Data.MIMETYPE + " = '" + ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE + "')"
+				+ " OR ("+ Data.MIMETYPE + " = '" + ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE + "')"
+				+ " OR ("+ Data.MIMETYPE + " = '" + ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE + "')", new String[] { String.valueOf(id) }, null);
+			try {
+				while (c2.moveToNext()) {
+					Item item = new Item(c2.getString(0), c2.getInt(1));
+					String type = c2.getString(2);
+					if (ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE.equals(type)) {
+						phones.add(item.value);
+						this.phoneListAdapter.add(item);
+					}
+					else if (ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE.equals(type)) {
+						emails.add(item.value);
+						this.emailListAdapter.add(item);
+					}
+					else if (ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE.equals(type)) {
+						addresses.add(item.value);
+						this.addressListAdapter.add(item);
+					}
+				}
+			
+			} catch (Exception ex) {
+				Log.e(TAG, "Exception while retrieving contact informations from Android Contacts for " + jid, ex);
+			} finally {
+				c2.close();
+			}
+		}
+		
+		if (vcard != null) {
+			// Merge info about phones
+			if (vcard.getHomeTelVoice() != null && vcard.getHomeTelVoice().length() > 0) {
+				if (phones.add(vcard.getHomeTelVoice())) {
+					Item item = new Item(vcard.getHomeTelVoice(), ContactsContract.CommonDataKinds.Phone.TYPE_HOME);
+					this.phoneListAdapter.add(item);
+				}
+			}
+			if (vcard.getWorkTelVoice() != null && vcard.getWorkTelVoice().length() > 0) {
+				if (emails.add(vcard.getWorkTelVoice())) {
+					Item item = new Item(vcard.getWorkTelVoice(), ContactsContract.CommonDataKinds.Phone.TYPE_WORK);
+					this.phoneListAdapter.add(item);
+				}
+			}				
+			// merge info about emails
+			if (vcard.getHomeEmail() != null && vcard.getHomeEmail().length() > 0) {
+				if (emails.add(vcard.getHomeEmail())) {
+					Item item = new Item(vcard.getHomeEmail(), ContactsContract.CommonDataKinds.Email.TYPE_HOME);
+					this.emailListAdapter.add(item);
+				}
+			}
+			if (vcard.getWorkEmail() != null && vcard.getWorkEmail().length() > 0) {
+				if (emails.add(vcard.getWorkEmail())) {
+					Item item = new Item(vcard.getWorkEmail(), ContactsContract.CommonDataKinds.Email.TYPE_WORK);
+					this.emailListAdapter.add(item);
+				}
+			}			
+			// merge info about addresses
+			String homeAddress = "";
+			if (vcard != null) {
+				if (vcard.getHomeAddressStreet() != null)
+					homeAddress += vcard.getHomeAddressStreet();
+				if (vcard.getHomeAddressPCode() != null && vcard.getHomeAddressPCode().length() > 0) {
+					if (homeAddress.length() > 0)
+						homeAddress += ", ";
+					homeAddress += vcard.getHomeAddressPCode();
+					if (vcard.getHomeAddressLocality() != null && vcard.getHomeAddressLocality().length() > 0) {
+						homeAddress += " " + vcard.getHomeAddressLocality();
+					}
+				}
+				else if (vcard.getHomeAddressLocality() != null && vcard.getHomeAddressLocality().length() > 0) {
+					if (homeAddress.length() > 0)
+						homeAddress += ", ";
+					homeAddress += vcard.getHomeAddressLocality();
+				}
+				if (vcard.getHomeAddressCtry() != null && vcard.getHomeAddressCtry().length() > 0) {
+					if (homeAddress.length() > 0)
+						homeAddress += ", ";
+					homeAddress += vcard.getHomeAddressCtry();
+				}
+			}		
+			if (homeAddress.length() > 0) {
+				if (emails.add(homeAddress)) {
+					Item item = new Item(homeAddress, ContactsContract.CommonDataKinds.StructuredPostal.TYPE_HOME);
+					this.addressListAdapter.add(item);
+				}
+			}
+			String workAddress = "";
+			if (vcard != null) {
+				if (vcard.getWorkAddressStreet() != null)
+					workAddress += vcard.getWorkAddressStreet();
+				if (vcard.getWorkAddressPCode() != null && vcard.getWorkAddressPCode().length() > 0) {
+					if (workAddress.length() > 0)
+						workAddress += ", ";
+					workAddress += vcard.getWorkAddressPCode();
+					if (vcard.getWorkAddressLocality() != null && vcard.getWorkAddressLocality().length() > 0) {
+						workAddress += " " + vcard.getWorkAddressLocality();
+					}
+				}
+				else if (vcard.getWorkAddressLocality() != null && vcard.getWorkAddressLocality().length() > 0) {
+					if (workAddress.length() > 0)
+						workAddress += ", ";
+					workAddress += vcard.getWorkAddressLocality();
+				}
+				if (vcard.getWorkAddressCtry() != null && vcard.getWorkAddressCtry().length() > 0) {
+					if (workAddress.length() > 0)
+						workAddress += ", ";
+					workAddress += vcard.getWorkAddressCtry();
+				}
+			}
+			if (workAddress.length() > 0) {
+				if (emails.add(workAddress)) {
+					Item item = new Item(workAddress, ContactsContract.CommonDataKinds.StructuredPostal.TYPE_WORK);
+					this.addressListAdapter.add(item);
+				}
+			}
+		}
+
 		Uri uri = Uri.parse(RosterProvider.CONTENT_URI + "/" + Uri.encode(jid.toString()));
 		Cursor c = getActivity().getContentResolver().query(uri, null, null, null, null);
 		if (c.moveToNext()) {
@@ -503,90 +703,14 @@ public class ContactFragment extends Fragment {
 		titleView.setVisibility(vcard == null || vcard.getTitle() == null ? View.GONE : View.VISIBLE);
 		organizationView.setVisibility(vcard == null || vcard.getOrgName() == null ? View.GONE : View.VISIBLE);
 		
-		// Phones section
-		boolean hasNoHomePhone = vcard == null || vcard.getHomeTelVoice() == null || vcard.getHomeTelVoice().length() == 0;
-		phoneHomeLayout.setVisibility(hasNoHomePhone ? View.GONE : View.VISIBLE);
-		if (!hasNoHomePhone)
-			phoneHomeNumber.setText(vcard.getHomeTelVoice());
-		
-		boolean hasNoWorkPhone = vcard == null || vcard.getWorkTelVoice() == null || vcard.getWorkTelVoice().length() == 0;
-		phoneWorkLayout.setVisibility(hasNoWorkPhone ? View.GONE : View.VISIBLE);
-		if (!hasNoWorkPhone)
-			phoneWorkNumber.setText(vcard.getWorkTelVoice());
-		
-		phonesLayout.setVisibility(!hasNoHomePhone || !hasNoWorkPhone ? View.VISIBLE : View.GONE);
+//		// Phones section
+		phonesLayout.setVisibility(phoneListAdapter.getCount() != 0 ? View.VISIBLE : View.GONE);
 		
 		// Emails section
-		boolean hasNoHomeEmail = vcard == null || vcard.getHomeEmail() == null || vcard.getHomeEmail().length() == 0;
-		emailHomeLayout.setVisibility(hasNoHomeEmail ? View.GONE : View.VISIBLE);
-		if (!hasNoHomeEmail)
-			emailHomeNumber.setText(vcard.getHomeEmail());
-		
-		boolean hasNoWorkEmail = vcard == null || vcard.getWorkEmail() == null || vcard.getWorkEmail().length() == 0;
-		emailWorkLayout.setVisibility(hasNoWorkEmail ? View.GONE : View.VISIBLE);
-		if (!hasNoWorkEmail)
-			emailWorkNumber.setText(vcard.getWorkEmail());
-		
-		emailsLayout.setVisibility(!hasNoHomeEmail || !hasNoWorkEmail ? View.VISIBLE : View.GONE);		
-		
+		emailsLayout.setVisibility(emailListAdapter.getCount() != 0 ? View.VISIBLE : View.GONE);		
+				
 		// Locality section
-		String homeAddress = "";
-		if (vcard != null) {
-			if (vcard.getHomeAddressStreet() != null)
-				homeAddress += vcard.getHomeAddressStreet();
-			if (vcard.getHomeAddressPCode() != null && vcard.getHomeAddressPCode().length() > 0) {
-				if (homeAddress.length() > 0)
-					homeAddress += ", ";
-				homeAddress += vcard.getHomeAddressPCode();
-				if (vcard.getHomeAddressLocality() != null && vcard.getHomeAddressLocality().length() > 0) {
-					homeAddress += " " + vcard.getHomeAddressLocality();
-				}
-			}
-			else if (vcard.getHomeAddressLocality() != null && vcard.getHomeAddressLocality().length() > 0) {
-				if (homeAddress.length() > 0)
-					homeAddress += ", ";
-				homeAddress += vcard.getHomeAddressLocality();
-			}
-			if (vcard.getHomeAddressCtry() != null && vcard.getHomeAddressCtry().length() > 0) {
-				if (homeAddress.length() > 0)
-					homeAddress += ", ";
-				homeAddress += vcard.getHomeAddressCtry();
-			}
-		}
-		boolean hasNoHomeAddress = homeAddress.length() == 0;
-		addressHomeLayout.setVisibility(hasNoHomeAddress ? View.GONE : View.VISIBLE);
-		if (!hasNoHomeAddress)
-			addressHomeNumber.setText(homeAddress);
-		
-		String workAddress = "";
-		if (vcard != null) {
-			if (vcard.getWorkAddressStreet() != null)
-				workAddress += vcard.getWorkAddressStreet();
-			if (vcard.getWorkAddressPCode() != null && vcard.getWorkAddressPCode().length() > 0) {
-				if (workAddress.length() > 0)
-					workAddress += ", ";
-				workAddress += vcard.getWorkAddressPCode();
-				if (vcard.getWorkAddressLocality() != null && vcard.getWorkAddressLocality().length() > 0) {
-					workAddress += " " + vcard.getWorkAddressLocality();
-				}
-			}
-			else if (vcard.getWorkAddressLocality() != null && vcard.getWorkAddressLocality().length() > 0) {
-				if (workAddress.length() > 0)
-					workAddress += ", ";
-				workAddress += vcard.getWorkAddressLocality();
-			}
-			if (vcard.getWorkAddressCtry() != null && vcard.getWorkAddressCtry().length() > 0) {
-				if (workAddress.length() > 0)
-					workAddress += ", ";
-				workAddress += vcard.getWorkAddressCtry();
-			}
-		}
-		boolean hasNoWorkAddress = workAddress.length() == 0;
-		addressWorkLayout.setVisibility(hasNoWorkAddress ? View.GONE : View.VISIBLE);
-		if (!hasNoWorkAddress)
-			addressWorkNumber.setText(workAddress);
-		
-		addressesLayout.setVisibility(!hasNoHomeAddress || !hasNoWorkAddress ? View.VISIBLE : View.GONE);		
+		addressesLayout.setVisibility(addressListAdapter.getCount() != 0 ? View.VISIBLE : View.GONE);		
 //		
 //		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
 //			showActionBar();
