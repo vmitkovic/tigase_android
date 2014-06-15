@@ -18,6 +18,7 @@
         android:layout_marginTop="14dp"
         android:layout_marginBottom="10dp"
         android:layout_marginRight="8dp"
+        android:textColor="?android:attr/textColorPrimary"
         android:text="TextView" />
     
 </LinearLayout>

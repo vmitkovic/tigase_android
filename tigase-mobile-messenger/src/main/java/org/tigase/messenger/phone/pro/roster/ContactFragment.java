@@ -19,11 +19,16 @@ package org.tigase.messenger.phone.pro.roster;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.tigase.messenger.phone.pro.Constants;
+import org.tigase.messenger.phone.pro.IJaxmppService;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
+import org.tigase.messenger.phone.pro.db.providers.RosterProviderExt;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 import org.tigase.messenger.phone.pro.MainActivity;
 
@@ -32,16 +37,25 @@ import tigase.jaxmpp.core.client.BareJID;
 //import tigase.jaxmpp.core.client.Connector;
 //import tigase.jaxmpp.core.client.Connector.ConnectorEvent;
 import tigase.jaxmpp.core.client.JID;
+import tigase.jaxmpp.core.client.xml.ElementWrapper;
 //import tigase.jaxmpp.core.client.exceptions.JaxmppException;
 //import tigase.jaxmpp.core.client.observer.Listener;
 import tigase.jaxmpp.core.client.xml.XMLException;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterCacheProvider;
+import tigase.jaxmpp.core.client.xmpp.modules.vcard.VCard;
 //import tigase.jaxmpp.core.client.xmpp.modules.chat.Chat;
 //import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceModule;
 //import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceModule.PresenceEvent;
 //import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterItem;
 //import tigase.jaxmpp.core.client.xmpp.stanzas.Presence;
 import tigase.jaxmpp.j2se.Jaxmpp;
+import tigase.jaxmpp.j2se.connectors.socket.StreamListener;
+import tigase.jaxmpp.j2se.connectors.socket.XMPPDomBuilderHandler;
+import tigase.jaxmpp.j2se.xml.J2seElement;
+import tigase.xml.DomBuilderHandler;
+import tigase.xml.Element;
+import tigase.xml.SimpleParser;
+import tigase.xml.SingletonFactory;
 import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
@@ -51,8 +65,14 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.RemoteException;
+import android.provider.ContactsContract;
+import android.provider.ContactsContract.Data;
+import android.provider.ContactsContract.RawContacts;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.MenuItemCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -61,11 +81,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -166,11 +188,23 @@ public class ContactFragment extends Fragment {
 //		}
 //		
 //	}
+	private class Item {
+		String value;
+		int type;
+		
+		public Item(String value, int type) {
+			this.value = value;
+			this.type = type;
+		}
+	}
 	
 	private View layout;
 	
 	private ImageView avatarView;
 	private TextView nameTextView;
+	
+	private TextView titleView;
+	private TextView organizationView;
 	
 	private String account;
 	private BareJID jid;
@@ -186,6 +220,34 @@ public class ContactFragment extends Fragment {
 
 	private Button chatBtn;
 	private Button shareBtn;
+
+	private ProgressBar progressBar;
+
+	private View phonesLayout;
+
+	private View emailsLayout;
+
+	private View addressesLayout;
+
+	private OnClickListener dialOnClickListener;
+
+	private OnClickListener emailOnClickListener;
+
+	private OnClickListener addressOnClickListener;
+
+	private OnClickListener smsOnClickListener;
+
+	private ListView phoneListLayout;
+
+	private ArrayAdapter<Item> phoneListAdapter;
+
+	private ListView addressListLayout;
+
+	private ArrayAdapter<Item> addressListAdapter;
+
+	private ListView emailListLayout;
+
+	private ArrayAdapter<Item> emailListAdapter;
 	
 //	private Listener<Connector.ConnectorEvent> accountStatusListener;
 	
@@ -251,10 +313,12 @@ public class ContactFragment extends Fragment {
 	@Override
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 		inflater.inflate(R.menu.contact_menu, menu);
+		MenuItem refreshItem = menu.findItem(R.id.refreshVCard);
+		MenuItemCompat.setShowAsAction(refreshItem, MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
 		super.onCreateOptionsMenu(menu, inflater);
 	}
 	
-	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+	public View onCreateView(final LayoutInflater inflater, ViewGroup container,
 	        Bundle savedInstanceState) {
 		this.setHasOptionsMenu(true);
 		
@@ -262,6 +326,10 @@ public class ContactFragment extends Fragment {
 		
 		this.avatarView = (ImageView) this.layout.findViewById(R.id.avatar);
 		this.nameTextView = (TextView) this.layout.findViewById(R.id.name);
+		this.progressBar = (ProgressBar) this.layout.findViewById(R.id.progressBar);
+		
+		this.titleView = (TextView) this.layout.findViewById(R.id.title);
+		this.organizationView = (TextView) this.layout.findViewById(R.id.org);
 //		this.resourcesView = (ListView) this.layout.findViewById(R.id.resources_view);
 		
 		this.chatClickListener = new OnClickListener() {
@@ -280,6 +348,130 @@ public class ContactFragment extends Fragment {
 		this.chatBtn = (Button) layout.findViewById(R.id.chat_btn);
 		chatBtn.setOnClickListener(chatClickListener);
 
+		this.phonesLayout = (View) layout.findViewById(R.id.phone_layout);
+		this.phoneListLayout = (ListView) phonesLayout.findViewById(R.id.listLayout);
+		this.phoneListAdapter = new ArrayAdapter<Item>(this.getActivity(), R.layout.contact_fragment_phone_item) {
+			public View getView (int position, View convertView, ViewGroup parent) {
+				View view;
+				if (convertView == null) {
+					view = inflater.inflate(R.layout.contact_fragment_phone_item, parent, false);
+				} else {
+					view = convertView;
+				}		
+				
+				TextView value = (TextView) view.findViewById(R.id.value);
+				View btn = view.findViewById(R.id.valueLayout);
+				TextView type = (TextView) view.findViewById(R.id.type);
+				View smsBtn = view.findViewById(R.id.sms_button);
+				
+				Item item = getItem(position);
+				value.setText(item.value);
+				type.setText(ContactsContract.CommonDataKinds.Phone.getTypeLabelResource(item.type));
+				
+				btn.setOnClickListener(dialOnClickListener);
+				smsBtn.setOnClickListener(smsOnClickListener);
+				
+				return view;
+			}
+		};
+		this.phoneListLayout.setAdapter(phoneListAdapter);
+		
+		this.emailsLayout = (View) layout.findViewById(R.id.email_layout);		
+		this.emailListLayout = (ListView) emailsLayout.findViewById(R.id.listLayout);
+		this.emailListAdapter = new ArrayAdapter<Item>(getActivity(), R.layout.contact_fragment_item) {
+			public View getView (int position, View convertView, ViewGroup parent) {
+				View view;
+				if (convertView == null) {
+					view = inflater.inflate(R.layout.contact_fragment_item, parent, false);
+				} else {
+					view = convertView;
+				}		
+				
+				TextView value = (TextView) view.findViewById(R.id.value);
+				View btn = view.findViewById(R.id.valueLayout);
+				TextView type = (TextView) view.findViewById(R.id.type);
+				
+				Item item = getItem(position);
+				value.setText(item.value);
+				type.setText(ContactsContract.CommonDataKinds.Email.getTypeLabelResource(item.type));
+				
+				btn.setOnClickListener(emailOnClickListener);
+				
+				return view;
+			}			
+		};
+		this.emailListLayout.setAdapter(emailListAdapter);
+
+		this.addressesLayout = (View) layout.findViewById(R.id.locality_layout);	
+		this.addressListLayout = (ListView) addressesLayout.findViewById(R.id.listLayout);
+		this.addressListAdapter = new ArrayAdapter<Item>(getActivity(), R.layout.contact_fragment_item) {
+			public View getView (int position, View convertView, ViewGroup parent) {
+				View view;
+				if (convertView == null) {
+					view = inflater.inflate(R.layout.contact_fragment_item, parent, false);
+				} else {
+					view = convertView;
+				}		
+				
+				TextView value = (TextView) view.findViewById(R.id.value);
+				View btn = view.findViewById(R.id.valueLayout);
+				TextView type = (TextView) view.findViewById(R.id.type);
+				
+				Item item = getItem(position);
+				value.setText(item.value);
+				type.setText(ContactsContract.CommonDataKinds.StructuredPostal.getTypeLabelResource(item.type));
+				
+				btn.setOnClickListener(addressOnClickListener);
+				
+				return view;
+			}			
+		};
+		this.addressListLayout.setAdapter(addressListAdapter);
+		
+		this.dialOnClickListener = new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				TextView tv = (TextView) v.findViewById(R.id.value);
+				Intent intent = new Intent(Intent.ACTION_DIAL);
+				intent.setData(Uri.parse("tel:" + tv.getText()));
+				startActivity(Intent.createChooser(intent, "")); 
+			}		
+		};
+		
+		this.smsOnClickListener = new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				TextView tv = (TextView) ((View)v.getParent()).findViewById(R.id.value);
+				Intent intent = new Intent(Intent.ACTION_SENDTO);
+				intent.setData(Uri.parse("smsto:" + tv.getText().toString()));
+				intent.setType("text/plain");	
+				startActivity(Intent.createChooser(intent, ""));
+			}
+		};
+		
+		this.emailOnClickListener = new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				TextView tv = (TextView) v.findViewById(R.id.value);
+				Intent intent = new Intent(Intent.ACTION_SENDTO);
+				intent.setData(Uri.parse("mailto:"));
+				intent.setType("*/*");	
+				intent.putExtra(Intent.EXTRA_EMAIL, new String[] { tv.getText().toString() });
+				startActivity(Intent.createChooser(intent, ""));
+			}			
+		};
+		
+		this.addressOnClickListener = new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				TextView tv = (TextView) v.findViewById(R.id.value);
+				Intent intent = new Intent(Intent.ACTION_VIEW);
+				Uri uri = Uri.parse("geo:0,0?q="+Uri.encode(tv.getText().toString()));
+				intent.setData(uri);
+				startActivity(Intent.createChooser(intent, ""));
+			}
+		};
+		
 //		this.shareClickListener = new OnClickListener() {
 //
 //			@Override
@@ -347,15 +539,156 @@ public class ContactFragment extends Fragment {
 //		jaxmpp.addListener(PresenceModule.ContactUnavailable, this.presenceListener);
 //		resourcesView.setAdapter(resourcesAdapter);
 		
-		refresh();
+		refreshView(null);
 	}
 	
-	public void refresh() {
-//		final Jaxmpp jaxmpp = getJaxmpp();
-//		RosterItem ri = jaxmpp.getRoster().get(jid);
-//		String name = RosterDisplayTools.getDisplayName(ri);
-//		if (name == null) name = jid.toString();
-//		nameTextView.setText(name);
+	public void refreshView(VCard vcard) {
+		phoneListAdapter.clear();
+		emailListAdapter.clear();
+		addressListAdapter.clear();
+		
+		long id = RosterProviderExt.createId(BareJID.bareJIDInstance(account), jid);
+		Cursor c3 = this.getActivity().getContentResolver().query(RawContacts.CONTENT_URI, new String[] { RawContacts.CONTACT_ID }, RawContacts.ACCOUNT_TYPE
+			+ "='" + Constants.ACCOUNT_TYPE + "' AND " + RawContacts.SOURCE_ID + " = ?" , new String[] { String.valueOf(id) }, null);
+		try {
+			if (c3.moveToNext()) {
+				id = c3.getInt(0);
+				Log.e(TAG, "got contact id " + id + " for " + jid);
+			}
+			else {
+				id = 0;
+			}
+		} catch (Exception ex) {
+			id = 0;
+			Log.e(TAG, "Exception retrieving Android Contact contact id for " + jid);
+		}
+		finally {
+			c3.close();
+		}
+		Set<String> phones = new HashSet<String>();
+		Set<String> emails = new HashSet<String>();
+		Set<String> addresses = new HashSet<String>();
+		
+		if (id != 0) {
+			Cursor c2 = this.getActivity().getContentResolver().query(Data.CONTENT_URI, 
+				new String[] { "data1", "data2", Data.MIMETYPE }, 
+				Data.CONTACT_ID + " = ? AND " 
+				+ "("+ Data.MIMETYPE + " = '" + ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE + "')"
+				+ " OR ("+ Data.MIMETYPE + " = '" + ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE + "')"
+				+ " OR ("+ Data.MIMETYPE + " = '" + ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE + "')", new String[] { String.valueOf(id) }, null);
+			try {
+				while (c2.moveToNext()) {
+					Item item = new Item(c2.getString(0), c2.getInt(1));
+					String type = c2.getString(2);
+					if (ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE.equals(type)) {
+						phones.add(item.value);
+						this.phoneListAdapter.add(item);
+					}
+					else if (ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE.equals(type)) {
+						emails.add(item.value);
+						this.emailListAdapter.add(item);
+					}
+					else if (ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE.equals(type)) {
+						addresses.add(item.value);
+						this.addressListAdapter.add(item);
+					}
+				}
+			
+			} catch (Exception ex) {
+				Log.e(TAG, "Exception while retrieving contact informations from Android Contacts for " + jid, ex);
+			} finally {
+				c2.close();
+			}
+		}
+		
+		if (vcard != null) {
+			// Merge info about phones
+			if (vcard.getHomeTelVoice() != null && vcard.getHomeTelVoice().length() > 0) {
+				if (phones.add(vcard.getHomeTelVoice())) {
+					Item item = new Item(vcard.getHomeTelVoice(), ContactsContract.CommonDataKinds.Phone.TYPE_HOME);
+					this.phoneListAdapter.add(item);
+				}
+			}
+			if (vcard.getWorkTelVoice() != null && vcard.getWorkTelVoice().length() > 0) {
+				if (emails.add(vcard.getWorkTelVoice())) {
+					Item item = new Item(vcard.getWorkTelVoice(), ContactsContract.CommonDataKinds.Phone.TYPE_WORK);
+					this.phoneListAdapter.add(item);
+				}
+			}				
+			// merge info about emails
+			if (vcard.getHomeEmail() != null && vcard.getHomeEmail().length() > 0) {
+				if (emails.add(vcard.getHomeEmail())) {
+					Item item = new Item(vcard.getHomeEmail(), ContactsContract.CommonDataKinds.Email.TYPE_HOME);
+					this.emailListAdapter.add(item);
+				}
+			}
+			if (vcard.getWorkEmail() != null && vcard.getWorkEmail().length() > 0) {
+				if (emails.add(vcard.getWorkEmail())) {
+					Item item = new Item(vcard.getWorkEmail(), ContactsContract.CommonDataKinds.Email.TYPE_WORK);
+					this.emailListAdapter.add(item);
+				}
+			}			
+			// merge info about addresses
+			String homeAddress = "";
+			if (vcard != null) {
+				if (vcard.getHomeAddressStreet() != null)
+					homeAddress += vcard.getHomeAddressStreet();
+				if (vcard.getHomeAddressPCode() != null && vcard.getHomeAddressPCode().length() > 0) {
+					if (homeAddress.length() > 0)
+						homeAddress += ", ";
+					homeAddress += vcard.getHomeAddressPCode();
+					if (vcard.getHomeAddressLocality() != null && vcard.getHomeAddressLocality().length() > 0) {
+						homeAddress += " " + vcard.getHomeAddressLocality();
+					}
+				}
+				else if (vcard.getHomeAddressLocality() != null && vcard.getHomeAddressLocality().length() > 0) {
+					if (homeAddress.length() > 0)
+						homeAddress += ", ";
+					homeAddress += vcard.getHomeAddressLocality();
+				}
+				if (vcard.getHomeAddressCtry() != null && vcard.getHomeAddressCtry().length() > 0) {
+					if (homeAddress.length() > 0)
+						homeAddress += ", ";
+					homeAddress += vcard.getHomeAddressCtry();
+				}
+			}		
+			if (homeAddress.length() > 0) {
+				if (emails.add(homeAddress)) {
+					Item item = new Item(homeAddress, ContactsContract.CommonDataKinds.StructuredPostal.TYPE_HOME);
+					this.addressListAdapter.add(item);
+				}
+			}
+			String workAddress = "";
+			if (vcard != null) {
+				if (vcard.getWorkAddressStreet() != null)
+					workAddress += vcard.getWorkAddressStreet();
+				if (vcard.getWorkAddressPCode() != null && vcard.getWorkAddressPCode().length() > 0) {
+					if (workAddress.length() > 0)
+						workAddress += ", ";
+					workAddress += vcard.getWorkAddressPCode();
+					if (vcard.getWorkAddressLocality() != null && vcard.getWorkAddressLocality().length() > 0) {
+						workAddress += " " + vcard.getWorkAddressLocality();
+					}
+				}
+				else if (vcard.getWorkAddressLocality() != null && vcard.getWorkAddressLocality().length() > 0) {
+					if (workAddress.length() > 0)
+						workAddress += ", ";
+					workAddress += vcard.getWorkAddressLocality();
+				}
+				if (vcard.getWorkAddressCtry() != null && vcard.getWorkAddressCtry().length() > 0) {
+					if (workAddress.length() > 0)
+						workAddress += ", ";
+					workAddress += vcard.getWorkAddressCtry();
+				}
+			}
+			if (workAddress.length() > 0) {
+				if (emails.add(workAddress)) {
+					Item item = new Item(workAddress, ContactsContract.CommonDataKinds.StructuredPostal.TYPE_WORK);
+					this.addressListAdapter.add(item);
+				}
+			}
+		}
+
 		Uri uri = Uri.parse(RosterProvider.CONTENT_URI + "/" + Uri.encode(jid.toString()));
 		Cursor c = getActivity().getContentResolver().query(uri, null, null, null, null);
 		if (c.moveToNext()) {
@@ -366,6 +699,19 @@ public class ContactFragment extends Fragment {
 		}
 		nameTextView.setText(name);
 		AvatarHelper.setAvatarToImageView(jid, avatarView);
+		
+		titleView.setVisibility(vcard == null || vcard.getTitle() == null ? View.GONE : View.VISIBLE);
+		organizationView.setVisibility(vcard == null || vcard.getOrgName() == null ? View.GONE : View.VISIBLE);
+		
+//		// Phones section
+		phonesLayout.setVisibility(phoneListAdapter.getCount() != 0 ? View.VISIBLE : View.GONE);
+		
+		// Emails section
+		emailsLayout.setVisibility(emailListAdapter.getCount() != 0 ? View.VISIBLE : View.GONE);		
+				
+		// Locality section
+		addressesLayout.setVisibility(addressListAdapter.getCount() != 0 ? View.VISIBLE : View.GONE);		
+//		
 //		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
 //			showActionBar();
 //		}
@@ -389,6 +735,78 @@ public class ContactFragment extends Fragment {
 //			intent.putExtra("jid", jid.toString());
 //			this.startActivityForResult(intent, 0);
 //		} else 
+		if (item.getItemId() == R.id.refreshVCard) {	
+			progressBar.setVisibility(View.VISIBLE);
+			final IJaxmppService jaxmppService = ((MainActivity) getActivity()).getJaxmppService();
+			new Thread() {
+				public void run() {
+					
+			try {
+				jaxmppService.retrieveVCard(account, jid.toString(), new RosterUpdateCallback.Stub() {
+
+					@Override
+					public void onSuccess(final String msg) throws RemoteException {
+						// TODO Auto-generated method stub
+						layout.post(new Runnable() {
+							public void run() {
+								
+						try {
+							progressBar.setVisibility(View.INVISIBLE);
+							
+							XMPPDomBuilderHandler handler = new XMPPDomBuilderHandler(new StreamListener() {
+								@Override
+								public void nextElement(Element element) {
+									try {
+										VCard vcard = VCard.fromElement(new J2seElement(element));
+										refreshView(vcard);
+									} catch (XMLException ex) {
+										ex.printStackTrace();
+									}
+								}
+
+								@Override
+								public void xmppStreamClosed() {
+								}
+
+								@Override
+								public void xmppStreamOpened(Map<String, String> attribs) {
+								}
+								
+							});
+							SimpleParser parser = SingletonFactory.getParserInstance();
+							char[] data = msg.toCharArray();
+							parser.parse(handler, data, 0, data.length);
+							
+						} catch (Exception ex) {
+							ex.printStackTrace();
+						}
+							}
+						});
+					}
+
+					@Override
+					public void onFailure(String msg) throws RemoteException {
+						// TODO Auto-generated method stub
+						layout.post(new Runnable() {
+							public void run() {
+						try {
+							progressBar.setVisibility(View.INVISIBLE);
+						} catch (Exception ex) {
+							ex.printStackTrace();
+						}
+					}
+				});
+					}
+					
+				});
+			} catch (RemoteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				progressBar.setVisibility(View.INVISIBLE);
+			}
+				}
+			}.start();
+		}
 		if (item.getItemId() == R.id.contactEdit) {
 			Fragment frag = new ContactEditFragment();
 			Bundle args = new Bundle();

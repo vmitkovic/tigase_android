@@ -36,6 +36,7 @@ import tigase.jaxmpp.core.client.JID;
 import tigase.jaxmpp.core.client.JaxmppCore;
 import tigase.jaxmpp.core.client.xmpp.modules.capabilities.CapabilitiesModule;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.Chat;
+import tigase.jaxmpp.core.client.xmpp.modules.chat.xep0085.ChatState;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterItem;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Presence;
 import android.content.ComponentName;
@@ -51,6 +52,8 @@ import android.os.AsyncTask;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -92,6 +95,7 @@ public class ChatView extends RelativeLayout {
 //	private Chat chat;
 //
 	private ImageView clientTypeIndicator;
+	protected boolean composing = false;
 	private ListView lv;
 	private EditText ed;
 
@@ -170,16 +174,34 @@ public class ChatView extends RelativeLayout {
 				if (ets && keyCode == KeyEvent.KEYCODE_ENTER) {
 					sendMessage();
 					return true;
+				} else {
+					updateComposing(true);
 				}
 				return false;
+			}
+		});
+		this.ed.addTextChangedListener(new TextWatcher() {
+			@Override
+			public void afterTextChanged(Editable s) {
+				updateComposing(s.length() > 0);
+			}
+
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+			}
+
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
 			}
 		});
 		this.ed.setOnFocusChangeListener(new OnFocusChangeListener() {
 
 			@Override
 			public void onFocusChange(View v, boolean hasFocus) {
-				if (!hasFocus)
+				if (!hasFocus) {
+					updateComposing(false);
 					cancelEdit();
+				}
 			}
 		});
 
@@ -218,6 +240,8 @@ public class ChatView extends RelativeLayout {
 	}
 
 	protected void sendMessage() {
+		composing = false;
+		
 		if (ed == null)
 			return;
 
@@ -389,5 +413,29 @@ public class ChatView extends RelativeLayout {
 //			}
 //		}
 	}
+	
+	private ChatHistoryFragment fragment;
+	
+	public void setChatHistoryFragment(ChatHistoryFragment view) {
+		this.fragment = view;
+	}
+	
+    private void updateComposing(boolean value) {
+		Log.v(TAG, "updating composing from " + composing + " to " + value);
+		if (composing != value) {
+			composing = value;
+			new Thread() {
+				@Override
+				public void run() {
+					try {
+						ChatState state = composing ? ChatState.composing : ChatState.active;
+						((MainActivity) fragment.getActivity()).getJaxmppService().setOwnChatState(account, recipient.toString(), threadId, state.name());
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}.start();
+		}
+    }	
 
 }

@@ -39,12 +39,14 @@ import org.tigase.messenger.phone.pro.roster.CPresence;
 
 
 
+import org.tigase.messenger.phone.pro.roster.ContactFragment;
 import org.tigase.messenger.phone.pro.roster.RosterAdapterHelper;
 import org.tigase.messenger.phone.pro.service.JaxmppService;
 
 import tigase.jaxmpp.android.chat.OpenChatTableMetaData;
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.JID;
+import tigase.jaxmpp.core.client.xmpp.modules.chat.xep0085.ChatState;
 import tigase.jaxmpp.j2se.Jaxmpp;
 import android.app.Activity;
 import android.app.Dialog;
@@ -64,6 +66,7 @@ import android.support.v4.app.NavUtils;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.SlidingPaneLayout;
 import android.text.ClipboardManager;
@@ -71,6 +74,7 @@ import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -81,6 +85,7 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cursor>, CustomHeader {
 
@@ -324,6 +329,8 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 
 		inflater.inflate(R.menu.chat_main_menu, menu);
 
+		MenuItemCompat.setShowAsAction(menu.findItem(R.id.closeChatButton), MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
+		MenuItemCompat.setShowAsAction(menu.findItem(R.id.showContact), MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
 //		MenuItem showChats = menu.findItem(R.id.showChatsButton);
 //		if (showChats != null) {
 //			showChats.setVisible(getActivity() instanceof ChatActivity);
@@ -364,6 +371,7 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		//this.helper = TigaseMobileMessengerActivityHelper.createInstance();
 
 		this.layout = (ChatView) inflater.inflate(R.layout.chat, null);
+		layout.setChatHistoryFragment(this);
 		layout.init();
 
 		if (DEBUG)
@@ -411,13 +419,18 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		if (item.getItemId() == R.id.closeChatButton) {
 			layout.cancelEdit();
 			
-			IJaxmppService jaxmppService = ((MainActivity) getActivity()).getJaxmppService();
-			try {
-				jaxmppService.closeChat(account, recipient.toString(), threadId);
-			} catch (RemoteException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			new Thread() {
+				public void run() {
+					IJaxmppService jaxmppService = ((MainActivity) getActivity()).getJaxmppService();
+					try {
+						jaxmppService.closeChat(account, recipient.toString(), threadId);
+					} catch (RemoteException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}					
+				}
+			}.start();
+
 			getActivity().onBackPressed();
 			
 //			final Jaxmpp jaxmpp = ((MessengerApplication) getActivity().getApplicationContext()).getMultiJaxmpp().get(
@@ -443,11 +456,17 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 //			pickerIntent.setType("video/*");
 //			pickerIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
 //			startActivityForResult(pickerIntent, TigaseMobileMessengerActivity.SELECT_FOR_SHARE);
-//		} else if (item.getItemId() == R.id.showContact) {
+		} else if (item.getItemId() == R.id.showContact) {
 //			Intent intent = new Intent(getActivity(), ContactActivity.class);
 //			intent.putExtra("jid", chat.getJid().getBareJid().toString());
 //			intent.putExtra("account", chat.getSessionObject().getUserBareJid().toString());
 //			startActivity(intent);
+			Bundle args = new Bundle();
+			args.putString("account", account);
+			args.putString("jid", recipient.getBareJid().toString());
+			ContactFragment frag = new ContactFragment();
+			frag.setArguments(args);
+			((MainActivity) getActivity()).switchFragments(frag, ContactFragment.FRAG_TAG);
 		}
 		return true;
 	}
@@ -458,6 +477,10 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		intent.setAction(JaxmppService.CLIENT_FOCUS);
 		intent.putExtra("chat", "");
 		getActivity().sendBroadcast(intent);
+		if (layout != null) {
+			layout.composing = false;
+		}
+		setLocalChatState(ChatState.inactive);
 		super.onPause();
 	}
 
@@ -494,6 +517,9 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		values.put(ChatTableMetaData.FIELD_AUTHOR_JID, recipient.getBareJid().toString());
 		values.put(ChatTableMetaData.FIELD_STATE, ChatTableMetaData.STATE_INCOMING);
 		getActivity().getContentResolver().update(uri, values, null, null);		
+		
+		this.setLocalChatState(ChatState.active);
+		this.notifyChatState();
 	}
 
 	@Override
@@ -528,6 +554,7 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 						public void run() {
 							// TODO Auto-generated method stub
 							updatePresence();
+							notifyChatState();
 						}				
 					});
 				}
@@ -535,6 +562,7 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		}
 		
 		getActivity().getContentResolver().registerContentObserver(Uri.parse(RosterProvider.CONTENT_URI), true, observer);		
+		getActivity().getContentResolver().registerContentObserver(Uri.parse(OpenChatsProvider.OPEN_CHATS_URI), true, observer);
 		
 		updatePresence();
 		layout.updateClientIndicator();
@@ -558,6 +586,15 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		super.onStop();
 	}
 
+	@Override
+	public void setUserVisibleHint(boolean isVisibleToUser) {
+		super.setUserVisibleHint(isVisibleToUser);
+		if (!isVisibleToUser && layout != null) {
+			layout.composing = false;
+		}
+		setLocalChatState(isVisibleToUser ? ChatState.active : ChatState.inactive);
+	}
+	
 //	private void setChatId(final BareJID account, final long chatId) {
 //		MultiJaxmpp multi = ((MessengerApplication) getActivity().getApplicationContext()).getMultiJaxmpp();
 //
@@ -622,6 +659,26 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		}
 	}
 
+	protected void notifyChatState() {
+		if (getActivity() instanceof MainActivity) {
+			MainActivity activity = (MainActivity) getActivity();
+			try {
+				String chatStateStr = activity.getJaxmppService().getRecipientChatState(account, recipient.toString(), threadId);
+				if (chatStateStr.length() > 0) {
+					ChatState state = ChatState.valueOf(chatStateStr);
+					if (state != ChatState.active) {
+						Toast toast = Toast.makeText(activity, name + " is " + state.name(), 5);
+						toast.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 2);
+						toast.show();
+					}
+				}
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}		
+		}
+	}
+	
 	protected void updatePresence() {
 		if (getActivity() instanceof MainActivity) {
 			MainActivity activity = (MainActivity) getActivity();
@@ -699,4 +756,16 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		return view;
 	}
 
+	private void setLocalChatState(final ChatState state) {
+		new Thread() {
+			public void run() {
+				try {
+					((MainActivity) getActivity()).getJaxmppService().setOwnChatState(account, recipient.toString(), threadId, state.name());
+				}
+				catch (Exception ex) {
+					Log.e(TAG, "Exception setting local chat state", ex);
+				}
+			}
+		}.start();
+	}
 }

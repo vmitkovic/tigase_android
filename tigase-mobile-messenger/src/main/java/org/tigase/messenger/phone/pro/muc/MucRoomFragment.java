@@ -50,6 +50,7 @@ import android.support.v4.app.NavUtils;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.SlidingPaneLayout;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -294,7 +295,8 @@ public class MucRoomFragment extends Fragment implements LoaderCallbacks<Cursor>
 	@Override
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 		inflater.inflate(R.menu.muc_main_menu, menu);
-
+		MenuItemCompat.setShowAsAction(menu.findItem(R.id.closeChatButton), MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
+		MenuItemCompat.setShowAsAction(menu.findItem(R.id.showOccupantsButton), MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
 //		MenuItem showChats = menu.findItem(R.id.showChatsButton);
 //		if (showChats != null) {
 //			showChats.setVisible(getActivity() instanceof MucActivity);
