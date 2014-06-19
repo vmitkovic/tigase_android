@@ -130,6 +130,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		public boolean connect(String accountJidStr) throws RemoteException {
 			if (accountJidStr == null || accountJidStr.length() == 0) {
 				Log.v(TAG, "Connecting all accounts..");
+				started = true;
 				JaxmppService.this.startService(new Intent(JaxmppService.this, JaxmppService.class));
 				connectAllJaxmpp(10L);
 				return true;
@@ -148,6 +149,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		public boolean disconnect(String accountJidStr) throws RemoteException {
 			if (accountJidStr == null || accountJidStr.length() == 0) {
 				Log.v(TAG, "Disconnecting all accounts..");
+				started = false;
 				disconnectAllJaxmpp(true);
 				JaxmppService.this.stopService(new Intent(JaxmppService.this, JaxmppService.class));
 				return true;
@@ -161,6 +163,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			disconnectJaxmpp(jaxmpp, true);
 			return true;
 		}		
+		
+		@Override
+		public boolean isStarted() {
+			return started;
+		}
 		
 		@Override
 		public boolean isConnected(String accountJidStr) throws RemoteException {

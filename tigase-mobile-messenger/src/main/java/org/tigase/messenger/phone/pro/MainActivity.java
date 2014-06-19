@@ -41,6 +41,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -146,12 +147,15 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 			@Override
 			public View getGroupView(int groupPosition, boolean isExpanded,
 					View convertView, ViewGroup parent) {
+                DrawerMenuItem item = (DrawerMenuItem) getGroup(groupPosition);
+				int viewId = R.layout.main_left_drawer_item;
+				if (item.id == R.id.accounts_flipper) {
+					viewId = R.layout.main_left_drawer_item_account;
+				}
                 LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                View rowView = inflater.inflate(R.layout.main_left_drawer_item, parent, false);
+                View rowView = inflater.inflate(viewId, parent, false);
                 TextView textView = (TextView) rowView.findViewById(R.id.main_left_drawer_item_text);
                 ImageView imageView = (ImageView) rowView.findViewById(R.id.main_left_drawer_item_icon);
-
-                DrawerMenuItem item = (DrawerMenuItem) getGroup(groupPosition);
 
                 if (item.text != 0) { 
                 	textView.setText(item.text);
@@ -160,6 +164,36 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
                 }
                 imageView.setImageResource(item.icon);
 
+                if (item.id == R.id.accounts_flipper) {
+                	CompoundButton state = (CompoundButton) rowView.findViewById(R.id.main_left_drawer_item_switch);
+                	state.setFocusable(false);
+        			Boolean value = false;
+					try {
+						value = jaxmppService.isStarted();
+					} catch (RemoteException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+        			state.setChecked(value);
+        			state.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+						@Override
+						public void onCheckedChanged(
+								CompoundButton buttonView,
+								boolean isChecked) {
+							try {
+								if (isChecked) {
+									jaxmppService.connect("");
+								}
+								else {
+									jaxmppService.disconnect("");
+								}
+							} catch (RemoteException e) {
+								e.printStackTrace();
+							}				
+						}     				
+        			});   
+                }
+                
                 return rowView;
 			}
 

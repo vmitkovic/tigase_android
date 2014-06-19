@@ -9,6 +9,7 @@ interface IJaxmppService {
 	boolean connect(String accountJid);
 	boolean disconnect(String accountJid);
 
+	boolean isStarted();
 	boolean isConnected(String accountJid);
 	boolean hasStreamFeature(String accountJid, String elemName, String streamFeatureXmlns);
 
