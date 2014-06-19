@@ -62,7 +62,7 @@ public class JoinMucDialog extends DialogFragment {
 		dialog.setCanceledOnTouchOutside(true);
 
 		dialog.setContentView(R.layout.join_room_dialog);
-		dialog.setTitle(getString(R.string.aboutButton));
+		dialog.setTitle(getString(R.string.join_room));
 
 		ArrayList<String> accounts = new ArrayList<String>();
 		for (Account account : AccountManager.get(getActivity()).getAccountsByType(AccountAuthenticator.ACCOUNT_TYPE)) {

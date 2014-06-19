@@ -169,7 +169,7 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
                 	state.setFocusable(false);
         			Boolean value = false;
 					try {
-						value = jaxmppService.isStarted();
+						value = jaxmppService != null && jaxmppService.isStarted();
 					} catch (RemoteException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();

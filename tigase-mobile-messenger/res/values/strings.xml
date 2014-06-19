@@ -111,4 +111,5 @@
 
     <!-- MUC -->
     <string name="muc_occupants_list_title">Occupants</string>
+    <string name="join_room">Join room</string>
 </resources>
