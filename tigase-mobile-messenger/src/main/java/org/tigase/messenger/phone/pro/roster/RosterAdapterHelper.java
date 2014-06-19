@@ -26,7 +26,9 @@ package org.tigase.messenger.phone.pro.roster;
 //import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 
 import org.tigase.messenger.phone.pro.R;
+import org.tigase.messenger.phone.pro.db.GeolocationTableMetaData;
 import org.tigase.messenger.phone.pro.db.RosterTableMetaData;
+import org.tigase.messenger.phone.pro.db.providers.GeolocationProvider;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 
 import tigase.jaxmpp.core.client.BareJID;
@@ -37,8 +39,10 @@ import tigase.jaxmpp.j2se.Jaxmpp;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.net.Uri;
 import android.text.Html;
 import android.text.method.SingleLineTransformationMethod;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -65,6 +69,8 @@ public class RosterAdapterHelper {
 		ImageView itemPresence;
 		View openChatNotifier;
 	}
+
+	private static final String TAG = "RosterAdapterHelper";
 
 	/**
 	 * Created to remove duplication of code for binding view for
@@ -148,6 +154,30 @@ public class RosterAdapterHelper {
 				holder.itemDescription.setText(Html.fromHtml(status));
 			} else {
 				status = "";
+				Cursor gc = null;
+				try {
+					gc = context.getContentResolver().query(Uri.parse(GeolocationProvider.CONTENT_URI), new String[] {
+						GeolocationTableMetaData.FIELD_COUNTRY, GeolocationTableMetaData.FIELD_LOCALITY,
+						GeolocationTableMetaData.FIELD_STREET
+					}, GeolocationTableMetaData.FIELD_JID + "=?", new String[] { jid.toString() }, null);
+					if (gc.moveToNext()) {
+						for (int i=0; i<3; i++) {
+							if (!gc.isNull(i)) {
+								if (status.length() > 0) {
+									status += ", ";
+								}
+								status += gc.getString(i);
+							}
+						}
+					}
+				} catch (Exception ex) {
+					Log.e(TAG, "Exception retrieving contact geolocation", ex);
+				} finally {
+					if (gc != null) {
+						gc.close();
+					}
+				}
+				
 //				// TODO: is it fast enough?
 //				GeolocationModule geoModule = jaxmpp.getModule(GeolocationModule.class);
 //				if (geoModule != null) {

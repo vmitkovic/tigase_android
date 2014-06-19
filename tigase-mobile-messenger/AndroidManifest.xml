@@ -139,7 +139,12 @@
             android:authorities="org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider"
             android:multiprocess="true" >
         </provider>
-
+        <provider
+            android:name=".db.providers.GeolocationProvider"
+            android:authorities="org.tigase.messenger.phone.pro.db.providers.GeolocationProvider"
+            android:multiprocess="true" >
+        </provider>
+        
         <receiver android:name=".receivers.AvatarUpdatedReceiver" >
             <intent-filter>
                 <action android:name="org.tigase.messenger.phone.pro.AvatarUpdated" />

@@ -21,6 +21,8 @@ import android.provider.BaseColumns;
 
 public class GeolocationTableMetaData implements BaseColumns {
 
+	public static final String CONTENT_TYPE = "vnd.android.cursor.dir/vnd.mobilemessenger.geoloc";
+	
 	public static final String FIELD_ALT = "alt";
 
 	public static final String FIELD_COUNTRY = "country";
