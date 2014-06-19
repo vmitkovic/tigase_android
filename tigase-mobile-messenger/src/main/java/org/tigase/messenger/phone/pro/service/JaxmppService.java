@@ -38,6 +38,7 @@ import org.tigase.messenger.phone.pro.ui.NotificationHelper;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 
 import tigase.jaxmpp.android.Jaxmpp;
+import tigase.jaxmpp.android.caps.CapabilitiesDBCache;
 import tigase.jaxmpp.android.chat.AndroidChatManager;
 import tigase.jaxmpp.android.chat.ChatProvider;
 import tigase.jaxmpp.android.muc.AndroidRoomsManager;
@@ -829,6 +830,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	
 	private AccountModifyReceiver accountModifyReceiver = new AccountModifyReceiver();
 	private ClientFocusReceiver clientFocusReceiver = new ClientFocusReceiver();
+	private CapabilitiesDBCache capsCache = null;
 	private DatabaseHelper dbHelper = null;
 	private boolean focused = true;
 	private MessageHandler messageHandler = null;
@@ -952,6 +954,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	final Messenger messenger = new Messenger(new IncomingHandler());
 
 	private ConnReceiver connReceiver;
+	private GeolocationFeature geolocationFeature;
 	private OnSharedPreferenceChangeListener prefChangeListener;
 	private SharedPreferences prefs;
 	private int keepaliveInterval;
@@ -1051,6 +1054,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		chatProvider.resetRoomState(CPresence.OFFLINE);
 		this.mucHandler = new MucHandler();
 		this.streamHandler = new StreamHandler();
+		this.capsCache = new CapabilitiesDBCache(dbHelper);
 		
 		notificationHelper = NotificationHelper.createInstance(context);
 		
@@ -1267,6 +1271,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     			
     			jaxmpp.getModulesManager().register(new MucModule(new AndroidRoomsManager(this.chatProvider)));
     			jaxmpp.getModulesManager().register(new VCardModule());
+    			CapabilitiesModule capsModule = new CapabilitiesModule();
+    			capsModule.setCache(capsCache);
+    			jaxmpp.getModulesManager().register(capsModule);
     			
     			Log.v(TAG, "registering account " + accountJid.toString());
     			multiJaxmpp.add(jaxmpp);
@@ -1291,10 +1298,12 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     		Log.v(TAG, "updating chat state support to =  " + value);
     		needToSendPresence |= (ChatStateExtension.isDisabled(sessionObject) != (value));
     		jaxmpp.getModule(MessageModule.class).getExtensionChain().getExtension(ChatStateExtension.class).setDisabled(!value);
-    		
+    		needToSendPresence |= GeolocationFeature.updateGeolocationSettings(account, jaxmpp, context, this.dbHelper);
+   
     		// if we need to send presence (features changed), then go for it
     		// maybe we should clear CAPS module, or reset it?
     		if (needToSendPresence && jaxmpp.isConnected()) {
+				jaxmpp.getSessionObject().setProperty(CapabilitiesModule.VERIFICATION_STRING_KEY, null);
     			final JaxmppCore tjaxmpp = jaxmpp;
     			new Thread() {
     				public void run() {
@@ -1346,6 +1355,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     
     private void connectAllJaxmpp(Long delay) {
     	setUsedNetworkType(getActiveNetworkType());
+    	if (geolocationFeature == null) {
+    		geolocationFeature = new GeolocationFeature(this);
+    	}
+    	geolocationFeature.registerLocationListener();
+    	
     	for (final JaxmppCore jaxmpp : multiJaxmpp.get()) {
     		Log.v(TAG, "connecting account " + jaxmpp.getSessionObject().getUserBareJid());
     		connectJaxmpp((Jaxmpp) jaxmpp, delay);
@@ -1425,6 +1439,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     
     private void disconnectAllJaxmpp(final boolean cleaning) {
         setUsedNetworkType(-1);
+        if (geolocationFeature != null) {
+        	geolocationFeature.unregisterLocationListener();
+        }
         final MessengerApplication app = (MessengerApplication) getApplicationContext();
         for (final JaxmppCore j : multiJaxmpp.get()) {
         	disconnectJaxmpp((Jaxmpp) j, cleaning);

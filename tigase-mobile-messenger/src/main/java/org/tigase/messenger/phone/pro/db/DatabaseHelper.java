@@ -1,5 +1,6 @@
 package org.tigase.messenger.phone.pro.db;
 
+import tigase.jaxmpp.android.caps.CapsDbHelper;
 import tigase.jaxmpp.android.chat.OpenChatDbHelper;
 import tigase.jaxmpp.android.roster.RosterDbHelper;
 import tigase.jaxmpp.android.roster.RosterItemsCacheTableMetaData;
@@ -11,7 +12,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 	public static final String DATABASE_NAME = "mobile_messenger1.db";
 
-	public static final Integer DATABASE_VERSION = 2;
+	public static final Integer DATABASE_VERSION = 3;
 
 	private static final String TAG = "tigase";
 	
@@ -87,6 +88,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 			sql += VCardsCacheTableMetaData.FIELD_JID;
 			sql += ")";
 			db.execSQL(sql);			
+		}
+		if (oldVersion < 3) {
+			CapsDbHelper.onCreate(db);
+			
+			String sql;
+			sql = "CREATE TABLE " + GeolocationTableMetaData.TABLE_NAME + " (";
+			sql += GeolocationTableMetaData.FIELD_ID + " INTEGER PRIMARY KEY, ";
+			sql += GeolocationTableMetaData.FIELD_JID + " TEXT, ";
+			sql += GeolocationTableMetaData.FIELD_LON + " REAL, ";
+			sql += GeolocationTableMetaData.FIELD_LAT + " REAL, ";
+			sql += GeolocationTableMetaData.FIELD_ALT + " REAL, ";
+			sql += GeolocationTableMetaData.FIELD_COUNTRY + " TEXT, ";
+			sql += GeolocationTableMetaData.FIELD_LOCALITY + " TEXT, ";
+			sql += GeolocationTableMetaData.FIELD_STREET + " TEXT ";
+			sql += ");";
+			db.execSQL(sql);
+			
+			sql = "CREATE INDEX IF NOT EXISTS ";
+			sql += GeolocationTableMetaData.INDEX_JID;
+			sql += " ON " + GeolocationTableMetaData.TABLE_NAME + " (";
+			sql += GeolocationTableMetaData.FIELD_JID;
+			sql += ")";
+			db.execSQL(sql);
 		}
 	}
 
