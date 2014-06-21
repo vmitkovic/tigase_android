@@ -57,7 +57,7 @@ public class AccountAdvancedPreferencesFragment extends Fragment {
 		return false;
 	}
 
-	private Account account;
+	private volatile Account account;
 	private BareJID accountJid;
 	private CompoundButton geolocationListen;
 	private Spinner geolocationPrecision;
@@ -75,8 +75,12 @@ public class AccountAdvancedPreferencesFragment extends Fragment {
 
 		@Override
 		public void onServiceConnected(ComponentName className, IBinder service) {
-			jaxmppService = IJaxmppService.Stub.asInterface(service);
-			update();
+			synchronized (AccountAdvancedPreferencesFragment.this) {
+				jaxmppService = IJaxmppService.Stub.asInterface(service);
+				if (account != null) {
+					update();
+				}
+			}
 		}
 
 		@Override
@@ -97,6 +101,13 @@ public class AccountAdvancedPreferencesFragment extends Fragment {
 	@Override
 	public void onPause() {
 		super.onPause();
+		if (jaxmppService != null) {
+			try {
+				jaxmppService.updateConfiguration();
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+		}
 		getActivity().unbindService(jaxmppServiceConnection);		
 	}
 
@@ -120,7 +131,8 @@ public class AccountAdvancedPreferencesFragment extends Fragment {
 
 			@Override
 			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-				accountManager.setUserData(account, MobileModeFeature.MOBILE_OPTIMIZATIONS_ENABLED, String.valueOf(isChecked));
+				if (account != null)
+					accountManager.setUserData(account, MobileModeFeature.MOBILE_OPTIMIZATIONS_ENABLED, String.valueOf(isChecked));
 //				getMulti().get(accountJid).getSessionObject().setUserProperty(MobileModeFeature.MOBILE_OPTIMIZATIONS_ENABLED,
 //						isChecked);
 			}
@@ -131,7 +143,8 @@ public class AccountAdvancedPreferencesFragment extends Fragment {
 			@Override
 			public void onItemSelected(AdapterView<?> arg0, View arg1, int position, long id) {
 				int value = 3 * (position + 1);
-				accountManager.setUserData(account, MobileModeFeature.MOBILE_OPTIMIZATIONS_QUEUE_TIMEOUT, String.valueOf(value));
+				if (account != null)
+					accountManager.setUserData(account, MobileModeFeature.MOBILE_OPTIMIZATIONS_QUEUE_TIMEOUT, String.valueOf(value));
 //				getMulti().get(accountJid).getSessionObject().setUserProperty(
 //						MobileModeFeature.MOBILE_OPTIMIZATIONS_QUEUE_TIMEOUT, value);
 			}
@@ -149,7 +162,8 @@ public class AccountAdvancedPreferencesFragment extends Fragment {
 			geolocationListen.setOnCheckedChangeListener(new OnCheckedChangeListener() {
 				@Override
 				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-					accountManager.setUserData(account, GeolocationFeature.GEOLOCATION_LISTEN_ENABLED,
+					if (account != null)
+						accountManager.setUserData(account, GeolocationFeature.GEOLOCATION_LISTEN_ENABLED,
 							String.valueOf(isChecked));
 //					JaxmppCore jaxmpp = getMulti().get(accountJid);
 //					GeolocationFeature.updateGeolocationSettings(account, jaxmpp, getApplicationContext());
@@ -158,7 +172,8 @@ public class AccountAdvancedPreferencesFragment extends Fragment {
 			geolocationPublish.setOnCheckedChangeListener(new OnCheckedChangeListener() {
 				@Override
 				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-					accountManager.setUserData(account, GeolocationFeature.GEOLOCATION_PUBLISH_ENABLED,
+					if (account != null)
+						accountManager.setUserData(account, GeolocationFeature.GEOLOCATION_PUBLISH_ENABLED,
 							String.valueOf(isChecked));
 //					JaxmppCore jaxmpp = getMulti().get(accountJid);
 //					GeolocationFeature.updateGeolocationSettings(account, jaxmpp, getApplicationContext());
@@ -169,7 +184,8 @@ public class AccountAdvancedPreferencesFragment extends Fragment {
 				@Override
 				public void onItemSelected(AdapterView<?> arg0, View arg1, int position, long arg3) {
 					int precision = position;
-					accountManager.setUserData(account, GeolocationFeature.GEOLOCATION_PUBLISH_PRECISION,
+					if (account != null)
+						accountManager.setUserData(account, GeolocationFeature.GEOLOCATION_PUBLISH_PRECISION,
 							String.valueOf(precision));
 //					JaxmppCore jaxmpp = getMulti().get(accountJid);
 //					GeolocationFeature.updateGeolocationSettings(account, jaxmpp, getApplicationContext());
@@ -185,10 +201,15 @@ public class AccountAdvancedPreferencesFragment extends Fragment {
 	}
 
 	public void setAccount(final Account account) {
-		final AccountManager accountManager = AccountManager.get(this.getApplicationContext());
-		Log.v(TAG, "setting account = " + account.name);
-		accountJid = BareJID.bareJIDInstance(account.name);
-		this.account = account;
+		synchronized (this) {
+			//final AccountManager accountManager = AccountManager.get(this.getApplicationContext());
+			Log.v(TAG, "setting account = " + account.name);
+			accountJid = BareJID.bareJIDInstance(account.name);
+			this.account = account;
+			if (jaxmppService != null) {
+				update();
+			}
+		}
 	}
 	
 	private void update() {

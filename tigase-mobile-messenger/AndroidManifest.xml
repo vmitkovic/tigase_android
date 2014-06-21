@@ -5,7 +5,7 @@
     android:versionName="2.0" >
 
     <uses-sdk
-        android:minSdkVersion="8"
+        android:minSdkVersion="9"
         android:targetSdkVersion="19" />
 
     <uses-permission android:name="android.permission.VIBRATE" />
@@ -35,6 +35,10 @@
         android:label="@string/app_name"
         android:logo="@drawable/ic_actionbar_icon"
         android:theme="@style/AppTheme" >
+        
+        <meta-data android:name="com.google.android.gms.version"
+           android:value="@integer/google_play_services_version" />
+        
         <activity
             android:name="MainActivity"
             android:label="@string/title_activity_main" >
@@ -85,9 +89,10 @@
             android:configChanges="orientation"
             android:label="@string/account_advanced_preferences" >
         </activity>
-        <activity android:name=".muc.OccupantsListActivity"
+        <activity
+            android:name=".muc.OccupantsListActivity"
             android:configChanges="orientation"
-            android:label="@string/muc_occupants_list_title">
+            android:label="@string/muc_occupants_list_title" >
         </activity>
 
         <service
@@ -105,21 +110,23 @@
         </service>
         <service
             android:name=".sync.SyncService"
-            android:exported="true">
+            android:exported="true" >
             <intent-filter>
-                <action
-                    android:name="android.content.SyncAdapter" />
+                <action android:name="android.content.SyncAdapter" />
             </intent-filter>
+
             <meta-data
                 android:name="android.content.SyncAdapter"
                 android:resource="@xml/syncadapter" />
-        </service>        
+        </service>
+
         <receiver
             android:name=".BootUpReceiver"
             android:enabled="true"
             android:permission="android.permission.RECEIVE_BOOT_COMPLETED" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
@@ -144,7 +151,7 @@
             android:authorities="org.tigase.messenger.phone.pro.db.providers.GeolocationProvider"
             android:multiprocess="true" >
         </provider>
-        
+
         <receiver android:name=".receivers.AvatarUpdatedReceiver" >
             <intent-filter>
                 <action android:name="org.tigase.messenger.phone.pro.AvatarUpdated" />

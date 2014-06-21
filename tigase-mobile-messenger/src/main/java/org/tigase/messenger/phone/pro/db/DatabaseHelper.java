@@ -63,7 +63,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		sql += " ON " + VCardsCacheTableMetaData.TABLE_NAME + " (";
 		sql += VCardsCacheTableMetaData.FIELD_JID;
 		sql += ")";
-		db.execSQL(sql);        
+		db.execSQL(sql);   
+		
+		CapsDbHelper.onCreate(db);
+		
+		sql = "CREATE TABLE " + GeolocationTableMetaData.TABLE_NAME + " (";
+		sql += GeolocationTableMetaData.FIELD_ID + " INTEGER PRIMARY KEY, ";
+		sql += GeolocationTableMetaData.FIELD_JID + " TEXT, ";
+		sql += GeolocationTableMetaData.FIELD_LON + " REAL, ";
+		sql += GeolocationTableMetaData.FIELD_LAT + " REAL, ";
+		sql += GeolocationTableMetaData.FIELD_ALT + " REAL, ";
+		sql += GeolocationTableMetaData.FIELD_COUNTRY + " TEXT, ";
+		sql += GeolocationTableMetaData.FIELD_LOCALITY + " TEXT, ";
+		sql += GeolocationTableMetaData.FIELD_STREET + " TEXT ";
+		sql += ");";
+		db.execSQL(sql);
+		
+		sql = "CREATE INDEX IF NOT EXISTS ";
+		sql += GeolocationTableMetaData.INDEX_JID;
+		sql += " ON " + GeolocationTableMetaData.TABLE_NAME + " (";
+		sql += GeolocationTableMetaData.FIELD_JID;
+		sql += ")";
+		db.execSQL(sql);
+		
 	}
 
 	@Override

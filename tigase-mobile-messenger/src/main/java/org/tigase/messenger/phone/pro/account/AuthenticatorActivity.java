@@ -544,6 +544,9 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 		showProgressDialog();
 
 		mAuthTask = authTask;
+		if (mAuthTask instanceof JaxmppAccountTask) {
+			((JaxmppAccountTask) mAuthTask).initJaxmpp(new String[] { mUsername, mPassword, mHostname, mEmail });
+		}
 		mAuthTask.execute(mUsername, mPassword, mHostname, mEmail);
 	}
 

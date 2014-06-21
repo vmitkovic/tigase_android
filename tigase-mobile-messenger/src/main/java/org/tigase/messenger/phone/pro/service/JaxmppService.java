@@ -128,6 +128,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private class Stub extends IJaxmppService.Stub {
 
 		@Override
+		public void updateConfiguration() throws RemoteException {
+			JaxmppService.this.updateJaxmppInstances();
+		}
+		
+		@Override
 		public boolean connect(String accountJidStr) throws RemoteException {
 			if (accountJidStr == null || accountJidStr.length() == 0) {
 				Log.v(TAG, "Connecting all accounts..");
@@ -980,6 +985,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		
         AvatarHelper.initilize(context);
 
+    	if (geolocationFeature == null) {
+    		geolocationFeature = new GeolocationFeature(this);
+    		geolocationFeature.onStart();
+    	}
+        
 		// Android from API v8 contains optimized SSLSocketFactory
 		// which reduces network usage for handshake
 		SSLSessionCache sslSessionCache = new SSLSessionCache(this);
@@ -1122,6 +1132,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		stopKeepAlive();
 		setUsedNetworkType(-1);
 		
+		if (geolocationFeature != null) {
+        	geolocationFeature.onStop();
+        	geolocationFeature = null;			
+		}
+		
 		super.onDestroy();
 		mobileModeFeature = null;
 		context = null;
@@ -1150,8 +1165,10 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	@Override
 	public void onConnected(SessionObject sessionObject) {
 		try {
+			Log.v(TAG, "account " + sessionObject.getUserBareJid() + " connected");
 			Jaxmpp jaxmpp = multiJaxmpp.get(sessionObject);
 			mobileModeFeature.accountConnected(jaxmpp);
+			geolocationFeature.accountConnected(jaxmpp);
 		} catch (JaxmppException e) {
 			Log.e(TAG, "Exception processing MobileModeFeature on connect for account " + sessionObject.getUserBareJid().toString());
 		}
@@ -1179,12 +1196,13 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	
 	@Override
 	public void onDisconnected(SessionObject sessionObject) {
+		Jaxmpp jaxmpp = multiJaxmpp.get(sessionObject);
 		if (reconnect && getUsedNetworkType() != -1) {
-			Jaxmpp jaxmpp = multiJaxmpp.get(sessionObject);
 			if (jaxmpp != null) {
 				this.connectJaxmpp(jaxmpp, 5*1000L);
 			}
 		}
+		geolocationFeature.accountDisconnected(jaxmpp);
 		
 		NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
 		builder.setSmallIcon(R.drawable.ic_launcher);
@@ -1298,7 +1316,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     		Log.v(TAG, "updating chat state support to =  " + value);
     		needToSendPresence |= (ChatStateExtension.isDisabled(sessionObject) != (value));
     		jaxmpp.getModule(MessageModule.class).getExtensionChain().getExtension(ChatStateExtension.class).setDisabled(!value);
-    		needToSendPresence |= GeolocationFeature.updateGeolocationSettings(account, jaxmpp, context, this.dbHelper);
+    		needToSendPresence |= geolocationFeature.updateGeolocationSettings(account, jaxmpp, context, this.dbHelper);
    
     		// if we need to send presence (features changed), then go for it
     		// maybe we should clear CAPS module, or reset it?
@@ -1355,10 +1373,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     
     private void connectAllJaxmpp(Long delay) {
     	setUsedNetworkType(getActiveNetworkType());
-    	if (geolocationFeature == null) {
-    		geolocationFeature = new GeolocationFeature(this);
-    	}
-    	geolocationFeature.registerLocationListener();
+    	//geolocationFeature.registerLocationListener();
     	
     	for (final JaxmppCore jaxmpp : multiJaxmpp.get()) {
     		Log.v(TAG, "connecting account " + jaxmpp.getSessionObject().getUserBareJid());
@@ -1425,8 +1440,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
             @Override
             public void run() {
                     try {
-//                            GeolocationFeature.updateLocation(j, null, null);
-                            ((Jaxmpp) jaxmpp).disconnect(false);
+                            geolocationFeature.accountDisconnect(jaxmpp);
+                            jaxmpp.disconnect(false);
                             // is this needed any more??
                             //JaxmppService.this.rosterProvider.resetStatus(jaxmpp.getSessionObject());
 //                            app.clearPresences(j.getSessionObject(), !cleaning);
@@ -1439,9 +1454,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     
     private void disconnectAllJaxmpp(final boolean cleaning) {
         setUsedNetworkType(-1);
-        if (geolocationFeature != null) {
-        	geolocationFeature.unregisterLocationListener();
-        }
+//        if (geolocationFeature != null) {
+//        	geolocationFeature.unregisterLocationListener();
+//        }
         final MessengerApplication app = (MessengerApplication) getApplicationContext();
         for (final JaxmppCore j : multiJaxmpp.get()) {
         	disconnectJaxmpp((Jaxmpp) j, cleaning);
@@ -1526,8 +1541,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 					try {
 						if (jaxmpp.isConnected()) {
 							jaxmpp.getConnector().keepalive();
-//							GeolocationFeature.sendQueuedGeolocation(jaxmpp,
-//									JaxmppService.this);
+							GeolocationFeature.sendQueuedGeolocation(jaxmpp, JaxmppService.this);
 						}
 					} catch (JaxmppException ex) {
 						Log.e(TAG, "error sending keep alive for = "
