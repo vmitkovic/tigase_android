@@ -45,8 +45,6 @@ public class GeolocationProviderGPlayService extends GeolocationProvider
 		this.context = context;
 	}
 	
-	
-	
 	@Override
 	public void registerLocationListener(LocationRequest request,
 			LocationListener listener) {

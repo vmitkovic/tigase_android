@@ -18,7 +18,9 @@
 package org.tigase.messenger.phone.pro.preferences;
 
 import org.tigase.messenger.phone.pro.Constants;
+import org.tigase.messenger.phone.pro.Preferences;
 import org.tigase.messenger.phone.pro.R;
+import org.tigase.messenger.phone.pro.service.ActivityFeature;
 
 import android.accounts.AccountManager;
 import android.annotation.TargetApi;
@@ -32,6 +34,7 @@ import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
+import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
@@ -50,6 +53,9 @@ public class MessengerPreferenceActivity extends PreferenceActivity implements O
 	private static final String TAG = "tigase";
 
 	private void initSummary(Preference p) {
+		if (p.hasKey() && "activity_related".equals(p.getKey())) {
+			p.setEnabled(ActivityFeature.isAvailable(this));
+		}
 		if (p instanceof PreferenceScreen) {
 			PreferenceScreen pCat = (PreferenceScreen) p;
 			for (int i = 0; i < pCat.getPreferenceCount(); i++) {
@@ -170,6 +176,14 @@ public class MessengerPreferenceActivity extends PreferenceActivity implements O
 			} else if ("keepalive_time".equals(key)) {
 				pref.setSummary(getResources().getString(R.string.pref_keepalive_time_summary, pref.getText()));
 				this.onContentChanged();
+			} else if (Preferences.ACTIVITY_IN_VEHICLE_DESCR.equals(key)) {
+				pref.setSummary(pref.getText());
+			}
+		}
+		if (p instanceof ListPreference) {
+			final ListPreference pref = (ListPreference) p;
+			if (Preferences.ACTIVITY_IN_VEHICLE_STATUS.equals(key)) {
+				pref.setSummary(pref.getEntry());
 			}
 		}
 	}
