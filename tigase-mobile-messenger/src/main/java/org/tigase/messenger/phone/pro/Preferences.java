@@ -1,7 +1,16 @@
 package org.tigase.messenger.phone.pro;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
 public class Preferences {
 
+	public static final String ACTIVITIES_ENABLED = "activities_enabled";
+	
+	public static final String ACTIVITY_IN_VEHICLE_STATUS = "activities_in_vehicle_status";
+	
+	public static final String ACTIVITY_IN_VEHICLE_DESCR = "activities_in_vehicle_description";
+	
 	public static final String AUTOSTART_KEY = "autostart";
 	
 	public static final String AWAY_PRIORITY_KEY = "away_priority";
@@ -33,5 +42,9 @@ public class Preferences {
 	public static final String SHOW_OFFLINE = "show_offline";
 	
 	public static final String MAIN_WINDOW_TABS = "main_window_tabs";
+
+	public static SharedPreferences getDefaultSharedPreferences(Context context) {
+		return context.getSharedPreferences(context.getPackageName() + "_preferences", Context.MODE_MULTI_PROCESS);
+	}
 	
 }

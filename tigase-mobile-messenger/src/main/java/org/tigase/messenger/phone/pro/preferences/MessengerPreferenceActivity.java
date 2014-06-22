@@ -24,6 +24,7 @@ import android.accounts.AccountManager;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
@@ -95,6 +96,7 @@ public class MessengerPreferenceActivity extends PreferenceActivity implements O
 		Log.i(TAG, "onCreate() " + savedInstanceState);
 		super.onCreate(savedInstanceState);
 		addPreferencesFromResource(R.xml.main_preferences);
+		super.getPreferenceManager().setSharedPreferencesMode(Context.MODE_MULTI_PROCESS);
 
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
 			PreferenceScreen accounts = (PreferenceScreen) this.findPreference("accounts_manager");

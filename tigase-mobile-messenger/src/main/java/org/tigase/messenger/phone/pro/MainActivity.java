@@ -26,6 +26,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Messenger;
@@ -365,6 +366,9 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 //	  super.onBackPressed();
 //	  //fragmentChanged();
 //	}
+
+	private SharedPreferences prefs;
+	private SharedPreferences.OnSharedPreferenceChangeListener prefsChanged;
 	
 	public IJaxmppService getJaxmppService() {
 		return jaxmppService;
@@ -469,12 +473,29 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 			
 		};
 		this.registerReceiver(mucRoomJoinedReceiver, filter);
+		this.prefs = Preferences.getDefaultSharedPreferences(this);
+		this.prefsChanged = new SharedPreferences.OnSharedPreferenceChangeListener() {
+			@Override
+			public void onSharedPreferenceChanged(
+					SharedPreferences sharedPreferences, String key) {
+				if (jaxmppService != null) {
+					try {
+						jaxmppService.preferenceChanged(key);
+					} catch (RemoteException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}		
+		};
+		this.prefs.registerOnSharedPreferenceChangeListener(prefsChanged);
 		
 //		helper.updateActionBar();        
 	}
 	
 	public void onDestroy() {
 		super.onDestroy();
+		this.prefs.unregisterOnSharedPreferenceChangeListener(prefsChanged);
 		this.unregisterReceiver(mucRoomJoinedReceiver);
 		unbindService(jaxmppServiceConnection);
 	}

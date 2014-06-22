@@ -49,5 +49,19 @@
         <item>name</item>
         <item>status</item>
     </string-array>
+    <string-array name="change_status_options_entries">
+        <item>Do not change</item>
+        <item>Available</item>
+        <item>Away</item>
+        <item>Extended away</item>
+        <item>Do not distrurb</item>
+    </string-array>
+    <string-array name="change_status_options_values">
+        <item>no_change</item>
+        <item>online</item>
+        <item>away</item>
+        <item>xa</item>
+        <item>dnd</item>
+    </string-array>
 
 </resources>

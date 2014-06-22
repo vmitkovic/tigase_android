@@ -107,8 +107,13 @@
     <string name="pref_notification_vibrate_title">Vibrate</string>
     <string name="pref_notification_sound_muc_title">MUC mention sound</string>
     <string name="pref_notification_sound_chat_title">Chat message sound</string>
-    <string name="pref_notification_advanced_section_title">Advanced</string>
+    <string name="pref_notification_advanced_section_title">Advanced notifications</string>
 
+    <string name="pref_auto_activity_title">Activities</string>
+    <string name="pref_auto_activity_summary">Set reactions on activities</string>
+    <string name="pref_auto_activity_enable">Enable reactions on activities</string>
+    <string name="pref_auto_activity_in_vehicle">In vehicle</string>
+    
     <!-- MUC -->
     <string name="muc_occupants_list_title">Occupants</string>
     <string name="join_room">Join room</string>

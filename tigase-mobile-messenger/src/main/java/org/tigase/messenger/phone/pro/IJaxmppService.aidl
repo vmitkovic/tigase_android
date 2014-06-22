@@ -7,6 +7,7 @@ import org.tigase.messenger.phone.pro.roster.RosterUpdateCallback;
 interface IJaxmppService {
 	
 	void updateConfiguration();
+	void preferenceChanged(String key);
 	
 	boolean connect(String accountJid);
 	boolean disconnect(String accountJid);

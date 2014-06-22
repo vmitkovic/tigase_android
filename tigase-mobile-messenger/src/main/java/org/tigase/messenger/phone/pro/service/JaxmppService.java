@@ -128,6 +128,12 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private class Stub extends IJaxmppService.Stub {
 
 		@Override
+		public void preferenceChanged(String key) {
+			SharedPreferences prefs = Preferences.getDefaultSharedPreferences(JaxmppService.this);
+			JaxmppService.this.prefChangeListener.onSharedPreferenceChanged(prefs, key);
+		}
+		
+		@Override
 		public void updateConfiguration() throws RemoteException {
 			JaxmppService.this.updateJaxmppInstances();
 		}
@@ -754,6 +760,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				presence.setShow(Show.away);
 				presence.setPriority(prefs.getInt(Preferences.AWAY_PRIORITY_KEY, 0));
 			}
+			activityFeature.beforePresenceSend(prefs, presence);
 		}
 		
 	}
@@ -876,12 +883,10 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			if (intent.hasExtra("focus")) {
 				focused = intent.getBooleanExtra("focus", false);
 				if (focused) {
-					int pr = prefs.getInt(Preferences.DEFAULT_PRIORITY_KEY, 0);
-					sendAutoPresence(userStatusShow, userStatusMessage, pr, false);
+					sendAutoPresence(false);
 				}
 				else {
-					int pr = prefs.getInt(Preferences.AWAY_PRIORITY_KEY, 0);
-					sendAutoPresence(Show.away, "Auto away", pr, true);
+					sendAutoPresence(true);
 				}
 			}
 		}
@@ -958,10 +963,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	
 	final Messenger messenger = new Messenger(new IncomingHandler());
 
+	private ActivityFeature activityFeature;
 	private ConnReceiver connReceiver;
 	private GeolocationFeature geolocationFeature;
 	private OnSharedPreferenceChangeListener prefChangeListener;
-	private SharedPreferences prefs;
+	protected SharedPreferences prefs;
 	private int keepaliveInterval;
 	private ScreenStateReceiver screenStateReceiver;
 	private boolean started = false;
@@ -989,7 +995,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     		geolocationFeature = new GeolocationFeature(this);
     		geolocationFeature.onStart();
     	}
-        
+    	
 		// Android from API v8 contains optimized SSLSocketFactory
 		// which reduces network usage for handshake
 		SSLSessionCache sslSessionCache = new SSLSessionCache(this);
@@ -1017,11 +1023,21 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				if (Preferences.ENABLE_CHAT_STATE_SUPPORT_KEY.equals(key)) {
 					Log.v(TAG, "changed chat state support - calling update of jaxmpp states");
 					updateJaxmppInstances();
-				}				
+				}
+				if (activityFeature != null) {
+					activityFeature.onSharedPreferenceChanged(sharedPreferences, key);
+				}
 			}
 		};		
-		this.prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		//this.prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		this.prefs = Preferences.getDefaultSharedPreferences(this);
 		this.prefs.registerOnSharedPreferenceChangeListener(prefChangeListener);		
+
+        if (activityFeature == null) {
+        	activityFeature = new ActivityFeature(this);
+        	activityFeature.onStart();
+        }		
+		
 		keepaliveInterval = 1000 * 60 * this.prefs.getInt(Preferences.KEEPALIVE_TIME_KEY, 3);
 		
 		this.connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -1137,6 +1153,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
         	geolocationFeature = null;			
 		}
 		
+		if (activityFeature != null) {
+			activityFeature.onStop();
+			activityFeature = null;
+		}
+		
 		super.onDestroy();
 		mobileModeFeature = null;
 		context = null;
@@ -1156,6 +1177,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		}
 		else if (intent != null && ACTION_KEEPALIVE.equals(intent.getAction())) {
 			keepAlive();
+		}
+		else if (activityFeature != null) {
+			activityFeature.onHandleIntent(intent);
 		}
 //		}
 
@@ -1597,7 +1621,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		}
 	}
 	
-	private void sendAutoPresence(final Show show, final String status, final int priority, final boolean delayed) {
+	protected void sendAutoPresence(final boolean delayed) {
 		if (autoPresenceTask != null) {
 			autoPresenceTask.cancel();
 			autoPresenceTask = null;
@@ -1615,8 +1639,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 									.getModule(PresenceModule.class);
 							if (jaxmpp.getSessionObject().getProperty(
 									Connector.CONNECTOR_STAGE_KEY) == Connector.State.connected)
-								presenceModule.setPresence(show, status,
-										priority);
+								presenceModule.setPresence(null, null, null);
 						}
 					} catch (Exception e) {
 						Log.e(TAG, "Can't send auto presence!", e);
@@ -1634,8 +1657,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 									.getModule(PresenceModule.class);
 							if (jaxmpp.getSessionObject().getProperty(
 									Connector.CONNECTOR_STAGE_KEY) == Connector.State.connected)
-								presenceModule.setPresence(show, status,
-										priority);
+								presenceModule.setPresence(null, null, null);
 						}
 					} catch (Exception e) {
 						Log.e(TAG, "Can't send auto presence!", e);

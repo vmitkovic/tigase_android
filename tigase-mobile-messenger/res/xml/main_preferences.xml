@@ -71,7 +71,6 @@
             android:entryValues="@array/pref_notification_vibrate_values"
             android:key="notification_vibrate"
             android:title="@string/pref_notification_vibrate_title" />
-
         <PreferenceScreen
             xmlns:android="http://schemas.android.com/apk/res/android"
             android:key="notification_advanced"
@@ -95,6 +94,32 @@
         </PreferenceScreen>
     </PreferenceCategory>
 
+    <PreferenceScreen
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:key="activity_related"
+        android:summary="@string/pref_auto_activity_summary"
+        android:title="@string/pref_auto_activity_title" >
+		<CheckBoxPreference
+           	android:defaultValue="true"
+           	android:key="activities_enabled"
+           	android:title="@string/pref_auto_activity_enable"/>
+    	<PreferenceCategory
+        	xmlns:android="http://schemas.android.com/apk/res/android"
+        	android:key="activities_in_vehicle"
+        	android:title="@string/pref_auto_activity_in_vehicle" >
+        	<ListPreference
+            	android:defaultValue="dnd"
+            	android:entries="@array/change_status_options_entries"
+            	android:entryValues="@array/change_status_options_values"
+            	android:key="activities_in_vehicle_status"
+            	android:title="Change status" />
+    	    <EditTextPreference 
+    	        android:defaultValue="In a car.."
+    	        android:key="activities_in_vehicle_description"
+    	        android:title="Set description"/>
+        </PreferenceCategory>        
+    </PreferenceScreen>
+    
     <PreferenceScreen
         xmlns:android="http://schemas.android.com/apk/res/android"
         android:key="advanced_data"
