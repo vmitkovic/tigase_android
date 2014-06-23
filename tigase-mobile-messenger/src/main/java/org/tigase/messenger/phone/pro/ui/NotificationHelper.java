@@ -22,9 +22,12 @@ import org.tigase.messenger.phone.pro.Preferences;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
 import org.tigase.messenger.phone.pro.db.providers.RosterProviderExt;
+import org.tigase.messenger.phone.pro.service.JaxmppService;
 
 import tigase.jaxmpp.android.roster.RosterItemsCacheTableMetaData;
 import tigase.jaxmpp.core.client.BareJID;
+import tigase.jaxmpp.core.client.Connector;
+import tigase.jaxmpp.core.client.Connector.State;
 import tigase.jaxmpp.core.client.JID;
 import tigase.jaxmpp.core.client.JaxmppCore;
 import tigase.jaxmpp.core.client.SessionObject;
@@ -41,6 +44,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.preference.PreferenceManager;
+import android.support.v4.app.NotificationCompat;
 
 public abstract class NotificationHelper {
 
@@ -141,27 +145,27 @@ public abstract class NotificationHelper {
 //				| PendingIntent.FLAG_ONE_SHOT);
 //	}
 
-//	public Notification getForegroundNotification(int ico, String notiticationTitle, String expandedNotificationText) {
-//		if (foregroundNotification == null) {
-//			long whenNotify = System.currentTimeMillis();
-//			foregroundNotification = new Notification(ico, notiticationTitle, whenNotify);
-//		}
-//
-//		foregroundNotification.icon = ico;
-//		foregroundNotification.tickerText = notiticationTitle;
-//
-//		// notification.flags = Notification.FLAG_AUTO_CANCEL;
-//		foregroundNotification.flags |= Notification.FLAG_ONLY_ALERT_ONCE;
-//		foregroundNotification.flags |= Notification.FLAG_FOREGROUND_SERVICE;
-//		Context context = this.context.getApplicationContext();
-//		String expandedNotificationTitle = context.getResources().getString(R.string.app_name);
-//		Intent intent = new Intent(context, TigaseMobileMessengerActivity.class);
-//		PendingIntent pendingIntent = PendingIntent.getActivity(context, (int) System.currentTimeMillis(), intent, 0);
-//
-//		foregroundNotification.setLatestEventInfo(context, expandedNotificationTitle, expandedNotificationText, pendingIntent);
-//
-//		return foregroundNotification;
-//	}
+	public Notification getForegroundNotification(int ico, String notiticationTitle, String expandedNotificationText) {
+		if (foregroundNotification == null) {
+			long whenNotify = System.currentTimeMillis();
+			foregroundNotification = new Notification(ico, notiticationTitle, whenNotify);
+		}
+
+		foregroundNotification.icon = ico;
+		foregroundNotification.tickerText = notiticationTitle;
+
+		// notification.flags = Notification.FLAG_AUTO_CANCEL;
+		foregroundNotification.flags |= Notification.FLAG_ONLY_ALERT_ONCE;
+		foregroundNotification.flags |= Notification.FLAG_FOREGROUND_SERVICE;
+		Context context = this.context.getApplicationContext();
+		String expandedNotificationTitle = context.getResources().getString(R.string.app_name);
+		Intent intent = new Intent(context, MainActivity.class);
+		PendingIntent pendingIntent = PendingIntent.getActivity(context, (int) System.currentTimeMillis(), intent, 0);
+
+		foregroundNotification.setLatestEventInfo(context, expandedNotificationTitle, expandedNotificationText, pendingIntent);
+
+		return foregroundNotification;
+	}
 
 //	private final MultiJaxmpp getMulti() {
 //		return ((MessengerApplication) context.getApplicationContext()).getMultiJaxmpp();
@@ -436,7 +440,7 @@ public abstract class NotificationHelper {
 
 		notificationManager.notify("error:" + id, ERROR_NOTIFICATION_ID, notification);
 	}
-
+	
 	protected void updateLight(Notification notification, String lightKey) {
 		// notification.defaults |= Notification.DEFAULT_LIGHTS;
 

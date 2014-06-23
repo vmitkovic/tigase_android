@@ -61,6 +61,7 @@ import tigase.jaxmpp.core.client.exceptions.JaxmppException;
 import tigase.jaxmpp.core.client.factory.UniversalFactory;
 import tigase.jaxmpp.core.client.xml.Element;
 import tigase.jaxmpp.core.client.xml.XMLException;
+import tigase.jaxmpp.core.client.xmpp.modules.ResourceBinderModule;
 import tigase.jaxmpp.core.client.xmpp.modules.SoftwareVersionModule;
 import tigase.jaxmpp.core.client.xmpp.modules.StreamFeaturesModule;
 import tigase.jaxmpp.core.client.xmpp.modules.capabilities.CapabilitiesModule;
@@ -92,6 +93,7 @@ import tigase.jaxmpp.j2se.connectors.socket.SocketConnector;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.AlarmManager;
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -1121,6 +1123,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		
 		updateJaxmppInstances();
 		startKeepAlive();	
+		updateServiceNotification();
 	}
 	
 	@Override
@@ -1209,13 +1212,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			Log.e(TAG, "Exception while rejoining to rooms on connect for account " + sessionObject.getUserBareJid().toString());
 		}
 		
-		// TODO Auto-generated method stub
-		NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
-		builder.setSmallIcon(R.drawable.ic_launcher);
-		builder.setContentTitle("Connection").setContentText("" + sessionObject.getUserBareJid().toString() + " - Connected");
-		NotificationManager mNotificationManager =
-			    (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);	
-		mNotificationManager.notify(10, builder.build());
+		updateServiceNotification();
 	}
 	
 	@Override
@@ -1228,12 +1225,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		}
 		geolocationFeature.accountDisconnected(jaxmpp);
 		
-		NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
-		builder.setSmallIcon(R.drawable.ic_launcher);
-		builder.setContentTitle("Connection").setContentText("" + sessionObject.getUserBareJid().toString() + " - Disconnected");
-		NotificationManager mNotificationManager =
-			    (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);	
-		mNotificationManager.notify(10, builder.build());
+		updateServiceNotification();
 	}
 
 	private void onNetworkChange(final NetworkInfo netInfo) {
@@ -1500,7 +1492,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     	return info.getType();
     }
     
-    private boolean isDisabled(SessionObject sessionObject) {
+    public boolean isDisabled(SessionObject sessionObject) {
     	Boolean x = sessionObject.getProperty("CC:DISABLED");
     	return x == null ? false : x;
     }
@@ -1747,4 +1739,48 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			notificationHelper.notifyNewChatMessage(sessionObject, msg);
 		}
 	}
+	
+	private void updateServiceNotification() {
+		int ico = R.drawable.ic_stat_disconnected;
+		String notificationTitle = null;
+		String expandedNotificationTitle = null;
+		if (getUsedNetworkType() == -1) {
+			notificationTitle = getResources().getString(R.string.service_disconnected_notification_title);
+			expandedNotificationTitle = getResources().getString(R.string.service_no_network_notification_text);
+		}
+		else {
+			int onlineCount = 0;
+			int offlineCount = 0;
+			int connectingCount = 0;
+			for (JaxmppCore jaxmpp : getMulti().get()) {
+				State state = jaxmpp.getSessionObject().getProperty(Connector.CONNECTOR_STAGE_KEY);
+				boolean established = jaxmpp.getSessionObject().getProperty(ResourceBinderModule.BINDED_RESOURCE_JID) != null;
+				if (!isDisabled(jaxmpp.getSessionObject())) {
+					if (state == State.connected && established) {
+						++onlineCount;
+					} else if (state == null || state == State.disconnected) {
+						++offlineCount;
+					} else {
+						++connectingCount;
+					}	
+				}
+			}
+			if (connectingCount > 0) {
+				ico = R.drawable.ic_stat_connecting;
+				notificationTitle = getResources().getString(R.string.service_connecting_notification_title);
+				expandedNotificationTitle = getResources().getString(R.string.service_connecting_notification_text, connectingCount);
+			} else if (onlineCount == 0) {
+				notificationTitle = getResources().getString(R.string.service_disconnected_notification_title);
+				expandedNotificationTitle = getResources().getString(R.string.service_no_active_accounts_notification_text);
+			} else {
+				ico = R.drawable.ic_stat_connected;
+				notificationTitle = getResources().getString(R.string.service_connected_notification_title);
+				expandedNotificationTitle = getResources().getString(R.string.service_online_notification_text);
+			}
+		}
+		
+		Notification notification = notificationHelper.getForegroundNotification(ico, notificationTitle, expandedNotificationTitle);
+		startForeground(NotificationHelper.NOTIFICATION_ID, notification);
+	}
+	
 }

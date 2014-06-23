@@ -77,6 +77,13 @@
     <string name="service_mentioned_you_in_message">%s mentioned you</string>
     <string name="service_new_message">New message</string>
     <string name="service_warning_notification_title">Warning</string>
+	<string name="service_disconnected_notification_title">Disconnected</string>
+    <string name="service_no_network_notification_text">Disconnected</string>
+    <string name="service_connecting_notification_title">Connecting</string>
+    <string name="service_connecting_notification_text">Connecting %d accounts...</string>
+    <string name="service_connected_notification_title">Connected</string>
+    <string name="service_online_notification_text">Online</string>
+    <string name="service_no_active_accounts_notification_text">No active accounts!</string>    
 
     <!-- Preferences -->
     <string name="propertiesButton">Settings</string>
