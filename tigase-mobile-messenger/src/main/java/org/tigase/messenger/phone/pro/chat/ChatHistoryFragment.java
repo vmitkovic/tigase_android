@@ -255,25 +255,16 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 
 	@Override
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
-		// if (requestCode == TigaseMobileMessengerActivity.SELECT_FOR_SHARE &&
-		// resultCode == Activity.RESULT_OK) {
-		// Uri selected = data.getData();
-		// String mimetype = data.getType();
-		// RosterItem ri =
-		// chat.getSessionObject().getRoster().get(chat.getJid().getBareJid());
-		// JID jid = chat.getJid();
-		// final Jaxmpp jaxmpp = ((MessengerApplication)
-		// getActivity().getApplicationContext()).getMultiJaxmpp().get(
-		// ri.getSessionObject());
-		// if (jid.getResource() == null) {
-		// jid = FileTransferUtility.getBestJidForFeatures(jaxmpp,
-		// jid.getBareJid(), FileTransferUtility.FEATURES);
-		// }
-		// if (jid != null) {
-		// FileTransferUtility.startFileTransfer(getActivity(), jaxmpp,
-		// chat.getJid(), selected, mimetype);
-		// }
-		// }
+		if (requestCode == MainActivity.SELECT_FOR_SHARE && resultCode == Activity.RESULT_OK) {
+			Uri selected = data.getData();
+			String mimetype = data.getType();
+			try {
+				IJaxmppService jaxmppService = ((MainActivity) getActivity()).getJaxmppService();
+				jaxmppService.sendFile(account, recipient.toString(), selected.toString(), mimetype);
+			} catch (RemoteException ex) {
+				ex.printStackTrace();
+			}
+		}
 	}
 
 	// @Override
@@ -345,7 +336,10 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		inflater.inflate(R.menu.chat_main_menu, menu);
 
 		MenuItemCompat.setShowAsAction(menu.findItem(R.id.closeChatButton), MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
+		MenuItem shareItem = menu.findItem(R.id.shareButton);
+		MenuItemCompat.setShowAsAction(shareItem, MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
 		MenuItemCompat.setShowAsAction(menu.findItem(R.id.showContact), MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
+		
 		// MenuItem showChats = menu.findItem(R.id.showChatsButton);
 		// if (showChats != null) {
 		// showChats.setVisible(getActivity() instanceof ChatActivity);
@@ -452,35 +446,18 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 
 			getActivity().onBackPressed();
 
-			// final Jaxmpp jaxmpp = ((MessengerApplication)
-			// getActivity().getApplicationContext()).getMultiJaxmpp().get(
-			// chat.getSessionObject());
-			// final AbstractChatManager cm =
-			// jaxmpp.getModule(MessageModule.class).getChatManager();
-			// try {
-			// cm.close(chat);
-			// NavUtils.navigateUpTo(getActivity(), new Intent(getActivity(),
-			// TigaseMobileMessengerActivity.class));
-			// if (DEBUG)
-			// Log.i(TAG, "Chat with " + chat.getJid() + " (" + chat.getId() +
-			// ") closed");
-			// } catch (JaxmppException e) {
-			// Log.w(TAG, "Chat close problem!", e);
-			// }
-			// } else if (item.getItemId() == R.id.shareImageButton) {
-			// Log.v(TAG, "share selected for = " + chat.getJid().toString());
-			// Intent pickerIntent = new Intent(Intent.ACTION_PICK);
-			// pickerIntent.setType("image/*");
-			// pickerIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
-			// startActivityForResult(pickerIntent,
-			// TigaseMobileMessengerActivity.SELECT_FOR_SHARE);
-			// } else if (item.getItemId() == R.id.shareVideoButton) {
-			// Log.v(TAG, "share selected for = " + chat.getJid().toString());
-			// Intent pickerIntent = new Intent(Intent.ACTION_PICK);
-			// pickerIntent.setType("video/*");
-			// pickerIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
-			// startActivityForResult(pickerIntent,
-			// TigaseMobileMessengerActivity.SELECT_FOR_SHARE);
+		} else if (item.getItemId() == R.id.shareImageButton) {
+			Log.v(TAG, "share selected for = " + recipient.toString());
+			Intent pickerIntent = new Intent(Intent.ACTION_PICK);
+			pickerIntent.setType("image/*");
+			pickerIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+			startActivityForResult(pickerIntent, MainActivity.SELECT_FOR_SHARE);
+		} else if (item.getItemId() == R.id.shareVideoButton) {
+			 Log.v(TAG, "share selected for = " + recipient.toString());
+			 Intent pickerIntent = new Intent(Intent.ACTION_PICK);
+			 pickerIntent.setType("video/*");
+			 pickerIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+			 startActivityForResult(pickerIntent, MainActivity.SELECT_FOR_SHARE);
 		} else if (item.getItemId() == R.id.showContact) {
 			// Intent intent = new Intent(getActivity(), ContactActivity.class);
 			// intent.putExtra("jid", chat.getJid().getBareJid().toString());

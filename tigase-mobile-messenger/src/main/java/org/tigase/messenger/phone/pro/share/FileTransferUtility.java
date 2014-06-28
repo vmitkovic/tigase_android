@@ -25,6 +25,7 @@ import java.util.Set;
 
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.JID;
+import tigase.jaxmpp.core.client.JaxmppCore;
 import tigase.jaxmpp.core.client.xml.Element;
 import tigase.jaxmpp.core.client.xml.XMLException;
 import tigase.jaxmpp.core.client.xmpp.modules.capabilities.CapabilitiesCache;
@@ -72,7 +73,7 @@ public class FileTransferUtility {
 
 	private static Map<String, FileTransfer> waitingFileTransfers = new HashMap<String, FileTransfer>();
 
-	public static JID getBestJidForFeatures(Jaxmpp jaxmpp, BareJID jid, String[] features) {
+	public static JID getBestJidForFeatures(JaxmppCore jaxmpp, BareJID jid, String[] features) {
 		try {
 			CapabilitiesCache capsCache = jaxmpp.getModule(CapabilitiesModule.class).getCache();
 			Set<String> nodes = capsCache.getNodesWithFeature(features[0]);

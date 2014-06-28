@@ -348,6 +348,8 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 	
 	public static final String NEW_MESSAGE_ACTION = "org.tigase.messenger.phone.pro.NEW_MESSAGE_ACTION";
 	
+	public static final int SELECT_FOR_SHARE = 2;
+	
 	protected DrawerLayout drawerLayout;
 	protected ExpandableListView drawerList;
 	protected DrawerMenuItem accountsDrawerItem;

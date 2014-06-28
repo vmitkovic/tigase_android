@@ -21,6 +21,7 @@ import java.io.File;
 
 import tigase.jaxmpp.android.Jaxmpp;
 import tigase.jaxmpp.core.client.JID;
+import tigase.jaxmpp.core.client.JaxmppCore;
 import tigase.jaxmpp.core.client.SessionObject;
 import tigase.jaxmpp.core.client.exceptions.JaxmppException;
 import tigase.jaxmpp.j2se.filetransfer.FileTransfer;
@@ -70,7 +71,7 @@ public class FileTransferFeature implements FileTransferManager.FileTransferRequ
 		jaxmpp.getEventBus().addHandler(FileTransferManager.FileTransferRejectedHandler.FileTransferRejectedEvent.class, this);
 	}
 	
-	public void startFileTransfer(final Context context, final Jaxmpp jaxmpp, final JID peerJid, final Uri uri,
+	public void startFileTransfer(final Context context, final JaxmppCore jaxmpp, final JID peerJid, final Uri uri,
 			final String mimetype) {
 		new Thread() {
 			@Override

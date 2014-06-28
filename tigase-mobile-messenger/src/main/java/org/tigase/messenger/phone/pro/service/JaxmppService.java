@@ -33,6 +33,7 @@ import org.tigase.messenger.phone.pro.muc.Occupant;
 import org.tigase.messenger.phone.pro.roster.CPresence;
 import org.tigase.messenger.phone.pro.roster.RosterUpdateCallback;
 import org.tigase.messenger.phone.pro.security.SecureTrustManagerFactory;
+import org.tigase.messenger.phone.pro.share.FileTransferUtility;
 import org.tigase.messenger.phone.pro.sync.SyncAdapter;
 import org.tigase.messenger.phone.pro.ui.NotificationHelper;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
@@ -606,8 +607,19 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
 				JID jid = JID.jidInstance(jidStr);			
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				if (jid.getResource() == null) {
+					JID fullJid = FileTransferUtility.getBestJidForFeatures(jaxmpp, jid.getBareJid(), FileTransferUtility.FEATURES);
+					if (fullJid != null) {
+						jid = fullJid;
+					} else {
+						Presence p = PresenceModule.getPresenceStore(jaxmpp.getSessionObject()).getBestPresence(jid.getBareJid());
+						if (p != null) {
+							jid = p.getFrom();
+						}
+					}
+				}
 				Uri uri = Uri.parse(uriStr);
-				fileTransferFeature.startFileTransfer(JaxmppService.this, (Jaxmpp) jaxmpp, jid, uri, mimetype);
+				fileTransferFeature.startFileTransfer(JaxmppService.this, jaxmpp, jid, uri, mimetype);
 				return true;
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
