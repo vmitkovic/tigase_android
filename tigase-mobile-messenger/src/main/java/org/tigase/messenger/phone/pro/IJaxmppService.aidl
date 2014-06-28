@@ -20,13 +20,14 @@ interface IJaxmppService {
 
 	List<CPresence> getPresences(String accountJid, String jid);
 	
+	// Chats
 	boolean openChat(String accountJid, String jid);
 	boolean sendMessage(String accountJid, String jid, String thread, String message);
 	void closeChat(String accountJid, String jid, String thread);
 	String getRecipientChatState(String accountJid, String jid, String thread);
 	void setOwnChatState(String accountJid, String jid, String thread, String chatState);
 	
-	
+	// MUC
 	boolean joinRoom(String accountJid, String roomJid, String nickname, String password, String action);
 	boolean leaveRoom(String accountJid, String roomJid);
 	boolean sendRoomMessage(String accountJid, String roomJid, String message);
@@ -34,4 +35,7 @@ interface IJaxmppService {
 	
 	void updateRosterItem(String accountJid, String jid, String name, in List<String> groups, boolean requestAuth, RosterUpdateCallback callback);
 	void retrieveVCard(String accountJid, String jid, RosterUpdateCallback callback);
+	
+	// FileTransfer
+	boolean sendFile(String account, String jid, String fileUri, String mimetype);
 }

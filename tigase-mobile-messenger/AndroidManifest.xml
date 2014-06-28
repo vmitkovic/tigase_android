@@ -95,7 +95,32 @@
             android:configChanges="orientation"
             android:label="@string/muc_occupants_list_title" >
         </activity>
-
+        <activity android:name=".share.ShareActivity" >
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+		<activity
+            android:name=".share.IncomingFileActivity"
+            android:label="@string/incoming_file" >
+        </activity>
         <service
             android:name="org.tigase.messenger.phone.pro.service.JaxmppService"
             android:process=":JaxmppService" >

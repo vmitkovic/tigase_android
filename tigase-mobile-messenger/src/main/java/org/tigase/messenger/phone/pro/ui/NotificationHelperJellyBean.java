@@ -17,10 +17,13 @@
  */
 package org.tigase.messenger.phone.pro.ui;
 
+import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.ChatTableMetaData;
+import org.tigase.messenger.phone.pro.service.FileTransferFeature;
 
 import tigase.jaxmpp.core.client.SessionObject;
 import tigase.jaxmpp.core.client.xml.XMLException;
+import tigase.jaxmpp.j2se.filetransfer.FileTransfer;
 import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.PendingIntent;
@@ -63,44 +66,44 @@ public class NotificationHelperJellyBean extends NotificationHelperICS {
 		builder.setStyle(style);
 	}
 
-//	@Override
-//	protected Notification prepareFileTransferProgressNotification(int ico, String title, String text, FileTransfer ft,
-//			FileTransferFeature.State state) {
-//		Notification.Builder builder = this.prepareFileTransferProgressNotificationInt(ico, title, text, ft, state);
-//		return builder.build();
-//	}
-//
-//	@Override
-//	protected Notification prepareFileTransferRequestNotification(int ico, String title, String text, FileTransfer ft,
-//			JaxmppCore jaxmpp, String tag) {
-//
-//		Notification.Builder builder = prepareFileTransferRequestNotificationInt(ico, title, text, ft, jaxmpp, tag);
-//		Notification notification = builder.build();
-//		notification.flags |= Notification.FLAG_SHOW_LIGHTS;
-//		return notification;
-//	}
-//
-//	@Override
-//	protected Notification.Builder prepareFileTransferRequestNotificationInt(int ico, String title, String text,
-//			FileTransfer ft, JaxmppCore jaxmpp, String tag) {
-//		Notification.Builder builder = super.prepareFileTransferRequestNotificationInt(ico, title, text, ft, jaxmpp, tag);
-//
-//		Intent intentReject = NotificationHelper.createFileTransferRejectIntent(context, ft,
-//				jaxmpp.getSessionObject().getUserBareJid(), tag);
-//		builder.addAction(
-//				android.R.drawable.ic_menu_close_clear_cancel,
-//				context.getString(R.string.reject),
-//				PendingIntent.getService(context, 1, intentReject, PendingIntent.FLAG_CANCEL_CURRENT
-//						| PendingIntent.FLAG_ONE_SHOT));
-//
-//		Intent intentAccept = NotificationHelper.createFileTransferAcceptIntent(context, ft,
-//				jaxmpp.getSessionObject().getUserBareJid(), tag);
-//		builder.addAction(
-//				android.R.drawable.ic_menu_save,
-//				context.getString(R.string.accept),
-//				PendingIntent.getService(context, 2, intentAccept, PendingIntent.FLAG_CANCEL_CURRENT
-//						| PendingIntent.FLAG_ONE_SHOT));
-//
-//		return builder;
-//	}
+	@Override
+	protected Notification prepareFileTransferProgressNotification(int ico, String title, String text, FileTransfer ft,
+			FileTransferFeature.State state) {
+		Notification.Builder builder = this.prepareFileTransferProgressNotificationInt(ico, title, text, ft, state);
+		return builder.build();
+	}
+
+	@Override
+	protected Notification prepareFileTransferRequestNotification(int ico, String title, String text, FileTransfer ft,
+			String tag) {
+
+		Notification.Builder builder = prepareFileTransferRequestNotificationInt(ico, title, text, ft, tag);
+		Notification notification = builder.build();
+		notification.flags |= Notification.FLAG_SHOW_LIGHTS;
+		return notification;
+	}
+
+	@Override
+	protected Notification.Builder prepareFileTransferRequestNotificationInt(int ico, String title, String text,
+			FileTransfer ft, String tag) {
+		Notification.Builder builder = super.prepareFileTransferRequestNotificationInt(ico, title, text, ft, tag);
+
+		Intent intentReject = NotificationHelper.createFileTransferRejectIntent(context, ft,
+				ft.getSessionObject().getUserBareJid(), tag);
+		builder.addAction(
+				android.R.drawable.ic_menu_close_clear_cancel,
+				context.getString(R.string.reject),
+				PendingIntent.getService(context, 1, intentReject, PendingIntent.FLAG_CANCEL_CURRENT
+						| PendingIntent.FLAG_ONE_SHOT));
+
+		Intent intentAccept = NotificationHelper.createFileTransferAcceptIntent(context, ft,
+				ft.getSessionObject().getUserBareJid(), tag);
+		builder.addAction(
+				android.R.drawable.ic_menu_save,
+				context.getString(R.string.accept),
+				PendingIntent.getService(context, 2, intentAccept, PendingIntent.FLAG_CANCEL_CURRENT
+						| PendingIntent.FLAG_ONE_SHOT));
+
+		return builder;
+	}
 }

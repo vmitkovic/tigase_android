@@ -44,6 +44,7 @@
     <string name="no">No</string>
     <string name="cancel">Cancel</string>
     <string name="accept">Accept</string>
+    <string name="reject">Reject</string>
 
     <!-- Message shown in progress dialog while app connects to the server -->
     <string name="ui_activity_authenticating">Authenticating\u2026</string>
@@ -124,4 +125,23 @@
     <!-- MUC -->
     <string name="muc_occupants_list_title">Occupants</string>
     <string name="join_room">Join room</string>
+    
+    <!-- FileTransfer? -->
+    <string name="avatar">Avatar</string>
+    <string name="incoming_file">Incoming file</string>
+    <string name="incoming_file_from">Incoming file from</string>
+    <string name="incoming_file_filename">Name</string>
+    <string name="incoming_file_mimetype">Kind</string>
+    <string name="incoming_file_filesize">Size</string>
+    <string name="incoming_file_description">Description</string>
+    <string name="incoming_file_store">Save file to</string>   
+    <string name="service_file_transfer_sending_file">Sending file %1$s to %2$s</string>
+    <string name="service_file_transfer_receiving_file">Receiving file %1$s from %2$s</string>
+    <string name="service_file_transfer_negotiating">negotiating...</string>
+    <string name="service_file_transfer_connecting">connecting...</string>
+    <string name="service_file_transfer_error">connection failed</string>
+    <string name="service_file_transfer_progress">progress %1$s</string>
+    <string name="service_file_transfer_finished">transfer finished</string>     
+    <string name="service_incoming_file_notification_title">Incoming file %1$s from %2$s</string>
+    <string name="service_incoming_file_notification_text"></string>
 </resources>

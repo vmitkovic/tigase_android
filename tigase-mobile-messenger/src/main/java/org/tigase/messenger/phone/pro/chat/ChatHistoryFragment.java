@@ -705,7 +705,7 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 			MainActivity activity = (MainActivity) getActivity();
 			try {
 				String chatStateStr = activity.getJaxmppService().getRecipientChatState(account, recipient.toString(), threadId);
-				if (chatStateStr.length() > 0) {
+				if (chatStateStr != null && chatStateStr.length() > 0) {
 					ChatState state = ChatState.valueOf(chatStateStr);
 					if (state != ChatState.active) {
 						Toast toast = Toast.makeText(activity, name + " is " + state.name(), 5);

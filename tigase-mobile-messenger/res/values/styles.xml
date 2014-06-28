@@ -32,4 +32,7 @@
 <!--         <item name="height">32dp</item>
         <item name="android:height">32dp</item> -->
     </style>
+    
+    <style name="BorderlesButton">
+    </style>    
 </resources>

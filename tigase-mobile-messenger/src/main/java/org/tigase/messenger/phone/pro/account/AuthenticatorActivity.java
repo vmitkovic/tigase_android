@@ -107,6 +107,14 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 			try {
 				contact.login(true);
 
+				//----
+				// double connect!! is it blocking or not on see-other-host?
+				if (token == null && contact.getSessionObject().getProperty("s:reconnecting") != null 
+						&& (Boolean) contact.getSessionObject().getProperty("s:reconnecting")) {
+					contact.login(true);
+				}
+				//if (contact.getSessionObject().getProperty(SocketConnector.RECONNECTING_KEY, Boolean.TRUE))
+				
 				Log.w(TAG, "Czy jest error? " + contact.getSessionObject().getProperty(tigase.jaxmpp.j2se.Jaxmpp.EXCEPTION_KEY));
 
 				// if
@@ -346,6 +354,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 
 						@Override
 						public void onResourceBindSuccess(SessionObject sessionObject, JID bindedJid) throws JaxmppException {
+							Log.v(TAG, "session bound for jid " + bindedJid + ", setting token to = " + params[1]);
 							token = params[1];
 						}
 					});
@@ -544,9 +553,6 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 		showProgressDialog();
 
 		mAuthTask = authTask;
-		if (mAuthTask instanceof JaxmppAccountTask) {
-			((JaxmppAccountTask) mAuthTask).initJaxmpp(new String[] { mUsername, mPassword, mHostname, mEmail });
-		}
 		mAuthTask.execute(mUsername, mPassword, mHostname, mEmail);
 	}
 

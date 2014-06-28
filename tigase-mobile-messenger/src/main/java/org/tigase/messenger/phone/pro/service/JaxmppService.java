@@ -598,6 +598,24 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				Log.e(TAG, "EXCEPTION", e);
 			}
 		}
+		
+		@Override
+		public boolean sendFile(String accountJidStr, String jidStr, String uriStr, String mimetype) {
+			try {
+				Log.v(TAG, "send file called for account = " + accountJidStr + " for jid " + jidStr);
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+				JID jid = JID.jidInstance(jidStr);			
+				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				Uri uri = Uri.parse(uriStr);
+				fileTransferFeature.startFileTransfer(JaxmppService.this, (Jaxmpp) jaxmpp, jid, uri, mimetype);
+				return true;
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "EXCEPTION", e);
+				return false;
+			}		
+		}
 	}
 	
 	private class MessageHandler implements MessageModule.MessageReceivedHandler, MessageCarbonsModule.CarbonReceivedHandler, 
@@ -824,6 +842,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	public static final int SEND_MESSAGE = 1;
 	public static final String CLIENT_FOCUS = "org.tigase.messenger.phone.pro.CLIENT_FOCUS";
 
+	public static final String ACTION_FILETRANSFER = "org.tigase.messenger.phone.pro.service.JaxmppService.FILE_TRANSFER";
 	private static final String ACTION_KEEPALIVE = "org.tigase.messenger.phone.pro.service.JaxmppService.KEEP_ALIVE";
 	private static final String TAG = "JaxmppService";
 	private static final StanzaExecutor executor = new StanzaExecutor();
@@ -850,7 +869,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private MessageHandler messageHandler = null;
 	private MobileModeFeature mobileModeFeature = null;
 	private MucHandler mucHandler = null;
-	private NotificationHelper notificationHelper = null;
+	protected NotificationHelper notificationHelper = null;
 	private PresenceHandler presenceHandler = null;
 	private RosterProviderExt rosterProvider = null;
 	private ChatProvider chatProvider = null;
@@ -967,6 +986,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 
 	private ActivityFeature activityFeature;
 	private ConnReceiver connReceiver;
+	private FileTransferFeature fileTransferFeature;
 	private GeolocationFeature geolocationFeature;
 	private OnSharedPreferenceChangeListener prefChangeListener;
 	protected SharedPreferences prefs;
@@ -1039,6 +1059,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
         	activityFeature = new ActivityFeature(this);
         	activityFeature.onStart();
         }		
+        if (fileTransferFeature == null) {
+        	fileTransferFeature = new FileTransferFeature(this);
+        }
 		
 		keepaliveInterval = 1000 * 60 * this.prefs.getInt(Preferences.KEEPALIVE_TIME_KEY, 3);
 		
@@ -1180,6 +1203,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		}
 		else if (intent != null && ACTION_KEEPALIVE.equals(intent.getAction())) {
 			keepAlive();
+		}
+		else if (intent != null && ACTION_FILETRANSFER.equals(intent.getAction())) {
+			fileTransferFeature.processFileTransferAction(intent);
 		}
 		else if (activityFeature != null) {
 			activityFeature.onHandleIntent(intent);
@@ -1324,6 +1350,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     		MobileModeFeature.updateSettings(account, jaxmpp, context);
     		Boolean disabled = Boolean.valueOf(am.getUserData(account, "DISABLED"));
     		sessionObject.setUserProperty("CC:DISABLED", disabled);
+    		
+    		fileTransferFeature.updateSettings(jaxmpp, this);
     		
     		boolean needToSendPresence = false;
     		
@@ -1698,7 +1726,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		values.put(ChatTableMetaData.FIELD_JID, jid);
 
 		XmppDelay delay = XmppDelay.extract(msg);
-		values.put(ChatTableMetaData.FIELD_TIMESTAMP, (delay == null ? new Date() : delay.getStamp()).getTime());
+		values.put(ChatTableMetaData.FIELD_TIMESTAMP, ((delay == null || delay.getStamp() == null) ? new Date() : delay.getStamp()).getTime());
 		if (msg.getType() == StanzaType.error) {
 			ErrorElement error = ErrorElement.extract(msg);
 			String body = "Error: ";
