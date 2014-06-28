@@ -11,7 +11,10 @@
         android:layout_height="fill_parent"
         android:layout_above="@+id/chat_send_section"
         android:layout_below="@+id/topBar"
-        android:layout_weight="1" >
+        android:layout_weight="1"
+        android:dividerHeight="0dp"
+android:divider="@null">
+
     </ListView>
 
     <LinearLayout

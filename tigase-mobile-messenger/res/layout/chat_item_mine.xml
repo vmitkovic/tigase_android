@@ -4,23 +4,6 @@
     android:layout_height="wrap_content"
     android:padding="5px" >
 
-    <ImageView
-        android:id="@+id/msgStatus"
-        android:layout_width="48px"
-        android:layout_height="48px"
-        android:layout_alignBottom="@+id/user_avatar"
-        android:layout_alignRight="@+id/chat_item_timestamp"
-        android:layout_below="@+id/chat_item_timestamp"
-        android:src="@drawable/message_not_sent" >
-    </ImageView>
-
-    <ImageView
-        android:id="@+id/user_avatar"
-        android:layout_width="50sp"
-        android:layout_height="50sp"
-        android:src="@drawable/user_avatar" >
-    </ImageView>
-
     <TextView
         android:id="@+id/chat_item_timestamp"
         android:textSize="12sp"
@@ -42,9 +25,12 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/chat_item_nickname"
-        android:layout_toRightOf="@+id/user_avatar"
+        android:layout_toLeftOf="@+id/user_avatar"
         android:autoLink="all"
-        android:paddingLeft="5px" >
+        android:background="@drawable/bubble_green"
+        android:paddingLeft="10dp"
+        android:text="Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum." >
+
     </TextView>
 
     <TextView
@@ -56,5 +42,22 @@
         android:paddingLeft="5px"
         android:textStyle="bold" >
     </TextView>
+
+    <ImageView
+        android:id="@+id/msgStatus"
+        android:layout_width="18px"
+        android:layout_height="18px"
+        android:layout_alignBottom="@+id/chat_item_timestamp"
+        android:layout_alignTop="@+id/chat_item_timestamp"
+        android:layout_toLeftOf="@+id/chat_item_timestamp"
+        android:src="@drawable/message_not_sent" />
+
+    <ImageView
+        android:id="@+id/user_avatar"
+        android:layout_width="50sp"
+        android:layout_height="50sp"
+        android:layout_alignBottom="@+id/chat_item_body"
+        android:layout_alignParentRight="true"
+        android:src="@drawable/user_avatar" />
 
 </RelativeLayout>

@@ -101,16 +101,19 @@ public class ChatAdapter extends SimpleCursorAdapter {
 			final BareJID jid = BareJID.bareJIDInstance(cursor.getString(cursor.getColumnIndex(ChatTableMetaData.FIELD_JID)));
 			setAvatarForJid(holder.avatar, jid, cursor);
 			// direct use of Jaxmpp in this context is not allowed
-//			JaxmppCore jaxmpp = ((MessengerApplication) context.getApplicationContext()).getMultiJaxmpp().get(account);
-//			RosterItem ri = jaxmpp.getRoster().get(jid);
-//			holder.nickname.setText(ri == null ? jid.toString() : RosterDisplayTools.getDisplayName(ri));
+			// JaxmppCore jaxmpp = ((MessengerApplication)
+			// context.getApplicationContext()).getMultiJaxmpp().get(account);
+			// RosterItem ri = jaxmpp.getRoster().get(jid);
+			// holder.nickname.setText(ri == null ? jid.toString() :
+			// RosterDisplayTools.getDisplayName(ri));
 			holder.nickname.setText(recipientName == null ? jid.toString() : recipientName);
 
 			holder.nickname.setTextColor(context.getResources().getColor(R.color.message_his_text));
 			holder.webview.setTextColor(context.getResources().getColor(R.color.message_his_text));
 			holder.timestamp.setTextColor(context.getResources().getColor(R.color.message_his_text));
 
-			view.setBackgroundColor(context.getResources().getColor(R.color.message_his_background));
+			// view.setBackgroundColor(context.getResources().getColor(R.color.message_his_background));
+			holder.webview.setBackgroundResource(R.drawable.bubble_yellow);
 			holder.msgStatus.setVisibility(View.GONE);
 		} else if (state == ChatTableMetaData.STATE_OUT_NOT_SENT || state == ChatTableMetaData.STATE_OUT_SENT) {
 			final BareJID jid = BareJID.bareJIDInstance(cursor.getString(cursor.getColumnIndex(ChatTableMetaData.FIELD_AUTHOR_JID)));
@@ -126,7 +129,8 @@ public class ChatAdapter extends SimpleCursorAdapter {
 			else if (state == ChatTableMetaData.STATE_OUT_NOT_SENT)
 				holder.msgStatus.setVisibility(View.VISIBLE);
 
-			view.setBackgroundColor(context.getResources().getColor(R.color.message_mine_background));
+			holder.webview.setBackgroundResource(R.drawable.bubble_green);
+			// view.setBackgroundColor(context.getResources().getColor(R.color.message_mine_background));
 		} else {
 			holder.msgStatus.setVisibility(View.GONE);
 			holder.nickname.setText("?");
@@ -150,7 +154,7 @@ public class ChatAdapter extends SimpleCursorAdapter {
 		DateUtils.getRelativeDateTimeString(mContext, ts, DateUtils.MINUTE_IN_MILLIS, DateUtils.WEEK_IN_MILLIS, 0);
 		holder.timestamp.setText(tsStr);
 	}
-	
+
 	public void setRecipientName(String name) {
 		this.recipientName = name;
 	}

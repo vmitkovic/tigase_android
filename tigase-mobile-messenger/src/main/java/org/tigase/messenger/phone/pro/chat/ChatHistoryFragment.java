@@ -36,9 +36,6 @@ import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
 import org.tigase.messenger.phone.pro.roster.CPresence;
 //import org.tigase.messenger.phone.pro.roster.ContactActivity;
 
-
-
-
 import org.tigase.messenger.phone.pro.roster.ContactFragment;
 import org.tigase.messenger.phone.pro.roster.RosterAdapterHelper;
 import org.tigase.messenger.phone.pro.service.JaxmppService;
@@ -93,12 +90,12 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		TextView description;
 		ImageView status;
 		TextView title;
-	}	
-	
+	}
+
 	private static final boolean DEBUG = true;
 
 	private static final String TAG = "tigase-chat";
-	
+
 	public static final String FRAG_TAG = "ChatHistoryFragment";
 
 	public static Fragment newInstance(String account, JID recipient) {
@@ -119,20 +116,20 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 
 	private ChatAdapter chatAdapter;
 
-//	private TigaseMobileMessengerActivityHelper helper;
+	// private TigaseMobileMessengerActivityHelper helper;
 
 	private ChatView layout;
 
 	private ListView lv;
 
 	private ContentObserver observer = null;
-	
+
 	private String account;
 	private JID recipient;
 	private String threadId;
 	private String name;
-	
-//	private final Listener<PresenceEvent> presenceListener;
+
+	// private final Listener<PresenceEvent> presenceListener;
 
 	public static void openChat(FragmentActivity activity, String account, String recipient, boolean xlarge) {
 		Intent detailIntent = new Intent(activity, ChatActivity.class);
@@ -143,24 +140,28 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 
 	public ChatHistoryFragment() {
 		super();
-//		this.presenceListener = new Listener<PresenceModule.PresenceEvent>() {
-//
-//			@Override
-//			public void handleEvent(PresenceEvent be) throws JaxmppException {
-//				if (DEBUG)
-//					Log.d(TAG, "Received presence " + be.getJid() + " :: " + be.getPresence());
-//				if (ChatHistoryFragment.this.chat != null
-//						&& ChatHistoryFragment.this.chat.getJid().getBareJid().equals(be.getJid().getBareJid()))
-//					updatePresence();
-//			}
-//		};
-//		this.chatUpdateListener = new Listener<MessageModule.MessageEvent>() {
-//
-//			@Override
-//			public void handleEvent(MessageEvent be) throws JaxmppException {
-//				layout.updateClientIndicator();
-//			}
-//		};
+		// this.presenceListener = new Listener<PresenceModule.PresenceEvent>()
+		// {
+		//
+		// @Override
+		// public void handleEvent(PresenceEvent be) throws JaxmppException {
+		// if (DEBUG)
+		// Log.d(TAG, "Received presence " + be.getJid() + " :: " +
+		// be.getPresence());
+		// if (ChatHistoryFragment.this.chat != null
+		// &&
+		// ChatHistoryFragment.this.chat.getJid().getBareJid().equals(be.getJid().getBareJid()))
+		// updatePresence();
+		// }
+		// };
+		// this.chatUpdateListener = new Listener<MessageModule.MessageEvent>()
+		// {
+		//
+		// @Override
+		// public void handleEvent(MessageEvent be) throws JaxmppException {
+		// layout.updateClientIndicator();
+		// }
+		// };
 	}
 
 	private void clearMessageHistory() {
@@ -182,14 +183,14 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 
 	}
 
-//	public Chat getChat() {
-//		return chat;
-//	}
+	// public Chat getChat() {
+	// return chat;
+	// }
 
 	private Cursor getChatEntry(long id) {
 		Cursor cursor = getActivity().getApplicationContext().getContentResolver().query(
-				Uri.parse(ChatHistoryProvider.CHAT_URI + "/" + Uri.encode(recipient.getBareJid().toString()) + "/" + id),
-				null, null, null, null);
+				Uri.parse(ChatHistoryProvider.CHAT_URI + "/" + Uri.encode(recipient.getBareJid().toString()) + "/" + id), null,
+				null, null, null);
 		cursor.moveToNext();
 		return cursor;
 	}
@@ -201,9 +202,11 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		if (getArguments() != null) {
 			if (getArguments().containsKey("chatId")) {
 				long chatId = getArguments().getLong("chatId");
-				Cursor c = this.getActivity().getContentResolver().query(Uri.parse(OpenChatsProvider.OPEN_CHATS_URI), 
-						new String[] { OpenChatTableMetaData.FIELD_ACCOUNT, OpenChatTableMetaData.FIELD_JID, OpenChatTableMetaData.FIELD_THREAD_ID, OpenChatsProvider.FIELD_NAME }, 
-						"open_chats."+OpenChatTableMetaData.FIELD_ID + "= ?", new String[] { String.valueOf(chatId) }, null);
+				Cursor c = this.getActivity().getContentResolver().query(
+						Uri.parse(OpenChatsProvider.OPEN_CHATS_URI),
+						new String[] { OpenChatTableMetaData.FIELD_ACCOUNT, OpenChatTableMetaData.FIELD_JID,
+								OpenChatTableMetaData.FIELD_THREAD_ID, OpenChatsProvider.FIELD_NAME },
+						"open_chats." + OpenChatTableMetaData.FIELD_ID + "= ?", new String[] { String.valueOf(chatId) }, null);
 				try {
 					Log.v(TAG, "found " + c.getCount() + " for chatId = " + chatId);
 					if (c.moveToNext()) {
@@ -214,17 +217,21 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 					}
 				} finally {
 					c.close();
-				}					
-			}
-			else if (getArguments().containsKey("recipient") || getArguments().containsKey("jid")) {
-				String recipient = getArguments().containsKey("recipient") ? getArguments().getString("recipient") : getArguments().getString("jid");
+				}
+			} else if (getArguments().containsKey("recipient") || getArguments().containsKey("jid")) {
+				String recipient = getArguments().containsKey("recipient") ? getArguments().getString("recipient")
+						: getArguments().getString("jid");
 				this.recipient = JID.jidInstance(recipient);
 				this.account = getArguments().getString("account");
 				// fix thread id
-				// maybe we should retrieve here recipients name as well? or maybe we should move it to method calling this method
+				// maybe we should retrieve here recipients name as well? or
+				// maybe we should move it to method calling this method
 				// or maybe it is not needed at all
-				Cursor c = this.getActivity().getContentResolver().query(Uri.parse(OpenChatsProvider.OPEN_CHATS_URI), 
-						new String[] { OpenChatTableMetaData.FIELD_THREAD_ID, OpenChatsProvider.FIELD_NAME }, "open_chats." + OpenChatTableMetaData.FIELD_ACCOUNT + " = ? AND open_chats." + OpenChatTableMetaData.FIELD_JID + "= ?", 
+				Cursor c = this.getActivity().getContentResolver().query(
+						Uri.parse(OpenChatsProvider.OPEN_CHATS_URI),
+						new String[] { OpenChatTableMetaData.FIELD_THREAD_ID, OpenChatsProvider.FIELD_NAME },
+						"open_chats." + OpenChatTableMetaData.FIELD_ACCOUNT + " = ? AND open_chats."
+								+ OpenChatTableMetaData.FIELD_JID + "= ?",
 						new String[] { account, this.recipient.getBareJid().toString() }, null);
 				try {
 					if (c.moveToNext()) {
@@ -233,13 +240,12 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 					}
 				} finally {
 					c.close();
-				}			
-			}
-			else {
+				}
+			} else {
 				Log.e(TAG, "something gone really bad - no proper arguments found!");
 			}
-		}	
-		
+		}
+
 		if (account != null && recipient != null) {
 			layout.setChat(account, recipient, threadId);
 			chatAdapter.setRecipientName(name);
@@ -249,39 +255,46 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 
 	@Override
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
-//		if (requestCode == TigaseMobileMessengerActivity.SELECT_FOR_SHARE && resultCode == Activity.RESULT_OK) {
-//			Uri selected = data.getData();
-//			String mimetype = data.getType();
-//			RosterItem ri = chat.getSessionObject().getRoster().get(chat.getJid().getBareJid());
-//			JID jid = chat.getJid();
-//			final Jaxmpp jaxmpp = ((MessengerApplication) getActivity().getApplicationContext()).getMultiJaxmpp().get(
-//					ri.getSessionObject());
-//			if (jid.getResource() == null) {
-//				jid = FileTransferUtility.getBestJidForFeatures(jaxmpp, jid.getBareJid(), FileTransferUtility.FEATURES);
-//			}
-//			if (jid != null) {
-//				FileTransferUtility.startFileTransfer(getActivity(), jaxmpp, chat.getJid(), selected, mimetype);
-//			}
-//		}
+		// if (requestCode == TigaseMobileMessengerActivity.SELECT_FOR_SHARE &&
+		// resultCode == Activity.RESULT_OK) {
+		// Uri selected = data.getData();
+		// String mimetype = data.getType();
+		// RosterItem ri =
+		// chat.getSessionObject().getRoster().get(chat.getJid().getBareJid());
+		// JID jid = chat.getJid();
+		// final Jaxmpp jaxmpp = ((MessengerApplication)
+		// getActivity().getApplicationContext()).getMultiJaxmpp().get(
+		// ri.getSessionObject());
+		// if (jid.getResource() == null) {
+		// jid = FileTransferUtility.getBestJidForFeatures(jaxmpp,
+		// jid.getBareJid(), FileTransferUtility.FEATURES);
+		// }
+		// if (jid != null) {
+		// FileTransferUtility.startFileTransfer(getActivity(), jaxmpp,
+		// chat.getJid(), selected, mimetype);
+		// }
+		// }
 	}
 
-//	@Override
-//	public boolean onContextItemSelected(MenuItem item) {
-//		if (item.getItemId() == R.id.detailsMessage) {
-//			AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
-//			showMessageDetails(info.id);
-//			return true;
-//		} else if (item.getItemId() == R.id.copyMessage) {
-//			AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
-//			copyMessageBody(info.id);
-//			return true;
-//		} else if (item.getItemId() == R.id.clearMessageHistory) {
-//			clearMessageHistory();
-//			return true;
-//		} else {
-//			return super.onContextItemSelected(item);
-//		}
-//	}
+	// @Override
+	// public boolean onContextItemSelected(MenuItem item) {
+	// if (item.getItemId() == R.id.detailsMessage) {
+	// AdapterContextMenuInfo info = (AdapterContextMenuInfo)
+	// item.getMenuInfo();
+	// showMessageDetails(info.id);
+	// return true;
+	// } else if (item.getItemId() == R.id.copyMessage) {
+	// AdapterContextMenuInfo info = (AdapterContextMenuInfo)
+	// item.getMenuInfo();
+	// copyMessageBody(info.id);
+	// return true;
+	// } else if (item.getItemId() == R.id.clearMessageHistory) {
+	// clearMessageHistory();
+	// return true;
+	// } else {
+	// return super.onContextItemSelected(item);
+	// }
+	// }
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -290,7 +303,9 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		this.setHasOptionsMenu(true);
 		this.setRetainInstance(true);
 
-		this.chatAdapter = new ChatAdapter(getActivity(), R.layout.chat_item);
+		
+		
+		this.chatAdapter = new ChatAdapter(getActivity(), R.layout.chat_item_his);
 		chatAdapter.registerDataSetObserver(new DataSetObserver() {
 
 			@Override
@@ -313,8 +328,8 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
 		super.onCreateContextMenu(menu, v, menuInfo);
-//		MenuInflater m = new MenuInflater(getActivity());
-//		m.inflate(R.menu.chat_context_menu, menu);
+		// MenuInflater m = new MenuInflater(getActivity());
+		// m.inflate(R.menu.chat_context_menu, menu);
 	}
 
 	@Override
@@ -331,44 +346,47 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 
 		MenuItemCompat.setShowAsAction(menu.findItem(R.id.closeChatButton), MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
 		MenuItemCompat.setShowAsAction(menu.findItem(R.id.showContact), MenuItemCompat.SHOW_AS_ACTION_IF_ROOM);
-//		MenuItem showChats = menu.findItem(R.id.showChatsButton);
-//		if (showChats != null) {
-//			showChats.setVisible(getActivity() instanceof ChatActivity);
-//		}
-//
-//		// Share button support
-//		MenuItem share = menu.findItem(R.id.shareButton);
-//
-//		boolean visible = false;
-//		if (chat != null) {
-//			final Jaxmpp jaxmpp = ((MessengerApplication) getActivity().getApplicationContext()).getMultiJaxmpp().get(
-//					chat.getSessionObject());
-//			try {
-//				JID jid = chat.getJid();
-//
-//				if (jid.getResource() == null) {
-//					jid = FileTransferUtility.getBestJidForFeatures(jaxmpp, jid.getBareJid(), FileTransferUtility.FEATURES);
-//				}
-//
-//				if (jid != null) {
-//					visible = FileTransferUtility.resourceContainsFeatures(jaxmpp, jid, FileTransferUtility.FEATURES);
-//				}
-//			} catch (XMLException e) {
-//			}
-//		} else {
-//			Log.v(TAG, "no chat for fragment");
-//		}
-//		share.setVisible(visible);
-//
-//		MenuItem showContact = menu.findItem(R.id.showContact);
-//		showContact.setVisible(!helper.isXLarge());
-		
+		// MenuItem showChats = menu.findItem(R.id.showChatsButton);
+		// if (showChats != null) {
+		// showChats.setVisible(getActivity() instanceof ChatActivity);
+		// }
+		//
+		// // Share button support
+		// MenuItem share = menu.findItem(R.id.shareButton);
+		//
+		// boolean visible = false;
+		// if (chat != null) {
+		// final Jaxmpp jaxmpp = ((MessengerApplication)
+		// getActivity().getApplicationContext()).getMultiJaxmpp().get(
+		// chat.getSessionObject());
+		// try {
+		// JID jid = chat.getJid();
+		//
+		// if (jid.getResource() == null) {
+		// jid = FileTransferUtility.getBestJidForFeatures(jaxmpp,
+		// jid.getBareJid(), FileTransferUtility.FEATURES);
+		// }
+		//
+		// if (jid != null) {
+		// visible = FileTransferUtility.resourceContainsFeatures(jaxmpp, jid,
+		// FileTransferUtility.FEATURES);
+		// }
+		// } catch (XMLException e) {
+		// }
+		// } else {
+		// Log.v(TAG, "no chat for fragment");
+		// }
+		// share.setVisible(visible);
+		//
+		// MenuItem showContact = menu.findItem(R.id.showContact);
+		// showContact.setVisible(!helper.isXLarge());
+
 		super.onCreateOptionsMenu(menu, inflater);
 	}
 
 	@Override
 	public View onCreateView(final LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		//this.helper = TigaseMobileMessengerActivityHelper.createInstance();
+		// this.helper = TigaseMobileMessengerActivityHelper.createInstance();
 
 		this.layout = (ChatView) inflater.inflate(R.layout.chat, null);
 		layout.setChatHistoryFragment(this);
@@ -408,17 +426,18 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-//		if (item.getItemId() == R.id.showChatsButton) {
-//			SlidingPaneLayout slidingPaneLayout = (SlidingPaneLayout) getActivity().findViewById(R.id.chat_sliding_pane_layout);
-//			if (slidingPaneLayout.isOpen()) {
-//				slidingPaneLayout.closePane();
-//			} else {
-//				slidingPaneLayout.openPane();
-//			}
-//		} else 
+		// if (item.getItemId() == R.id.showChatsButton) {
+		// SlidingPaneLayout slidingPaneLayout = (SlidingPaneLayout)
+		// getActivity().findViewById(R.id.chat_sliding_pane_layout);
+		// if (slidingPaneLayout.isOpen()) {
+		// slidingPaneLayout.closePane();
+		// } else {
+		// slidingPaneLayout.openPane();
+		// }
+		// } else
 		if (item.getItemId() == R.id.closeChatButton) {
 			layout.cancelEdit();
-			
+
 			new Thread() {
 				public void run() {
 					IJaxmppService jaxmppService = ((MainActivity) getActivity()).getJaxmppService();
@@ -427,40 +446,47 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 					} catch (RemoteException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
-					}					
+					}
 				}
 			}.start();
 
 			getActivity().onBackPressed();
-			
-//			final Jaxmpp jaxmpp = ((MessengerApplication) getActivity().getApplicationContext()).getMultiJaxmpp().get(
-//					chat.getSessionObject());
-//			final AbstractChatManager cm = jaxmpp.getModule(MessageModule.class).getChatManager();
-//			try {
-//				cm.close(chat);
-//				NavUtils.navigateUpTo(getActivity(), new Intent(getActivity(), TigaseMobileMessengerActivity.class));
-//				if (DEBUG)
-//					Log.i(TAG, "Chat with " + chat.getJid() + " (" + chat.getId() + ") closed");
-//			} catch (JaxmppException e) {
-//				Log.w(TAG, "Chat close problem!", e);
-//			}
-//		} else if (item.getItemId() == R.id.shareImageButton) {
-//			Log.v(TAG, "share selected for = " + chat.getJid().toString());
-//			Intent pickerIntent = new Intent(Intent.ACTION_PICK);
-//			pickerIntent.setType("image/*");
-//			pickerIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
-//			startActivityForResult(pickerIntent, TigaseMobileMessengerActivity.SELECT_FOR_SHARE);
-//		} else if (item.getItemId() == R.id.shareVideoButton) {
-//			Log.v(TAG, "share selected for = " + chat.getJid().toString());
-//			Intent pickerIntent = new Intent(Intent.ACTION_PICK);
-//			pickerIntent.setType("video/*");
-//			pickerIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
-//			startActivityForResult(pickerIntent, TigaseMobileMessengerActivity.SELECT_FOR_SHARE);
+
+			// final Jaxmpp jaxmpp = ((MessengerApplication)
+			// getActivity().getApplicationContext()).getMultiJaxmpp().get(
+			// chat.getSessionObject());
+			// final AbstractChatManager cm =
+			// jaxmpp.getModule(MessageModule.class).getChatManager();
+			// try {
+			// cm.close(chat);
+			// NavUtils.navigateUpTo(getActivity(), new Intent(getActivity(),
+			// TigaseMobileMessengerActivity.class));
+			// if (DEBUG)
+			// Log.i(TAG, "Chat with " + chat.getJid() + " (" + chat.getId() +
+			// ") closed");
+			// } catch (JaxmppException e) {
+			// Log.w(TAG, "Chat close problem!", e);
+			// }
+			// } else if (item.getItemId() == R.id.shareImageButton) {
+			// Log.v(TAG, "share selected for = " + chat.getJid().toString());
+			// Intent pickerIntent = new Intent(Intent.ACTION_PICK);
+			// pickerIntent.setType("image/*");
+			// pickerIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+			// startActivityForResult(pickerIntent,
+			// TigaseMobileMessengerActivity.SELECT_FOR_SHARE);
+			// } else if (item.getItemId() == R.id.shareVideoButton) {
+			// Log.v(TAG, "share selected for = " + chat.getJid().toString());
+			// Intent pickerIntent = new Intent(Intent.ACTION_PICK);
+			// pickerIntent.setType("video/*");
+			// pickerIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+			// startActivityForResult(pickerIntent,
+			// TigaseMobileMessengerActivity.SELECT_FOR_SHARE);
 		} else if (item.getItemId() == R.id.showContact) {
-//			Intent intent = new Intent(getActivity(), ContactActivity.class);
-//			intent.putExtra("jid", chat.getJid().getBareJid().toString());
-//			intent.putExtra("account", chat.getSessionObject().getUserBareJid().toString());
-//			startActivity(intent);
+			// Intent intent = new Intent(getActivity(), ContactActivity.class);
+			// intent.putExtra("jid", chat.getJid().getBareJid().toString());
+			// intent.putExtra("account",
+			// chat.getSessionObject().getUserBareJid().toString());
+			// startActivity(intent);
 			Bundle args = new Bundle();
 			args.putString("account", account);
 			args.putString("jid", recipient.getBareJid().toString());
@@ -511,13 +537,13 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		if (this.recipient != null)
 			intent.putExtra("chat", this.recipient.toString());
 		getActivity().sendBroadcast(intent);
-		
+
 		Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/" + Uri.encode(recipient.getBareJid().toString()));
 		ContentValues values = new ContentValues();
 		values.put(ChatTableMetaData.FIELD_AUTHOR_JID, recipient.getBareJid().toString());
 		values.put(ChatTableMetaData.FIELD_STATE, ChatTableMetaData.STATE_INCOMING);
-		getActivity().getContentResolver().update(uri, values, null, null);		
-		
+		getActivity().getContentResolver().update(uri, values, null, null);
+
 		this.setLocalChatState(ChatState.active);
 		this.notifyChatState();
 	}
@@ -535,16 +561,21 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 	public void onStart() {
 		if (DEBUG)
 			Log.d(TAG, "Start ChatFragment");
-//		final MultiJaxmpp jaxmpp = ((MessengerApplication) getActivity().getApplicationContext()).getMultiJaxmpp();
-//
-//		jaxmpp.addListener(PresenceModule.ContactAvailable, this.presenceListener);
-//		jaxmpp.addListener(PresenceModule.ContactUnavailable, this.presenceListener);
-//		jaxmpp.addListener(PresenceModule.ContactChangedPresence, this.presenceListener);
-//
-//		jaxmpp.addListener(MessageModule.ChatUpdated, this.chatUpdateListener);
+		// final MultiJaxmpp jaxmpp = ((MessengerApplication)
+		// getActivity().getApplicationContext()).getMultiJaxmpp();
+		//
+		// jaxmpp.addListener(PresenceModule.ContactAvailable,
+		// this.presenceListener);
+		// jaxmpp.addListener(PresenceModule.ContactUnavailable,
+		// this.presenceListener);
+		// jaxmpp.addListener(PresenceModule.ContactChangedPresence,
+		// this.presenceListener);
+		//
+		// jaxmpp.addListener(MessageModule.ChatUpdated,
+		// this.chatUpdateListener);
 
 		super.onStart();
-		
+
 		if (observer == null) {
 			observer = new ContentObserver(null) {
 				@Override
@@ -555,15 +586,15 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 							// TODO Auto-generated method stub
 							updatePresence();
 							notifyChatState();
-						}				
+						}
 					});
 				}
 			};
 		}
-		
-		getActivity().getContentResolver().registerContentObserver(Uri.parse(RosterProvider.CONTENT_URI), true, observer);		
+
+		getActivity().getContentResolver().registerContentObserver(Uri.parse(RosterProvider.CONTENT_URI), true, observer);
 		getActivity().getContentResolver().registerContentObserver(Uri.parse(OpenChatsProvider.OPEN_CHATS_URI), true, observer);
-		
+
 		updatePresence();
 		layout.updateClientIndicator();
 	}
@@ -572,13 +603,18 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 	public void onStop() {
 		if (DEBUG)
 			Log.d(TAG, "Stop ChatFragment");
-//		final MultiJaxmpp jaxmpp = ((MessengerApplication) getActivity().getApplicationContext()).getMultiJaxmpp();
-//
-//		jaxmpp.removeListener(MessageModule.ChatUpdated, this.chatUpdateListener);
-//
-//		jaxmpp.removeListener(PresenceModule.ContactAvailable, this.presenceListener);
-//		jaxmpp.removeListener(PresenceModule.ContactUnavailable, this.presenceListener);
-//		jaxmpp.removeListener(PresenceModule.ContactChangedPresence, this.presenceListener);
+		// final MultiJaxmpp jaxmpp = ((MessengerApplication)
+		// getActivity().getApplicationContext()).getMultiJaxmpp();
+		//
+		// jaxmpp.removeListener(MessageModule.ChatUpdated,
+		// this.chatUpdateListener);
+		//
+		// jaxmpp.removeListener(PresenceModule.ContactAvailable,
+		// this.presenceListener);
+		// jaxmpp.removeListener(PresenceModule.ContactUnavailable,
+		// this.presenceListener);
+		// jaxmpp.removeListener(PresenceModule.ContactChangedPresence,
+		// this.presenceListener);
 		if (observer != null) {
 			getActivity().getContentResolver().unregisterContentObserver(observer);
 			observer = null;
@@ -594,25 +630,30 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		}
 		setLocalChatState(isVisibleToUser ? ChatState.active : ChatState.inactive);
 	}
-	
-//	private void setChatId(final BareJID account, final long chatId) {
-//		MultiJaxmpp multi = ((MessengerApplication) getActivity().getApplicationContext()).getMultiJaxmpp();
-//
-//		chatWrapper = multi.getChatById(chatId);
-//		if (chatWrapper != null) {
-//			chat = chatWrapper.getChat();
-//
-//			Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/" + Uri.encode(chat.getJid().getBareJid().toString()));
-//			ContentValues values = new ContentValues();
-//			values.put(ChatTableMetaData.FIELD_AUTHOR_JID, chat.getJid().getBareJid().toString());
-//			values.put(ChatTableMetaData.FIELD_STATE, ChatTableMetaData.STATE_INCOMING);
-//			getActivity().getContentResolver().update(uri, values, null, null);
-//
-//			return;
-//		}
-//
-//		throw new RuntimeException("Chat (id:" + chatId + ", account:" + account + ")  not found!");
-//	}
+
+	// private void setChatId(final BareJID account, final long chatId) {
+	// MultiJaxmpp multi = ((MessengerApplication)
+	// getActivity().getApplicationContext()).getMultiJaxmpp();
+	//
+	// chatWrapper = multi.getChatById(chatId);
+	// if (chatWrapper != null) {
+	// chat = chatWrapper.getChat();
+	//
+	// Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/" +
+	// Uri.encode(chat.getJid().getBareJid().toString()));
+	// ContentValues values = new ContentValues();
+	// values.put(ChatTableMetaData.FIELD_AUTHOR_JID,
+	// chat.getJid().getBareJid().toString());
+	// values.put(ChatTableMetaData.FIELD_STATE,
+	// ChatTableMetaData.STATE_INCOMING);
+	// getActivity().getContentResolver().update(uri, values, null, null);
+	//
+	// return;
+	// }
+	//
+	// throw new RuntimeException("Chat (id:" + chatId + ", account:" + account
+	// + ")  not found!");
+	// }
 
 	private void showMessageDetails(final long id) {
 		Cursor cc = null;
@@ -672,40 +713,39 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 						toast.show();
 					}
 				}
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				e.printStackTrace();
-			}		
+			}
 		}
 	}
-	
+
 	protected void updatePresence() {
 		if (getActivity() instanceof MainActivity) {
 			MainActivity activity = (MainActivity) getActivity();
-			activity.fragmentChanged(this);					
-		}		
-//		if (chat != null) {
-//			CPresence cp = RosterDisplayTools.getShowOf(chat.getSessionObject(), chat.getJid().getBareJid());
-//
-//			layout.setImagePresence(cp);
-//
-//			helper.updateActionBar(getActivity(), chatWrapper);
-//
-//		}
+			activity.fragmentChanged(this);
+		}
+		// if (chat != null) {
+		// CPresence cp = RosterDisplayTools.getShowOf(chat.getSessionObject(),
+		// chat.getJid().getBareJid());
+		//
+		// layout.setImagePresence(cp);
+		//
+		// helper.updateActionBar(getActivity(), chatWrapper);
+		//
+		// }
 	}
 
 	@Override
 	public int getHeaderViewId() {
 		return R.layout.actionbar_status;
 	}
-	
+
 	@Override
 	public View updateHeaderView(View view) {
 		CPresence p = null;
 		try {
 			p = ((MainActivity) getActivity()).getJaxmppService().getBestPresence(account, recipient.getBareJid().toString());
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		int icon = R.drawable.user_offline;
@@ -714,7 +754,7 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 			icon = RosterAdapterHelper.cPresenceToImageResource(p.getStatus());
 			descr = p.getDescription();
 		}
-		
+
 		Holder holder = (Holder) view.getTag();
 		if (holder == null) {
 			holder = new Holder();
@@ -726,33 +766,35 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		holder.title.setText(name);
 		holder.description.setText(descr == null ? "" : descr);
 		holder.status.setImageResource(icon);
-//		BareJID jid = c.getChat().getJid().getBareJid();
-//		RosterItem ri = c.getChat().getSessionObject().getRoster().get(jid);
-//		subtitle = "Chat with " + (ri != null ? ri.getName() : jid.toString());
-//
-//		icon = R.drawable.user_offline;
-//		CPresence p = RosterDisplayTools.getShowOf(c.getChat().getSessionObject(),
-//				c.getChat().getJid().getBareJid());
-//		c.getChat().getSessionObject().getPresence().getPresence(c.getChat().getJid());
-//		switch (p) {
-//		case chat:
-//			icon = R.drawable.user_free_for_chat;
-//			break;
-//		case online:
-//			icon = R.drawable.user_available;
-//			break;
-//		case away:
-//			icon = R.drawable.user_away;
-//			break;
-//		case xa:
-//			icon = R.drawable.user_extended_away;
-//			break;
-//		case dnd:
-//			icon = R.drawable.user_busy;
-//			break;
-//		default:
-//			break;
-//		}
+		// BareJID jid = c.getChat().getJid().getBareJid();
+		// RosterItem ri = c.getChat().getSessionObject().getRoster().get(jid);
+		// subtitle = "Chat with " + (ri != null ? ri.getName() :
+		// jid.toString());
+		//
+		// icon = R.drawable.user_offline;
+		// CPresence p =
+		// RosterDisplayTools.getShowOf(c.getChat().getSessionObject(),
+		// c.getChat().getJid().getBareJid());
+		// c.getChat().getSessionObject().getPresence().getPresence(c.getChat().getJid());
+		// switch (p) {
+		// case chat:
+		// icon = R.drawable.user_free_for_chat;
+		// break;
+		// case online:
+		// icon = R.drawable.user_available;
+		// break;
+		// case away:
+		// icon = R.drawable.user_away;
+		// break;
+		// case xa:
+		// icon = R.drawable.user_extended_away;
+		// break;
+		// case dnd:
+		// icon = R.drawable.user_busy;
+		// break;
+		// default:
+		// break;
+		// }
 		return view;
 	}
 
@@ -760,9 +802,9 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		new Thread() {
 			public void run() {
 				try {
-					((MainActivity) getActivity()).getJaxmppService().setOwnChatState(account, recipient.toString(), threadId, state.name());
-				}
-				catch (Exception ex) {
+					((MainActivity) getActivity()).getJaxmppService().setOwnChatState(account, recipient.toString(), threadId,
+							state.name());
+				} catch (Exception ex) {
 					Log.e(TAG, "Exception setting local chat state", ex);
 				}
 			}
