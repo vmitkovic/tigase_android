@@ -39,7 +39,6 @@ public class MucAdapter extends SimpleCursorAdapter {
 	static class ViewHolder {
 		ImageView avatar;
 		TextView body;
-		TextView bodySelf;
 		TextView nickname;
 		TextView timestamp;
 	}
@@ -54,50 +53,46 @@ public class MucAdapter extends SimpleCursorAdapter {
 
 	private final static int[] names = new int[] { R.id.chat_item_body };
 
-	static int getOccupantColor(final String nick) {
+	static int getOccupantBubble(final String nick) {
 		if (nick == null)
-			return R.color.mucmessage_his_nickname_0;
+			return R.drawable.bubble_1;
 
 		final int i = nick.hashCode();
-		final int color = Math.abs(i ^ (i >>> 5)) % 17;
+		final int color = Math.abs(i ^ (i >>> 5)) % 14;
 
 		switch (color) {
 		case 0:
-			return R.color.mucmessage_his_nickname_0;
+			return R.drawable.bubble_1;
 		case 1:
-			return R.color.mucmessage_his_nickname_1;
+			return R.drawable.bubble_2;
 		case 2:
-			return R.color.mucmessage_his_nickname_2;
+			return R.drawable.bubble_3;
 		case 3:
-			return R.color.mucmessage_his_nickname_3;
+			return R.drawable.bubble_4;
 		case 4:
-			return R.color.mucmessage_his_nickname_4;
+			return R.drawable.bubble_5;
 		case 5:
-			return R.color.mucmessage_his_nickname_5;
+			return R.drawable.bubble_6;
 		case 6:
-			return R.color.mucmessage_his_nickname_6;
+			return R.drawable.bubble_7;
 		case 7:
-			return R.color.mucmessage_his_nickname_7;
+			return R.drawable.bubble_8;
 		case 8:
-			return R.color.mucmessage_his_nickname_8;
+			return R.drawable.bubble_10;
 		case 9:
-			return R.color.mucmessage_his_nickname_9;
+			return R.drawable.bubble_11;
 		case 10:
-			return R.color.mucmessage_his_nickname_10;
+			return R.drawable.bubble_12;
 		case 11:
-			return R.color.mucmessage_his_nickname_11;
+			return R.drawable.bubble_13;
 		case 12:
-			return R.color.mucmessage_his_nickname_12;
+			return R.drawable.bubble_14;
 		case 13:
-			return R.color.mucmessage_his_nickname_13;
+			return R.drawable.bubble_15;
 		case 14:
-			return R.color.mucmessage_his_nickname_14;
-		case 15:
-			return R.color.mucmessage_his_nickname_15;
-		case 16:
-			return R.color.mucmessage_his_nickname_16;
+			return R.drawable.bubble_16;
 		default:
-			return R.color.mucmessage_his_nickname_0;
+			return R.drawable.bubble_1;
 		}
 	}
 
@@ -120,7 +115,6 @@ public class MucAdapter extends SimpleCursorAdapter {
 			view.setTag(holder);
 			holder.nickname = (TextView) view.findViewById(R.id.chat_item_nickname);
 			holder.body = (TextView) view.findViewById(R.id.chat_item_body);
-			holder.bodySelf = (TextView) view.findViewById(R.id.chat_item_body_self);
 			holder.timestamp = (TextView) view.findViewById(R.id.chat_item_timestamp);
 			holder.avatar = (ImageView) view.findViewById(R.id.user_avatar);
 		}
@@ -147,39 +141,21 @@ public class MucAdapter extends SimpleCursorAdapter {
 		}
 
 		if (nick != null && nick.equals(participantName)) {
-			holder.nickname.setTextColor(context.getResources().getColor(R.color.mucmessage_mine_nickname));
-			holder.body.setTextColor(context.getResources().getColor(R.color.mucmessage_mine_text));
-			holder.bodySelf.setTextColor(context.getResources().getColor(R.color.mucmessage_mine_text));
-			holder.timestamp.setTextColor(context.getResources().getColor(R.color.mucmessage_mine_text));
-			view.setBackgroundColor(context.getResources().getColor(R.color.mucmessage_mine_background));
+			holder.body.setBackgroundResource(R.drawable.bubble_9);
 		} else {
-			int colorRes = getOccupantColor(nick);
-
-			if (bd.contains(participantName)) {
-				view.setBackgroundColor(context.getResources().getColor(R.color.mucmessage_his_background_marked));
-			} else {
-				view.setBackgroundColor(context.getResources().getColor(R.color.mucmessage_his_background));
-			}
-
-			holder.nickname.setTextColor(context.getResources().getColor(colorRes));
-			holder.body.setTextColor(context.getResources().getColor(R.color.mucmessage_his_text));
-			holder.bodySelf.setTextColor(context.getResources().getColor(colorRes));
-			holder.timestamp.setTextColor(context.getResources().getColor(R.color.mucmessage_his_text));
+			int bubble = getOccupantBubble(nick);
+			holder.body.setBackgroundResource(bubble);
 		}
 
 		// java.text.DateFormat df = DateFormat.getTimeFormat(context);
 
 		if (bd != null && bd.startsWith("/me ")) {
-			holder.body.setVisibility(View.GONE);
-			holder.bodySelf.setVisibility(View.VISIBLE);
-			String t = bd.substring(4);
+			String t = nick + " " + bd.substring(4);
 			final String txt = EscapeUtils.escape(t);
-			holder.bodySelf.setText(Html.fromHtml(txt.replace("\n", "<br/>").replace(participantName,
+			holder.body.setText(Html.fromHtml(txt.replace("\n", "<br/>").replace(participantName,
 					"<b>" + participantName + "</b>")));
 
 		} else {
-			holder.body.setVisibility(View.VISIBLE);
-			holder.bodySelf.setVisibility(View.GONE);
 			final String txt = EscapeUtils.escape(bd);
 			holder.body.setText(Html.fromHtml(txt.replace("\n", "<br/>").replace(participantName,
 					"<b>" + participantName + "</b>")));
@@ -199,7 +175,7 @@ public class MucAdapter extends SimpleCursorAdapter {
 		holder.timestamp.setText(tsStr);
 
 	}
-	
+
 	public void setParticipantName(String name) {
 		this.participantName = name;
 	}

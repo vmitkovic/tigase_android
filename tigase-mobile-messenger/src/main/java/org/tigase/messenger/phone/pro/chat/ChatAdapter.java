@@ -17,16 +17,12 @@
  */
 package org.tigase.messenger.phone.pro.chat;
 
-import org.tigase.messenger.phone.pro.MessengerApplication;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.ChatTableMetaData;
 //import org.tigase.messenger.phone.pro.utils.AvatarHelper;
-
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 
 import tigase.jaxmpp.core.client.BareJID;
-import tigase.jaxmpp.core.client.JaxmppCore;
-import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterItem;
 import tigase.jaxmpp.core.client.xmpp.utils.EscapeUtils;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -70,8 +66,8 @@ public class ChatAdapter extends SimpleCursorAdapter {
 		avatar.setImageBitmap(AvatarHelper.getAvatar(jid));
 	}
 
-	private String recipientName = null;
 	private String nickname;
+	private String recipientName = null;
 
 	public ChatAdapter(Context context, int layout) {
 		super(context, layout, null, cols, names, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
@@ -113,7 +109,7 @@ public class ChatAdapter extends SimpleCursorAdapter {
 			holder.timestamp.setTextColor(context.getResources().getColor(R.color.message_his_text));
 
 			// view.setBackgroundColor(context.getResources().getColor(R.color.message_his_background));
-			holder.webview.setBackgroundResource(R.drawable.bubble_yellow);
+			holder.webview.setBackgroundResource(R.drawable.bubble_5);
 			holder.msgStatus.setVisibility(View.GONE);
 		} else if (state == ChatTableMetaData.STATE_OUT_NOT_SENT || state == ChatTableMetaData.STATE_OUT_SENT) {
 			final BareJID jid = BareJID.bareJIDInstance(cursor.getString(cursor.getColumnIndex(ChatTableMetaData.FIELD_AUTHOR_JID)));
@@ -129,7 +125,7 @@ public class ChatAdapter extends SimpleCursorAdapter {
 			else if (state == ChatTableMetaData.STATE_OUT_NOT_SENT)
 				holder.msgStatus.setVisibility(View.VISIBLE);
 
-			holder.webview.setBackgroundResource(R.drawable.bubble_green);
+			holder.webview.setBackgroundResource(R.drawable.bubble_9);
 			// view.setBackgroundColor(context.getResources().getColor(R.color.message_mine_background));
 		} else {
 			holder.msgStatus.setVisibility(View.GONE);
