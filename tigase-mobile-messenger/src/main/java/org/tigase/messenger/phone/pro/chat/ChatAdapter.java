@@ -17,6 +17,10 @@
  */
 package org.tigase.messenger.phone.pro.chat;
 
+import java.io.InputStream;
+import java.lang.ref.WeakReference;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.Map;
 
 import org.tigase.messenger.phone.pro.MessengerApplication;
@@ -38,20 +42,24 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.JaxmppCore;
+import tigase.jaxmpp.core.client.exceptions.JaxmppException;
+import tigase.jaxmpp.core.client.xml.Element;
 import tigase.jaxmpp.core.client.xml.XMLException;
 import tigase.jaxmpp.core.client.xmpp.utils.EscapeUtils;
 import tigase.jaxmpp.j2se.connectors.socket.StreamListener;
 import tigase.jaxmpp.j2se.connectors.socket.XMPPDomBuilderHandler;
 import tigase.jaxmpp.j2se.xml.J2seElement;
-import tigase.xml.Element;
 import tigase.xml.SimpleParser;
 import tigase.xml.SingletonFactory;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Address;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.support.v4.widget.CursorAdapter;
 import android.support.v4.widget.SimpleCursorAdapter;
@@ -71,6 +79,10 @@ public class ChatAdapter extends SimpleCursorAdapter {
 
 	private static final String TAG = "ChatAdapter";
 	
+	private interface ElementCallback {
+		void parsed(Element element) throws JaxmppException;
+	}
+	
 	static class ViewHolder {
 		ImageView avatar;
 		ImageView msgStatus;
@@ -78,8 +90,60 @@ public class ChatAdapter extends SimpleCursorAdapter {
 		TextView timestamp;
 		TextView webview;
 		ImageButton actionButton;
+		ImageView map;
 	}
-
+	
+	class ImageDownloaderTask extends AsyncTask<String, Void, Bitmap> {
+	    private final WeakReference<ImageView> imageViewReference;
+	 
+	    public ImageDownloaderTask(ImageView imageView) {
+	        imageViewReference = new WeakReference<ImageView>(imageView);
+	    }
+	 
+		@Override
+		protected Bitmap doInBackground(String... params) {
+			String uri = params[0];
+			InputStream is;
+			try {
+				URL url = new URL(uri);
+				URLConnection connection = url.openConnection();
+				connection.setUseCaches(true);
+				Object response = connection.getContent();
+				if (response instanceof Bitmap) {
+					return (Bitmap) response;
+				} else {
+					is = connection.getInputStream();
+					final Bitmap bitmap = BitmapFactory.decodeStream(is);
+					return bitmap;
+				}
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+			return null;
+		}
+	 
+	    @Override
+	    // Once the image is downloaded, associates it to the imageView
+	    protected void onPostExecute(Bitmap bitmap) {
+	        if (isCancelled()) {
+	            bitmap = null;
+	        }
+	 
+	        if (imageViewReference != null) {
+	            ImageView imageView = imageViewReference.get();
+	            if (imageView != null) {
+	 
+	                if (bitmap != null) {
+	                    imageView.setImageBitmap(bitmap);
+	                } else {
+	                    imageView.setVisibility(View.GONE);
+	                }
+	            }
+	 
+	        }
+	    } 
+	}
+	
 	private final static String[] cols = new String[] { ChatTableMetaData.FIELD_ID, 
 			ChatTableMetaData.FIELD_TIMESTAMP, ChatTableMetaData.FIELD_BODY,
 			ChatTableMetaData.FIELD_STATE, ChatTableMetaData.FIELD_JID /*
@@ -155,6 +219,7 @@ public class ChatAdapter extends SimpleCursorAdapter {
 			holder.timestamp = (TextView) view.findViewById(R.id.chat_item_timestamp);
 			holder.avatar = (ImageView) view.findViewById(R.id.user_avatar);
 			holder.msgStatus = (ImageView) view.findViewById(R.id.msgStatus);
+			holder.map = (ImageView) view.findViewById(R.id.map_image);
 		}
 
 		final int id = cursor.getInt(cursor.getColumnIndex(ChatTableMetaData.FIELD_ID));
@@ -205,12 +270,14 @@ public class ChatAdapter extends SimpleCursorAdapter {
 
 		// webview.setMinimumHeight(webview.getMeasuredHeight());
 
+		OnClickListener mapOnClick = null;
+		
 		if (holder.actionButton != null) {
 			holder.actionButton.setClickable(true);
 			holder.actionButton.setFocusable(false);
 			holder.actionButton.setFocusableInTouchMode(false);
 			holder.actionButton.setImageResource(android.R.drawable.ic_menu_mapmode);
-			holder.actionButton.setOnClickListener(new OnClickListener() {
+			mapOnClick = new OnClickListener() {
 				@Override
 				public void onClick(View v) {
 					Cursor c = mContext.getContentResolver().query(Uri.parse(ChatHistoryProvider.CHAT_URI + "/whatever/" + id),
@@ -218,14 +285,12 @@ public class ChatAdapter extends SimpleCursorAdapter {
 					Log.v(TAG, "map action button clicked");
 					try {
 						c.moveToNext();
-					String dataStr = c.getString(c.getColumnIndex(ChatTableMetaData.FIELD_DATA));
-					Log.v(TAG, "loaded data = " + dataStr);
-					XMPPDomBuilderHandler handler = new XMPPDomBuilderHandler(new StreamListener() {
-						@Override
-						public void nextElement(Element element) {
-							try {
-								Log.v(TAG, "parsed, now decoding address..");
-								Address address = GeolocationFeature.fromElement(new J2seElement(element));
+						String dataStr = c.getString(c.getColumnIndex(ChatTableMetaData.FIELD_DATA));
+						Log.v(TAG, "loaded data = " + dataStr);
+						parseElement(dataStr, new ElementCallback() {
+							@Override
+							public void parsed(Element element) throws JaxmppException {
+								Address address = GeolocationFeature.fromElement(element);
 								double lat = address.getLatitude();
 								double lng = address.getLongitude();
 								String uriString = address.getUrl() == null ? ("geo:"+lat+","+lng+"?z=14") : address.getUrl();
@@ -237,32 +302,47 @@ public class ChatAdapter extends SimpleCursorAdapter {
 									intent.setData(Uri.parse("http://maps.google.com/maps?q="+lat+","+lng+"&z=14"));
 									ChatAdapter.this.mContext.startActivity(intent);
 								}
-								
-							} catch (Exception ex) {
-								ex.printStackTrace();
-							}
-						}
-
-						@Override
-						public void xmppStreamClosed() {
-						}
-
-						@Override
-						public void xmppStreamOpened(Map<String, String> attribs) {
-						}
-						
-					});
-					SimpleParser parser = SingletonFactory.getParserInstance();
-					char[] data = dataStr.toCharArray();
-					Log.v(TAG, "parsing..");
-					parser.parse(handler, data, 0, data.length);					
+							}							
+						});
 					} catch (Exception ex) {
 						ex.printStackTrace();
 					}
+					finally {
+						c.close();
+					}
 				}			
-			});
+			};
+			holder.actionButton.setOnClickListener(mapOnClick);
 		}
 		
+		if (holder.map != null) {
+			final ImageView map = holder.map;
+			String dataStr = cursor.getString(cursor.getColumnIndex(ChatTableMetaData.FIELD_DATA));
+			holder.map.setVisibility(dataStr == null ? View.GONE : View.VISIBLE);
+			if (dataStr != null) { 
+				parseElement(dataStr, new ElementCallback() {
+					@Override
+					public void parsed(Element element) throws JaxmppException {
+						Address address = GeolocationFeature.fromElement(element);
+						map.setVisibility((address.hasLatitude() && address.hasLongitude()) ? View.VISIBLE : View.GONE);
+						if (address.hasLatitude() && address.hasLongitude()) {
+							// add image caching!! very important!!
+							int width = map.getWidth();
+							if (width == 0) {
+								width = mContext.getResources().getDisplayMetrics().widthPixels;
+							}
+							int height = (int) (300 * mContext.getResources().getDisplayMetrics().density);//(int)(width / 2);
+							String position = "" + address.getLatitude() + "," + address.getLongitude();
+							String uri = "http://maps.googleapis.com/maps/api/staticmap?center=" 
+									+ position + "&zoom=16&size="+width+"x"+height + "&markers="+position;
+							new ImageDownloaderTask(map).execute(uri);
+						}
+					}
+				});
+				holder.map.setOnClickListener(mapOnClick);
+			}
+		}
+				
 		Spanned sp = Html.fromHtml(txt.replace("\n", "<br/>"));
 		holder.webview.setText(sp);
 		// Date t = new
@@ -277,6 +357,33 @@ public class ChatAdapter extends SimpleCursorAdapter {
 		holder.timestamp.setText(tsStr);
 	}
 
+	public static void parseElement(String dataStr, final ElementCallback callback) {
+		XMPPDomBuilderHandler handler = new XMPPDomBuilderHandler(new StreamListener() {
+			@Override
+			public void nextElement(tigase.xml.Element element) {
+				try {
+					Log.v(TAG, "parsed, now decoding address..");
+					callback.parsed(new J2seElement(element));
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+
+			@Override
+			public void xmppStreamClosed() {
+			}
+
+			@Override
+			public void xmppStreamOpened(Map<String, String> attribs) {
+			}
+			
+		});
+		SimpleParser parser = SingletonFactory.getParserInstance();
+		char[] data = dataStr.toCharArray();
+		Log.v(TAG, "parsing..");
+		parser.parse(handler, data, 0, data.length);					
+	}
+	
 	public void setRecipientName(String name) {
 		this.recipientName = name;
 	}

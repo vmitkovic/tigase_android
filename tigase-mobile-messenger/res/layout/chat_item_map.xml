@@ -72,4 +72,13 @@
         android:layout_alignTop="@+id/chat_item_nickname"
         android:src="@drawable/user_avatar" />
 
+    <ImageView
+        android:id="@+id/map_image"
+        android:layout_width="match_parent" 
+        android:layout_height="200dp"
+        android:layout_below="@+id/chat_item_body"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true">
+    </ImageView>
+    
 </RelativeLayout>
