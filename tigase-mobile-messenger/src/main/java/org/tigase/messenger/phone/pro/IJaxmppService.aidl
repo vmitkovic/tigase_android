@@ -3,6 +3,7 @@ package org.tigase.messenger.phone.pro;
 import org.tigase.messenger.phone.pro.muc.Occupant;
 import org.tigase.messenger.phone.pro.roster.CPresence;
 import org.tigase.messenger.phone.pro.roster.RosterUpdateCallback;
+import tigase.jaxmpp.android.xml.ParcelableElement;
 
 interface IJaxmppService {
 	
@@ -23,6 +24,7 @@ interface IJaxmppService {
 	// Chats
 	boolean openChat(String accountJid, String jid);
 	boolean sendMessage(String accountJid, String jid, String thread, String message);
+	boolean sendMessageExt(String accountJid, String jid, String thread, String message, in List<ParcelableElement> elems);
 	void closeChat(String accountJid, String jid, String thread);
 	String getRecipientChatState(String accountJid, String jid, String thread);
 	void setOwnChatState(String accountJid, String jid, String thread, String chatState);

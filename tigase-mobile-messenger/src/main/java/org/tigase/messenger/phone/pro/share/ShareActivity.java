@@ -17,6 +17,9 @@
  */
 package org.tigase.messenger.phone.pro.share;
 
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -31,11 +34,14 @@ import org.tigase.messenger.phone.pro.db.providers.ChatHistoryProvider;
 import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
 import org.tigase.messenger.phone.pro.db.providers.RosterProviderExt;
 import org.tigase.messenger.phone.pro.roster.FlatRosterAdapter;
+import org.tigase.messenger.phone.pro.service.GeolocationFeature;
 import org.tigase.messenger.phone.pro.service.JaxmppService;
 
 import tigase.jaxmpp.android.roster.RosterItemsCacheTableMetaData;
+import tigase.jaxmpp.android.xml.ParcelableElement;
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.JID;
+import tigase.jaxmpp.core.client.xml.Element;
 import tigase.jaxmpp.core.client.xmpp.modules.filetransfer.FileTransferModule;
 import tigase.jaxmpp.core.client.xmpp.modules.socks5.Socks5BytestreamsModule;
 import android.app.Activity;
@@ -46,6 +52,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.database.Cursor;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -80,6 +89,7 @@ public class ShareActivity extends Activity {
 	private static final String TAG = "ShareActivity";
 
 	private EditText message;
+	private ParcelableElement locality;
 	
 	private ServiceConnection jaxmppServiceConnection = new ServiceConnection() {
 
@@ -318,7 +328,74 @@ public class ShareActivity extends Activity {
 				if (subject != null) {
 					txt += subject + "\n";
 				}
-				txt += textOrUri;
+				if (textOrUri != null && textOrUri.length() > 0) {
+					if (textOrUri.contains(subject)) {
+						txt = textOrUri;
+					} else {
+						txt += textOrUri;
+					}
+				}
+				if (txt != null) {
+					int start = txt.indexOf("http://goo.gl/maps");
+					if (start > -1) {
+						int end = txt.indexOf(' ' , start);
+						if (end == -1) {
+							end = txt.length();
+						}
+						final String urlStr = txt.substring(start, end);
+						final String textStr = txt.substring(0, start-1);
+						new Thread() {
+							public void run() {
+								
+						try {
+							URL url = new URL(urlStr);
+							HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+							conn.setFollowRedirects(false);
+							Uri gmapsUri = Uri.parse(conn.getHeaderField("Location"));
+							String location = gmapsUri.getQueryParameter("q");
+							String cid = gmapsUri.getQueryParameter("cid");
+							Log.v(TAG, "got intent with " + urlStr + " - redirect to " + location);
+							if (location != null || cid != null) {
+								List<Address> addresses = null;
+								Location tmp_location = null;
+								if (location != null) {
+									String[] lparts = location.split(",");
+								try {
+									tmp_location = new Location("internal");
+									tmp_location.setLatitude(Double.parseDouble(lparts[0]));
+									tmp_location.setLongitude(Double.parseDouble(lparts[1]));
+									//------ find a way to pass this to jaxmpp to send as a part of a message in chat
+									Geocoder geocoder = new Geocoder(ShareActivity.this);
+									addresses = geocoder.getFromLocation(tmp_location.getLatitude(), tmp_location.getLongitude(), 1);
+								} catch (NumberFormatException ex) {
+									ex.printStackTrace();
+									tmp_location = null;
+								}
+								}
+								if (addresses == null) {
+									Geocoder geocoder = new Geocoder(ShareActivity.this);
+									Log.v(TAG, "geocoding " + location + " textStr = " + textStr);
+									addresses = geocoder.getFromLocationName(location == null ? textStr : location, 1);
+									if (addresses != null && !addresses.isEmpty()) {
+										Address address = addresses.get(0);
+										if (address.hasLatitude() || address.hasLongitude())
+											tmp_location = new Location("internal");
+										if (address.hasLatitude())
+											tmp_location.setLatitude(address.getLatitude());
+										if (address.hasLongitude())
+											tmp_location.setLongitude(address.getLongitude());
+									}									
+								}
+								Element geoEl = GeolocationFeature.toElement(tmp_location, addresses != null && !addresses.isEmpty() ? addresses.get(0) : null, urlStr, Integer.MAX_VALUE);
+								locality = ParcelableElement.fromElement(geoEl);
+							}
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+							}
+						}.start();	
+					}
+				}
 				
 				message.setText(txt);
 			}
@@ -366,7 +443,11 @@ public class ShareActivity extends Activity {
 					try {
 						// let's ensure that we have open chat
 						jaxmppService.openChat(account.toString(), jid.toString());
-						if (!jaxmppService.sendMessage(account.toString(), jid.toString(), null, body)) {
+						List<ParcelableElement> elems = new ArrayList<ParcelableElement>();
+						if (locality != null) {
+							elems.add(locality);
+						}
+						if (!jaxmppService.sendMessageExt(account.toString(), jid.toString(), null, body, elems)) {
 							// we were not able to send message - should not happen
 							return;
 						}
@@ -382,7 +463,10 @@ public class ShareActivity extends Activity {
 						//values.put(ChatTableMetaData.FIELD_THREAD_ID, null);
 						values.put(ChatTableMetaData.FIELD_ACCOUNT, account.toString());
 						values.put(ChatTableMetaData.FIELD_STATE, ChatTableMetaData.STATE_OUT_SENT);
-
+						if (locality != null) {
+							values.put(ChatTableMetaData.FIELD_ITEM_TYPE, ChatTableMetaData.ITEM_TYPE_LOCALITY);
+							values.put(ChatTableMetaData.FIELD_DATA, locality.getAsString());
+						}
 						contentResolver.insert(uri, values);						
 					}
 					catch(Exception ex) {

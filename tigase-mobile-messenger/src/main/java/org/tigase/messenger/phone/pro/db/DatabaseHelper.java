@@ -12,7 +12,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 	public static final String DATABASE_NAME = "mobile_messenger1.db";
 
-	public static final Integer DATABASE_VERSION = 3;
+	public static final Integer DATABASE_VERSION = 4;
 
 	private static final String TAG = "tigase";
 	
@@ -38,6 +38,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         sql += ChatTableMetaData.FIELD_AUTHOR_NICKNAME + " TEXT, ";
         sql += ChatTableMetaData.FIELD_TIMESTAMP + " DATETIME, ";
         sql += ChatTableMetaData.FIELD_BODY + " TEXT, ";
+        sql += ChatTableMetaData.FIELD_ITEM_TYPE + " INTEGER, ";
+        sql += ChatTableMetaData.FIELD_DATA + " TEXT, ";
         sql += ChatTableMetaData.FIELD_STATE + " INTEGER";
         sql += ");";
         db.execSQL(sql);
@@ -132,6 +134,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 			sql += " ON " + GeolocationTableMetaData.TABLE_NAME + " (";
 			sql += GeolocationTableMetaData.FIELD_JID;
 			sql += ")";
+			db.execSQL(sql);
+		}
+		if (oldVersion < 4) {
+			String sql;
+			sql = "ALTER TABLE " + ChatTableMetaData.TABLE_NAME + " ADD COLUMN " + ChatTableMetaData.FIELD_ITEM_TYPE + " INTEGER DEFAULT 0;";
+			db.execSQL(sql);
+			sql = "UPDATE " + ChatTableMetaData.TABLE_NAME + " SET " + ChatTableMetaData.FIELD_ITEM_TYPE + " = 0";
+			db.execSQL(sql);
+			sql = "ALTER TABLE " + ChatTableMetaData.TABLE_NAME + " ADD COLUMN " + ChatTableMetaData.FIELD_DATA + " TEXT;";
 			db.execSQL(sql);
 		}
 	}

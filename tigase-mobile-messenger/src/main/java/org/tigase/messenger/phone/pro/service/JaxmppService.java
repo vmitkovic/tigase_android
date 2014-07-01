@@ -45,6 +45,7 @@ import tigase.jaxmpp.android.chat.ChatProvider;
 import tigase.jaxmpp.android.muc.AndroidRoomsManager;
 import tigase.jaxmpp.android.roster.AndroidRosterStore;
 import tigase.jaxmpp.android.roster.RosterProvider;
+import tigase.jaxmpp.android.xml.ParcelableElement;
 import tigase.jaxmpp.core.client.AsyncCallback;
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.Base64;
@@ -242,6 +243,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				}
 			} catch (XMLException ex) {				
 			}
+			if (result == null) {
+				result = new CPresence(null, null, CPresence.OFFLINE, null);
+			}
 			return result;
 		}
 
@@ -252,6 +256,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
 				JID jid = JID.jidInstance(jidStr);			
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				if (jaxmpp == null)
+					return false;
 				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);		
 				boolean chatExists = messageModule.getChatManager().isChatOpenFor(jid.getBareJid());
 				if (!chatExists) {
@@ -270,6 +276,12 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		@Override
 		public boolean sendMessage(String accountJidStr, String jidStr, String threadId,
 				String body) throws RemoteException {
+			return sendMessageExt(accountJidStr, jidStr, threadId, body, null);
+		}
+		
+		@Override
+		public boolean sendMessageExt(String accountJidStr, String jidStr, String threadId,
+				String body, List<ParcelableElement> additionalElems) throws RemoteException {
 			try {
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);		
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
@@ -277,7 +289,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				JID jid = JID.jidInstance(jidStr);
 				Chat chat = messageModule.getChatManager().getChat(jid, threadId);
 				if (chat != null) {
-					messageModule.sendMessage(chat, body);
+					messageModule.sendMessage(chat, body, additionalElems);
 					return true;
 				}
 				return false;
@@ -288,7 +300,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			}			
 			return false;
 		}
-		
+
 		public void closeChat(String accountJidStr, String jidStr, String threadId)
 					throws RemoteException {
 			try {
@@ -507,6 +519,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
 				JID jid = JID.jidInstance(jidStr);			
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				if (jaxmpp == null)
+					return "";
 				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);	
 				Chat chat = messageModule.getChatManager().getChat(jid, threadId);
 				if (chat != null) {
@@ -536,6 +550,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
 				JID jid = JID.jidInstance(jidStr);			
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				if (jaxmpp == null)
+					return;
 				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);	
 				Chat chat = messageModule.getChatManager().getChat(jid, threadId);
 				if (chat != null) {
@@ -1765,8 +1781,16 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			values.put(ChatTableMetaData.FIELD_THREAD_ID, chat.getThreadId());
 		}
 		values.put(ChatTableMetaData.FIELD_ACCOUNT, sessionObject.getUserBareJid().toString());
+		
+		int type = ChatTableMetaData.ITEM_TYPE_MESSAGE;
+		Element geoloc = msg.getChildrenNS("geoloc", "http://jabber.org/protocol/geoloc");
+		if (geoloc != null) {
+			values.put(ChatTableMetaData.FIELD_DATA, geoloc.getAsString());
+			type = ChatTableMetaData.ITEM_TYPE_LOCALITY;
+		}
+		values.put(ChatTableMetaData.FIELD_ITEM_TYPE, type);
 		values.put(ChatTableMetaData.FIELD_STATE, sessionObject.getUserBareJid().equals(authorJid) 
-				? ChatTableMetaData.STATE_OUT_SENT : ChatTableMetaData.STATE_INCOMING_UNREAD);			
+				? ChatTableMetaData.STATE_OUT_SENT : ChatTableMetaData.STATE_INCOMING_UNREAD);	
 		
 		SQLiteDatabase db = dbHelper.getWritableDatabase();
 		long id = db.insert(ChatTableMetaData.TABLE_NAME, null, values);

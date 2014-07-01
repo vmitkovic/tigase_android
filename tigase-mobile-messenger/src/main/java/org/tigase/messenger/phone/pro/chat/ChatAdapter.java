@@ -17,43 +17,78 @@
  */
 package org.tigase.messenger.phone.pro.chat;
 
+import java.util.Map;
+
+import org.tigase.messenger.phone.pro.MessengerApplication;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.ChatTableMetaData;
 //import org.tigase.messenger.phone.pro.utils.AvatarHelper;
+
+import org.tigase.messenger.phone.pro.db.providers.ChatHistoryProvider;
+import org.tigase.messenger.phone.pro.service.GeolocationFeature;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapView;
+import com.google.android.gms.maps.MapsInitializer;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+
 import tigase.jaxmpp.core.client.BareJID;
+import tigase.jaxmpp.core.client.JaxmppCore;
+import tigase.jaxmpp.core.client.xml.XMLException;
 import tigase.jaxmpp.core.client.xmpp.utils.EscapeUtils;
+import tigase.jaxmpp.j2se.connectors.socket.StreamListener;
+import tigase.jaxmpp.j2se.connectors.socket.XMPPDomBuilderHandler;
+import tigase.jaxmpp.j2se.xml.J2seElement;
+import tigase.xml.Element;
+import tigase.xml.SimpleParser;
+import tigase.xml.SingletonFactory;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.location.Address;
+import android.net.Uri;
 import android.preference.PreferenceManager;
 import android.support.v4.widget.CursorAdapter;
 import android.support.v4.widget.SimpleCursorAdapter;
 import android.text.Html;
 import android.text.Spanned;
 import android.text.format.DateUtils;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 public class ChatAdapter extends SimpleCursorAdapter {
 
+	private static final String TAG = "ChatAdapter";
+	
 	static class ViewHolder {
 		ImageView avatar;
 		ImageView msgStatus;
 		TextView nickname;
 		TextView timestamp;
 		TextView webview;
+		ImageButton actionButton;
 	}
 
-	private final static String[] cols = new String[] { ChatTableMetaData.FIELD_TIMESTAMP, ChatTableMetaData.FIELD_BODY,
+	private final static String[] cols = new String[] { ChatTableMetaData.FIELD_ID, 
+			ChatTableMetaData.FIELD_TIMESTAMP, ChatTableMetaData.FIELD_BODY,
 			ChatTableMetaData.FIELD_STATE, ChatTableMetaData.FIELD_JID /*
 																		 * ,
 																		 * VCardsCacheTableMetaData
 																		 * .
 																		 * FIELD_DATA
-																		 */};
+																		 */
+			, ChatTableMetaData.FIELD_ITEM_TYPE, ChatTableMetaData.FIELD_DATA};
 
 	private final static int[] names = new int[] { R.id.chat_item_body };
 
@@ -76,6 +111,37 @@ public class ChatAdapter extends SimpleCursorAdapter {
 		String tmp = null;// prefs.getString(Preferences.NICKNAME_KEY, null);
 		nickname = tmp == null || tmp.length() == 0 ? null : tmp;
 	}
+	
+	//---------------------------------
+	@Override
+	public int getViewTypeCount() {
+		return 2;
+	}
+	
+	@Override
+	public View getView(int position, View convertView, ViewGroup parent) {
+		Cursor c = getCursor();
+		c.moveToPosition(position);
+		int viewId = (convertView == null) ? -1 : convertView.getId();
+		int type = c.getInt(c.getColumnIndex(ChatTableMetaData.FIELD_ITEM_TYPE));
+		if (type != viewId) {
+			LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			switch (type) {
+			case ChatTableMetaData.ITEM_TYPE_LOCALITY:
+				convertView = inflater.inflate(R.layout.chat_item_map, parent, false);
+				convertView.setId(type);
+				break;
+			default:
+			case ChatTableMetaData.ITEM_TYPE_MESSAGE:
+				convertView = inflater.inflate(R.layout.chat_item_his, parent, false);
+				convertView.setId(type);
+				break;
+			}
+		}
+		bindView(convertView, this.mContext, mCursor);
+		return convertView;
+	}
+	//---------------------------------
 
 	@Override
 	public void bindView(View view, Context context, Cursor cursor) {
@@ -85,11 +151,13 @@ public class ChatAdapter extends SimpleCursorAdapter {
 			view.setTag(holder);
 			holder.nickname = (TextView) view.findViewById(R.id.chat_item_nickname);
 			holder.webview = (TextView) view.findViewById(R.id.chat_item_body);
+			holder.actionButton = (ImageButton) view.findViewById(R.id.actionButton);
 			holder.timestamp = (TextView) view.findViewById(R.id.chat_item_timestamp);
 			holder.avatar = (ImageView) view.findViewById(R.id.user_avatar);
 			holder.msgStatus = (ImageView) view.findViewById(R.id.msgStatus);
 		}
 
+		final int id = cursor.getInt(cursor.getColumnIndex(ChatTableMetaData.FIELD_ID));
 		final int state = cursor.getInt(cursor.getColumnIndex(ChatTableMetaData.FIELD_STATE));
 
 		if (state == ChatTableMetaData.STATE_INCOMING || state == ChatTableMetaData.STATE_INCOMING_UNREAD) {
@@ -133,12 +201,70 @@ public class ChatAdapter extends SimpleCursorAdapter {
 		}
 
 		// java.text.DateFormat df = DateFormat.getTimeFormat(context);
-		final String txt = EscapeUtils.escape(cursor.getString(cursor.getColumnIndex(ChatTableMetaData.FIELD_BODY)));
+		String txt = EscapeUtils.escape(cursor.getString(cursor.getColumnIndex(ChatTableMetaData.FIELD_BODY)));
 
-		Spanned sp = Html.fromHtml(txt.replace("\n", "<br/>"));
-		holder.webview.setText(sp);
 		// webview.setMinimumHeight(webview.getMeasuredHeight());
 
+		if (holder.actionButton != null) {
+			holder.actionButton.setClickable(true);
+			holder.actionButton.setFocusable(false);
+			holder.actionButton.setFocusableInTouchMode(false);
+			holder.actionButton.setImageResource(android.R.drawable.ic_menu_mapmode);
+			holder.actionButton.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					Cursor c = mContext.getContentResolver().query(Uri.parse(ChatHistoryProvider.CHAT_URI + "/whatever/" + id),
+							null, null, null, null);
+					Log.v(TAG, "map action button clicked");
+					try {
+						c.moveToNext();
+					String dataStr = c.getString(c.getColumnIndex(ChatTableMetaData.FIELD_DATA));
+					Log.v(TAG, "loaded data = " + dataStr);
+					XMPPDomBuilderHandler handler = new XMPPDomBuilderHandler(new StreamListener() {
+						@Override
+						public void nextElement(Element element) {
+							try {
+								Log.v(TAG, "parsed, now decoding address..");
+								Address address = GeolocationFeature.fromElement(new J2seElement(element));
+								double lat = address.getLatitude();
+								double lng = address.getLongitude();
+								String uriString = address.getUrl() == null ? ("geo:"+lat+","+lng+"?z=14") : address.getUrl();
+								Log.v(TAG, "calling intent for " + uriString);
+								Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uriString));
+								if (intent.resolveActivity(ChatAdapter.this.mContext.getPackageManager()) != null) {
+									ChatAdapter.this.mContext.startActivity(intent);
+								} else {
+									intent.setData(Uri.parse("http://maps.google.com/maps?q="+lat+","+lng+"&z=14"));
+									ChatAdapter.this.mContext.startActivity(intent);
+								}
+								
+							} catch (Exception ex) {
+								ex.printStackTrace();
+							}
+						}
+
+						@Override
+						public void xmppStreamClosed() {
+						}
+
+						@Override
+						public void xmppStreamOpened(Map<String, String> attribs) {
+						}
+						
+					});
+					SimpleParser parser = SingletonFactory.getParserInstance();
+					char[] data = dataStr.toCharArray();
+					Log.v(TAG, "parsing..");
+					parser.parse(handler, data, 0, data.length);					
+					} catch (Exception ex) {
+						ex.printStackTrace();
+					}
+				}			
+			});
+		}
+		
+		Spanned sp = Html.fromHtml(txt.replace("\n", "<br/>"));
+		holder.webview.setText(sp);
 		// Date t = new
 		// Date(cursor.getLong(cursor.getColumnIndex(ChatTableMetaData.FIELD_TIMESTAMP)));
 		// holder.timestamp.setText(df.format(t));

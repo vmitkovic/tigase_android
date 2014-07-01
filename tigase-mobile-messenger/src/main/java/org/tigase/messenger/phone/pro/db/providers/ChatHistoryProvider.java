@@ -40,6 +40,8 @@ public class ChatHistoryProvider extends ContentProvider {
 			put(ChatTableMetaData.FIELD_AUTHOR_JID, ChatTableMetaData.TABLE_NAME + "." + ChatTableMetaData.FIELD_AUTHOR_JID);
 			put(ChatTableMetaData.FIELD_AUTHOR_NICKNAME, ChatTableMetaData.TABLE_NAME + "."
 					+ ChatTableMetaData.FIELD_AUTHOR_NICKNAME);
+			put(ChatTableMetaData.FIELD_ITEM_TYPE, ChatTableMetaData.TABLE_NAME + "." + ChatTableMetaData.FIELD_ITEM_TYPE);
+			put(ChatTableMetaData.FIELD_DATA, ChatTableMetaData.TABLE_NAME + "." + ChatTableMetaData.FIELD_DATA);
 		}
 	};
 

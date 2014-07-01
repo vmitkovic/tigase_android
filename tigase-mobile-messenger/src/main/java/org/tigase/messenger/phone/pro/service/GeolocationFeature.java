@@ -19,6 +19,7 @@ package org.tigase.messenger.phone.pro.service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 
 import org.tigase.messenger.phone.pro.db.DatabaseHelper;
 import org.tigase.messenger.phone.pro.pubsub.GeolocationModule;
@@ -181,9 +182,23 @@ public class GeolocationFeature {
 		pubsub.addChild(publish);
 		Element item = ElementFactory.create("item");
 		publish.addChild(item);
+		
+		Element geoloc = toElement(location, addresses.isEmpty() ? null : addresses.get(0), null, precision);
+		if (geoloc == null)
+			return;
+		item.addChild(geoloc);
+
+		Log.v(TAG, "publishing = " + iq.getAsString());
+		jaxmpp.send(iq);
+	}
+	
+	public static Element toElement(Location location, Address address, String url, int precision) throws JaxmppException {
+		if (location == null && address == null)
+			return null;
+
 		Element geoloc = ElementFactory.create("geoloc");
 		geoloc.setXMLNS("http://jabber.org/protocol/geoloc");
-		item.addChild(geoloc);
+		
 		if (location != null) {
 			if (precision > 2) {
 				Element lat = ElementFactory.create("lat");
@@ -196,14 +211,19 @@ public class GeolocationFeature {
 				alt.setValue(String.valueOf(location.getAltitude()));
 				geoloc.addChild(alt);
 			}
-
-			if (addresses != null && !addresses.isEmpty()) {
-				Address address = addresses.get(0);
+		}
+			if (address != null) {
+				
 				// precision == 0
 				if (address.getCountryName() != null) {
 					Element country = ElementFactory.create("country");
 					country.setValue(address.getCountryName());
 					geoloc.addChild(country);
+				}
+				if (address.getCountryCode() != null) {
+					Element countrycode = ElementFactory.create("countrycode");
+					countrycode.setValue(address.getCountryCode());
+					geoloc.addChild(countrycode);
 				}
 				// precision == 1
 				if (precision >= 1) {
@@ -221,25 +241,63 @@ public class GeolocationFeature {
 				}
 				// precision == 2
 				if (precision >= 2) {
+					if (address.getSubAdminArea() != null) {
+						Element region = ElementFactory.create("region");
+						region.setValue(address.getSubAdminArea());
+						geoloc.addChild(region);
+					}
+					Element street = null;
 					if (address.getThoroughfare() != null) {
-						Element street = ElementFactory.create("street");
+						street = ElementFactory.create("street");
 						street.setValue(address.getThoroughfare());
 						geoloc.addChild(street);
+					}
+					if (url != null) {
+						Element urlEl= ElementFactory.create("url");
+						urlEl.setValue(url);
+						geoloc.addChild(urlEl);
 					}
 				}
 			} else if (precision < 3) {
 				// nothing to send - exiting
 				Log.v(TAG, "precision " + precision + "< 3 - exiting 1");
-				return;
+				return null;
 			}
-		} else if (precision < 3) {
-			// nothing to send - exiting
-			Log.v(TAG, "precision " + precision + " < 3 - exiting 2");
-			return;
+		
+		return geoloc;
+	}
+	
+	public static Address fromElement(Element geoloc) throws JaxmppException {
+		if (geoloc == null || !"http://jabber.org/protocol/geoloc".equals(geoloc.getXMLNS()))
+			return null;
+		
+		Address address = new Address(Locale.getDefault());
+		for (Element child : geoloc.getChildren()) {
+			String name = child.getName();
+			if ("lon".equals(name)) {
+				address.setLongitude(Double.parseDouble(child.getValue()));
+			} else if ("lat".equals(name)) {
+				address.setLatitude(Double.parseDouble(child.getValue()));
+			} else if ("alt".equals(name)) {
+				//address.set
+			} else if ("street".equals(name)) {
+				address.setThoroughfare(child.getValue());
+			} else if ("locality".equals(name)) {
+				address.setLocality(child.getValue());
+			} else if ("postalcode".equals(name)) {
+				address.setPostalCode(child.getValue());
+			} else if ("region".equals(name)) {
+				address.setSubAdminArea(child.getValue());
+			} else if ("country".equals(name)) {
+				address.setCountryName(child.getValue());
+			} else if ("countrycode".equals(name)) {
+				address.setCountryCode(child.getValue());
+			} else if ("url".equals(name)) {
+				address.setUrl(child.getValue());
+			}
 		}
-
-		Log.v(TAG, "publishing = " + iq.getAsString());
-		jaxmpp.send(iq);
+		
+		return address;
 	}
 
 	private final JaxmppService jaxmppService;
