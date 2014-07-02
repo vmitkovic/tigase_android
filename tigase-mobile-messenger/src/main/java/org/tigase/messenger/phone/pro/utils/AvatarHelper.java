@@ -44,9 +44,9 @@ import android.widget.ImageView;
 
 //import tigase.jaxmpp.R;
 
-public class AvatarHelper {
+public class AvatarHelper extends ImageHelper {
 
-	private static LruCache<BareJID, Bitmap> avatarCache;
+	//private static LruCache<BareJID, Bitmap> avatarCache;
 
 	private static Context context;
 	private static int defaultAvatarSize = 50;
@@ -97,7 +97,7 @@ public class AvatarHelper {
 	}
 
 	public static void clearAvatar(BareJID jid) {
-		avatarCache.remove(jid);
+		memCache.remove(jid.toString());
 	}
 
 	public static Bitmap getAvatar(BareJID jid) {
@@ -105,7 +105,7 @@ public class AvatarHelper {
 	}
 	
 	public static Bitmap getAvatar(Context context, BareJID jid, boolean noCache) {
-		Bitmap bmp = noCache ? null : avatarCache.get(jid);
+		Bitmap bmp = noCache ? null : memCache.get(jid.toString());
 		if (bmp == null) {
 			bmp = loadAvatar(context, jid, noCache);
 		}
@@ -124,7 +124,7 @@ public class AvatarHelper {
 	}
 
 	public static void initilize(Context context_) {
-		if (avatarCache == null) {
+		if (mPlaceHolderBitmap == null) {
 			context = context_;
 
 			density = context.getResources().getDisplayMetrics().density;
@@ -132,35 +132,36 @@ public class AvatarHelper {
 			int defaultAvatarSizeForChat = context.getResources().getDimensionPixelSize(R.dimen.chat_item_layout_item_avatar_size);
 			defaultAvatarSize = Math.max(defaultAvatarSizeRoster, defaultAvatarSizeForChat);
 
-			// Get memory class of this device, exceeding this amount will throw
-			// an
-			// OutOfMemory exception.
-			final int memClass = ((android.app.ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass();
-
-			// Use 1/8th of the available memory for this memory cache.
-			final int cacheSize = 1024 * 1024 * memClass / 8;
-
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
-				avatarCache = new LruCache<BareJID, Bitmap>(cacheSize) {
-					@TargetApi(12)
-					@Override
-					protected int sizeOf(BareJID key, Bitmap bitmap) {
-						// The cache size will be measured in bytes rather than
-						// number of items. Ignoring placeholder bitmap as well.
-						return bitmap == mPlaceHolderBitmap ? 0 : bitmap.getByteCount();
-					}
-				};
-			} else {
-				// below SDK 12 there is no getByteCount method
-				avatarCache = new LruCache<BareJID, Bitmap>(cacheSize) {
-					@Override
-					protected int sizeOf(BareJID key, Bitmap bitmap) {
-						// The cache size will be measured in bytes rather than
-						// number of items. Ignoring placeholder bitmap as well.
-						return bitmap == mPlaceHolderBitmap ? 0 : (bitmap.getRowBytes() * bitmap.getHeight());
-					}
-				};
-			}
+			ImageHelper.initialize(context_);
+//			// Get memory class of this device, exceeding this amount will throw
+//			// an
+//			// OutOfMemory exception.
+//			final int memClass = ((android.app.ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass();
+//
+//			// Use 1/8th of the available memory for this memory cache.
+//			final int cacheSize = 1024 * 1024 * memClass / 8;
+//
+//			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
+//				avatarCache = new LruCache<BareJID, Bitmap>(cacheSize) {
+//					@TargetApi(12)
+//					@Override
+//					protected int sizeOf(BareJID key, Bitmap bitmap) {
+//						// The cache size will be measured in bytes rather than
+//						// number of items. Ignoring placeholder bitmap as well.
+//						return bitmap == mPlaceHolderBitmap ? 0 : bitmap.getByteCount();
+//					}
+//				};
+//			} else {
+//				// below SDK 12 there is no getByteCount method
+//				avatarCache = new LruCache<BareJID, Bitmap>(cacheSize) {
+//					@Override
+//					protected int sizeOf(BareJID key, Bitmap bitmap) {
+//						// The cache size will be measured in bytes rather than
+//						// number of items. Ignoring placeholder bitmap as well.
+//						return bitmap == mPlaceHolderBitmap ? 0 : (bitmap.getRowBytes() * bitmap.getHeight());
+//					}
+//				};
+//			}
 
 			BitmapFactory.Options options = new BitmapFactory.Options();
 			options.inJustDecodeBounds = true;
@@ -169,6 +170,7 @@ public class AvatarHelper {
 			options.inSampleSize = calculateSize(options, defaultAvatarSize, defaultAvatarSize);
 			options.inJustDecodeBounds = false;
 			mPlaceHolderBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.user_avatar, options);
+			ImageHelper.addPlaceHolder(mPlaceHolderBitmap);
 		}
 	}
 
@@ -176,9 +178,9 @@ public class AvatarHelper {
 		Bitmap bmp = loadAvatar(context, jid, defaultAvatarSize);
 		if (!noCache) {
 			if (bmp == null) {
-				avatarCache.put(jid, mPlaceHolderBitmap);
+				memCache.put(jid.toString(), mPlaceHolderBitmap);
 			} else {
-				avatarCache.put(jid, bmp);
+				memCache.put(jid.toString(), bmp);
 			}
 		}
 		return bmp;
@@ -243,7 +245,7 @@ public class AvatarHelper {
 	}
 
 	public static void setAvatarToImageView(BareJID jid, ImageView imageView) {
-		Bitmap bmp = avatarCache.get(jid);
+		Bitmap bmp = memCache.get(jid.toString());
 		if (bmp != null) {
 			imageView.setImageBitmap(bmp);
 			return;
@@ -276,21 +278,4 @@ public class AvatarHelper {
 		}
 	}
 
-	@SuppressLint("NewApi")
-	public static void onTrimMemory(int level) {
-		int count = 0;
-		if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
-			count = 10;
-			if (level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
-				count = 0;
-			}
-		}
-		else 
-			return;
-		
-		int trimSize = count * mPlaceHolderBitmap.getByteCount();
-		Log.v(TAG, "trim avatar cache from " + avatarCache.size() + " to " + trimSize + " to reduce memory usage, max size " + avatarCache.maxSize());
-		avatarCache.trimToSize(trimSize);
-	}
-	
 }

@@ -31,6 +31,7 @@ import org.tigase.messenger.phone.pro.db.ChatTableMetaData;
 import org.tigase.messenger.phone.pro.db.providers.ChatHistoryProvider;
 import org.tigase.messenger.phone.pro.service.GeolocationFeature;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
+import org.tigase.messenger.phone.pro.utils.ImageHelper;
 
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -103,6 +104,11 @@ public class ChatAdapter extends SimpleCursorAdapter {
 		@Override
 		protected Bitmap doInBackground(String... params) {
 			String uri = params[0];
+			final String key = ImageHelper.hashKey(uri);
+			Bitmap bmp = ImageHelper.get("maps", key);
+			if (bmp != null)
+				return bmp;
+			
 			InputStream is;
 			try {
 				URL url = new URL(uri);
@@ -114,6 +120,9 @@ public class ChatAdapter extends SimpleCursorAdapter {
 				} else {
 					is = connection.getInputStream();
 					final Bitmap bitmap = BitmapFactory.decodeStream(is);
+					if (bitmap != null) {
+						ImageHelper.put("maps", key, bitmap);
+					}
 					return bitmap;
 				}
 			} catch (Exception ex) {
@@ -326,12 +335,11 @@ public class ChatAdapter extends SimpleCursorAdapter {
 						Address address = GeolocationFeature.fromElement(element);
 						map.setVisibility((address.hasLatitude() && address.hasLongitude()) ? View.VISIBLE : View.GONE);
 						if (address.hasLatitude() && address.hasLongitude()) {
-							// add image caching!! very important!!
-							int width = map.getWidth();
-							if (width == 0) {
-								width = mContext.getResources().getDisplayMetrics().widthPixels;
-							}
-							int height = (int) (300 * mContext.getResources().getDisplayMetrics().density);//(int)(width / 2);
+							//int width = map.getWidth();
+							//if (width == 0) {
+							int width = mContext.getResources().getDisplayMetrics().widthPixels;
+							//}
+							int height = (int) (250 * mContext.getResources().getDisplayMetrics().density);//(int)(width / 2);
 							String position = "" + address.getLatitude() + "," + address.getLongitude();
 							String uri = "http://maps.googleapis.com/maps/api/staticmap?center=" 
 									+ position + "&zoom=16&size="+width+"x"+height + "&markers="+position;

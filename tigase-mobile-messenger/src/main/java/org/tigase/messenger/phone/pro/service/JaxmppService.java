@@ -37,6 +37,7 @@ import org.tigase.messenger.phone.pro.share.FileTransferUtility;
 import org.tigase.messenger.phone.pro.sync.SyncAdapter;
 import org.tigase.messenger.phone.pro.ui.NotificationHelper;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
+import org.tigase.messenger.phone.pro.utils.ImageHelper;
 
 import tigase.jaxmpp.android.Jaxmpp;
 import tigase.jaxmpp.android.caps.CapabilitiesDBCache;
@@ -1291,6 +1292,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			setReconnect(false);
 			disconnectAllJaxmpp(false);
 		}
+	}
+	
+	@Override
+	public void onTrimMemory(int level) {
+		ImageHelper.onTrimMemory(level);
 	}
 	
     protected final State getState(SessionObject object) {

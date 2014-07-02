@@ -2,6 +2,7 @@ package org.tigase.messenger.phone.pro;
 
 import org.tigase.messenger.phone.pro.service.JaxmppService;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
+import org.tigase.messenger.phone.pro.utils.ImageHelper;
 
 import android.app.Application;
 import android.app.NotificationManager;
@@ -25,5 +26,9 @@ public class MessengerApplication extends Application {
 		startServiceIntent.setAction("connect-all");
         startService(startServiceIntent); 
     }
-	
+
+	@Override
+	public void onTrimMemory(int level) {
+		ImageHelper.onTrimMemory(level);
+	}	
 }
