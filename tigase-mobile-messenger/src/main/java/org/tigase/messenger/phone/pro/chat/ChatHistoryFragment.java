@@ -17,6 +17,7 @@
  */
 package org.tigase.messenger.phone.pro.chat;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -38,12 +39,20 @@ import org.tigase.messenger.phone.pro.roster.CPresence;
 
 import org.tigase.messenger.phone.pro.roster.ContactFragment;
 import org.tigase.messenger.phone.pro.roster.RosterAdapterHelper;
+import org.tigase.messenger.phone.pro.service.GeolocationFeature;
 import org.tigase.messenger.phone.pro.service.JaxmppService;
+import org.tigase.messenger.phone.pro.utils.GeolocationProvider;
+import org.tigase.messenger.phone.pro.utils.GeolocationProviderBasic;
+
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
 
 import tigase.jaxmpp.android.chat.OpenChatTableMetaData;
+import tigase.jaxmpp.android.xml.ParcelableElement;
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.JID;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.xep0085.ChatState;
+import tigase.jaxmpp.core.client.xmpp.utils.MutableBoolean;
 import tigase.jaxmpp.j2se.Jaxmpp;
 import android.app.Activity;
 import android.app.Dialog;
@@ -53,7 +62,11 @@ import android.content.Intent;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.database.DataSetObserver;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.RemoteException;
@@ -458,6 +471,8 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 			 pickerIntent.setType("video/*");
 			 pickerIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
 			 startActivityForResult(pickerIntent, MainActivity.SELECT_FOR_SHARE);
+		} else if (item.getItemId() == R.id.shareLocationButton) {
+			sendGeolocation();
 		} else if (item.getItemId() == R.id.showContact) {
 			// Intent intent = new Intent(getActivity(), ContactActivity.class);
 			// intent.putExtra("jid", chat.getJid().getBareJid().toString());
@@ -775,6 +790,118 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 		return view;
 	}
 
+	private void sendGeolocation() {
+		Toast.makeText(getActivity(), "Acquiring location..", 1).show();
+		new AsyncTask<Object,String,String>() {		
+			protected String doInBackground(Object... objects) {
+				try {
+					final GeolocationProvider geoProvider = GeolocationProvider.createInstance(getActivity());
+					final MutableBoolean called = new MutableBoolean();
+					final LocationListener geoListener = new LocationListener() {
+						@Override
+						public void onLocationChanged(Location location) {
+							if (called.isValue())
+								return;
+							called.setValue(true);
+							Log.v(TAG, "location 1 = " + location);
+							geoProvider.unregisterLocationListener(this);
+							geoProvider.onStop();
+							if (location == null) {
+								publishProgress("Unable to acquire location");
+								return;
+							}
+							publishProgress("Location acquired");
+							sendGeolocation(location);
+						}
+					};
+					// Log.v(TAG, "currLocation = " + currLocation);
+					LocationRequest request = LocationRequest
+							.create()
+							.setNumUpdates(1)
+							.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+							.setFastestInterval(1).setInterval(1)
+							.setSmallestDisplacement(1)
+							.setExpirationDuration(10 * 1000);
+					geoProvider.registerLocationListener(request, geoListener);
+					geoProvider.onStart();					
+					Thread.sleep(10 * 1000);
+					if (!called.isValue()) {
+						geoProvider.getCurrentLocation(geoListener);
+					}
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
+				return null;
+			}
+			
+		    protected void onProgressUpdate(String... progress) {
+		    	Toast.makeText(getActivity(), progress[0], 1).show();
+		    }
+
+		    protected void onPostExecute(String result) {
+		        //showDialog("Downloaded " + result + " bytes");
+		    }			
+		}.execute(new Object());		
+	}
+	
+	private void sendGeolocation(Location location) {
+		Geocoder geocoder = new Geocoder(getActivity());
+		try {
+			Log.v(TAG, "resolving location " + location + " to address..");
+			List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+			if (addresses == null || addresses.isEmpty()) {
+				Log.v(TAG, "no address found for location = " + location);
+				return;
+			}
+			Address address = addresses.get(0);
+			Log.v(TAG, "resolved to address = " + address);
+			ParcelableElement geoEl = ParcelableElement.fromElement(
+				GeolocationFeature.toElement(location, address, null, Integer.MAX_VALUE));
+			Log.v(TAG, "prepared geolocation addon " + geoEl.getAsString());
+			IJaxmppService jaxmppService = ((MainActivity) getActivity()).getJaxmppService();
+			List<ParcelableElement> elems = new ArrayList<ParcelableElement>();
+			if (geoEl != null) {
+				elems.add(geoEl);
+			}
+			String message = "";
+			if (address.getFeatureName() != null) {
+				message += address.getFeatureName();
+			}
+			if (address.getMaxAddressLineIndex() > -1) {
+				for (int i=0; i<address.getMaxAddressLineIndex(); i++) {
+					if (message.length() > 0) {
+						message += "\n";
+					}
+					message += address.getAddressLine(i);
+				}
+			}
+			if (address.getUrl() != null) {
+				if(message.length() > 0) {
+					message += "\n";
+				}
+				message += address.getUrl();
+			}
+			jaxmppService.sendMessageExt(account.toString(), recipient.toString(), threadId, message, elems);
+
+			Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/" 
+					+ recipient.getBareJid().toString());
+			ContentValues values = new ContentValues();
+			values.put(ChatTableMetaData.FIELD_AUTHOR_JID, account.toString());
+			values.put(ChatTableMetaData.FIELD_JID, recipient.getBareJid().toString());
+			values.put(ChatTableMetaData.FIELD_TIMESTAMP, new Date().getTime());
+			values.put(ChatTableMetaData.FIELD_BODY, message);
+			values.put(ChatTableMetaData.FIELD_THREAD_ID, threadId);
+			values.put(ChatTableMetaData.FIELD_ACCOUNT, account.toString());
+			values.put(ChatTableMetaData.FIELD_STATE, ChatTableMetaData.STATE_OUT_SENT);
+			values.put(ChatTableMetaData.FIELD_ITEM_TYPE, ChatTableMetaData.ITEM_TYPE_LOCALITY);
+			values.put(ChatTableMetaData.FIELD_DATA, geoEl.getAsString());
+			getActivity().getContentResolver().insert(uri, values);				
+		}
+		catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
 	private void setLocalChatState(final ChatState state) {
 		new Thread() {
 			public void run() {

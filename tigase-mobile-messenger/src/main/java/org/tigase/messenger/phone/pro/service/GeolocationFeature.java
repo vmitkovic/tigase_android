@@ -58,13 +58,17 @@ public class GeolocationFeature {
 
 	public static final String GEOLOCATION_PUBLISH_PRECISION = "geolocation#publish_precision";
 
-	private void sendCurrentLocation(JaxmppCore jaxmpp, Context context) {
-		Location location = locationProvider.getCurrentLocation();
-		try {
-			GeolocationFeature.updateLocation(jaxmpp, location, context);
-		} catch (JaxmppException e) {
-			e.printStackTrace();
-		}
+	private void sendCurrentLocation(final JaxmppCore jaxmpp, final Context context) {
+		locationProvider.getCurrentLocation(new LocationListener() {
+			@Override
+			public void onLocationChanged(Location location) {
+				try {
+					GeolocationFeature.updateLocation(jaxmpp, location, context);
+				} catch (JaxmppException e) {
+					e.printStackTrace();
+				}
+			}		
+		});
 	}
 
 	/**
@@ -412,17 +416,17 @@ public class GeolocationFeature {
 		}.start();
 	}
 	
-	public void sendCurrentLocation() {
-		Location location = locationProvider.getCurrentLocation();
-		for (JaxmppCore jaxmpp : jaxmppService.getMulti().get()) {
-			try {
-				updateLocation(jaxmpp, location, jaxmppService);
-			} catch (JaxmppException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
+//	public void sendCurrentLocation() {
+//		Location location = locationProvider.getCurrentLocation();
+//		for (JaxmppCore jaxmpp : jaxmppService.getMulti().get()) {
+//			try {
+//				updateLocation(jaxmpp, location, jaxmppService);
+//			} catch (JaxmppException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//		}
+//	}
 
 	private void unregisterLocationListener() {
 		if (locationListener == null)

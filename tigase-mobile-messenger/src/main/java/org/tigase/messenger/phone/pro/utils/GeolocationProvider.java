@@ -66,5 +66,5 @@ public abstract class GeolocationProvider {
 
 	public abstract void unregisterLocationListener(LocationListener listener);
 
-	public abstract Location getCurrentLocation();
+	public abstract void getCurrentLocation(LocationListener listener);
 }

@@ -35,7 +35,7 @@ public class GeolocationProviderBasic extends GeolocationProvider {
 	private Context context;
 	private Map<LocationListener,android.location.LocationListener> listenersMap = new HashMap<LocationListener,android.location.LocationListener>();
 	
-	protected GeolocationProviderBasic(Context context) {
+	public GeolocationProviderBasic(Context context) {
 		this.context = context;
 	}
 	
@@ -68,7 +68,13 @@ public class GeolocationProviderBasic extends GeolocationProvider {
 		listenersMap.put(listener, locationListener);
 		
 		LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-		locationManager.requestLocationUpdates(request.getInterval(), request.getSmallestDisplacement(), new Criteria(), locationListener, null);
+		Criteria criteria = new Criteria();
+		if (request.getNumUpdates() == 1) {
+			criteria.setAccuracy(Criteria.ACCURACY_FINE);
+			locationManager.requestSingleUpdate(criteria, locationListener, null);
+		} else {
+			locationManager.requestLocationUpdates(request.getInterval(), request.getSmallestDisplacement(), criteria, locationListener, null);
+		}
 	}
 
 	@Override
@@ -82,9 +88,10 @@ public class GeolocationProviderBasic extends GeolocationProvider {
 	}
 
 	@Override
-	public Location getCurrentLocation() {
+	public void getCurrentLocation(LocationListener listener) {
 		LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-		return locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+		Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+		listener.onLocationChanged(location);
 	}
 
 	@Override

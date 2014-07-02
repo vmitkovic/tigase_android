@@ -23,6 +23,11 @@
         		android:icon="@android:drawable/ic_menu_slideshow"
         		android:title="@string/shareVideoButton">
     		</item>
+    		<item
+    		    android:id="@+id/shareLocationButton"
+    		    android:icon="@android:drawable/ic_menu_mylocation" 
+    		    android:title="@string/shareLocationButton"> 
+    		</item>
     	</menu>
     </item> 
     <item

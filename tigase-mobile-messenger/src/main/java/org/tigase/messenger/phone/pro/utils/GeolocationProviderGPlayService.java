@@ -40,6 +40,7 @@ public class GeolocationProviderGPlayService extends GeolocationProvider
 	private Context context;
 	private Map<LocationListener,LocationRequest> listeners = new HashMap<LocationListener,LocationRequest>();
 	private LocationClient locationClient;
+	private LocationListener currentLocationListener;
 	
 	protected GeolocationProviderGPlayService(Context context) {
 		this.context = context;
@@ -50,7 +51,7 @@ public class GeolocationProviderGPlayService extends GeolocationProvider
 			LocationListener listener) {
 		Log.v(TAG, "adding location listener = " + listener);
 		listeners.put(listener, request);
-		if (locationClient.isConnected()) {
+		if (locationClient != null && locationClient.isConnected()) {
 			Log.v(TAG, "registering location listener = " + listener);
 			locationClient.requestLocationUpdates(request, listener);
 		}
@@ -67,8 +68,13 @@ public class GeolocationProviderGPlayService extends GeolocationProvider
 	}
 
 	@Override
-	public Location getCurrentLocation() {	
-		return locationClient.getLastLocation();
+	public void getCurrentLocation(LocationListener listener) {	
+		if (locationClient.isConnected()) {
+			Location location = locationClient.getLastLocation();
+			listener.onLocationChanged(location);
+		} else {
+			currentLocationListener = listener;
+		}
 	}
 
 
@@ -103,6 +109,11 @@ public class GeolocationProviderGPlayService extends GeolocationProvider
 		for (Map.Entry<LocationListener,LocationRequest> e : listeners.entrySet()) {
 			Log.v(TAG, "registering location listener = " + e.getKey());
 			locationClient.requestLocationUpdates(e.getValue(), e.getKey());
+		}
+		if (currentLocationListener != null) {
+			Location location = locationClient.getLastLocation();
+			currentLocationListener.onLocationChanged(location);
+			currentLocationListener = null;
 		}
 	}
 
