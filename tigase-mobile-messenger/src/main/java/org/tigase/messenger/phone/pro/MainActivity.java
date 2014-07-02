@@ -395,7 +395,8 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
         }
         drawerMenuItems.add(accountsDrawerItem);
         
-        showMainWindowTabs = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(Preferences.MAIN_WINDOW_TABS, true);
+        this.prefs = Preferences.getDefaultSharedPreferences(this);
+        showMainWindowTabs = prefs.getBoolean(Preferences.MAIN_WINDOW_TABS, true);
         if (!showMainWindowTabs) {
         	drawerMenuItems.add(new DrawerMenuItem(R.id.rosterList, R.string.contacts, R.drawable.ic_menu_allfriends));
         }
@@ -475,7 +476,7 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 			
 		};
 		this.registerReceiver(mucRoomJoinedReceiver, filter);
-		this.prefs = Preferences.getDefaultSharedPreferences(this);
+		
 		this.prefsChanged = new SharedPreferences.OnSharedPreferenceChangeListener() {
 			@Override
 			public void onSharedPreferenceChanged(
