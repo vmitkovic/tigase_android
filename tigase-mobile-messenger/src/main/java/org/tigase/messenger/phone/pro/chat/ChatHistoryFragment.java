@@ -799,7 +799,7 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 					final MutableBoolean called = new MutableBoolean();
 					final LocationListener geoListener = new LocationListener() {
 						@Override
-						public void onLocationChanged(Location location) {
+						public void onLocationChanged(final Location location) {
 							if (called.isValue())
 								return;
 							called.setValue(true);
@@ -811,7 +811,11 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 								return;
 							}
 							publishProgress("Location acquired");
-							sendGeolocation(location);
+							new Thread() {
+								public void run() {
+									sendGeolocation(location);
+								}
+							}.start();
 						}
 					};
 					// Log.v(TAG, "currLocation = " + currLocation);
@@ -880,6 +884,12 @@ public class ChatHistoryFragment extends Fragment implements LoaderCallbacks<Cur
 					message += "\n";
 				}
 				message += address.getUrl();
+			}
+			else {
+				if(message.length() > 0) {
+					message += "\n";
+				}
+				message += "http://maps.google.com/maps?q="+location.getLatitude()+","+location.getLongitude()+"&z=14";
 			}
 			jaxmppService.sendMessageExt(account.toString(), recipient.toString(), threadId, message, elems);
 
