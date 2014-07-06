@@ -130,12 +130,15 @@ public abstract class DiskLruCache<T> {
 	public static File getDiskCacheDir(Context context, String uniqueName) {
 	    // Check if media is mounted or storage is built-in, if so, try and use external cache dir
 	    // otherwise use internal cache dir
-	    final String cachePath =
-	            Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState()) ||
-	                    !Environment.isExternalStorageRemovable() ? getExternalCacheDir(context).getPath() :
-	                            context.getCacheDir().getPath();
+		File cache = null;
+		if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState()) ||
+                !Environment.isExternalStorageRemovable())
+			cache = getExternalCacheDir(context);
+		if (cache == null) {
+			cache = context.getCacheDir();
+		}
 
-	    return new File(cachePath + File.separator + uniqueName);
+	    return new File(cache, uniqueName);
 	}	
 	
     public static File getExternalCacheDir(Context context) {
