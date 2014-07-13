@@ -318,19 +318,19 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
     	
     }
 	
-	private ServiceConnection messengerConnection = new ServiceConnection() {
-
-		@Override
-		public void onServiceConnected(ComponentName className, IBinder service) {
-			MainActivity.this.messenger = new Messenger(service);
-		}
-
-		@Override
-		public void onServiceDisconnected(ComponentName className) {
-			messenger = null;
-		}
-		
-	};    
+//	private ServiceConnection messengerConnection = new ServiceConnection() {
+//
+//		@Override
+//		public void onServiceConnected(ComponentName className, IBinder service) {
+//			MainActivity.this.messenger = new Messenger(service);
+//		}
+//
+//		@Override
+//		public void onServiceDisconnected(ComponentName className) {
+//			messenger = null;
+//		}
+//		
+//	};    
 
 	private ServiceConnection jaxmppServiceConnection = new ServiceConnection() {
 
