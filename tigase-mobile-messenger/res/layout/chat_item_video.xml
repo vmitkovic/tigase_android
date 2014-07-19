@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?><RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:padding="5px" >
+
+    <TextView
+        android:id="@+id/chat_item_timestamp"
+        android:textSize="12sp"
+        android:text="yesterday, 10:30pm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"        
+        android:layout_alignRight="@+id/chat_item_body" >
+    </TextView>
+
+    <!--
+		android:layout_alignParentTop="true" 
+		android:layout_alignBottom="@+id/user_avatar"
+    -->
+    <ImageButton
+        android:id="@+id/actionButton"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/chat_item_nickname"
+        android:src="@android:drawable/ic_menu_save"
+        android:background="@null" />
+
+
+   <TextView
+        android:id="@+id/chat_item_body"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/chat_item_nickname"
+        android:layout_toRightOf="@+id/user_avatar"
+        android:layout_toLeftOf="@+id/actionButton"
+        android:autoLink="all"
+        android:layout_marginLeft="4dp"
+        android:paddingLeft="10dp"
+        android:text="Sharing file xsusgss.png" >
+
+    </TextView>
+
+
+    <TextView
+        android:id="@+id/chat_item_nickname"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@+id/user_avatar"
+        android:paddingLeft="5px"
+        android:textStyle="bold" >
+    </TextView>
+
+    <ImageView
+        android:id="@+id/msgStatus"
+        android:layout_width="18px"
+        android:layout_height="18px"
+        android:layout_alignBottom="@+id/chat_item_timestamp"
+        android:layout_alignTop="@+id/chat_item_timestamp"
+        android:layout_toLeftOf="@+id/chat_item_timestamp"
+        android:src="@drawable/message_not_sent" />
+
+    <ImageView
+        android:id="@+id/user_avatar"
+        android:layout_width="50sp"
+        android:layout_height="50sp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignTop="@+id/chat_item_nickname"
+        android:src="@drawable/user_avatar" />
+    
+    <VideoView
+        android:id="@+id/video"
+        android:layout_width="fill_parent" 
+        android:layout_height="200dp"
+        android:layout_below="@+id/chat_item_body"
+        android:layout_toRightOf="@+id/user_avatar"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true">
+    </VideoView>     
+</RelativeLayout>

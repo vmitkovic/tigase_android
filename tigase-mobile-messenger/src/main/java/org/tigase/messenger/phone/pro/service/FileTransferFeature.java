@@ -27,13 +27,18 @@ import tigase.jaxmpp.core.client.exceptions.JaxmppException;
 import tigase.jaxmpp.j2se.filetransfer.FileTransfer;
 import tigase.jaxmpp.j2se.filetransfer.FileTransferManager;
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.util.Log;
 
 import java.io.InputStream;
+import java.util.Date;
 
+import org.tigase.messenger.phone.pro.db.ChatTableMetaData;
+import org.tigase.messenger.phone.pro.db.providers.ChatHistoryProvider;
 import org.tigase.messenger.phone.pro.share.FileTransferUtility;
 
 public class FileTransferFeature implements FileTransferManager.FileTransferRequestHandler, 
@@ -84,7 +89,10 @@ public class FileTransferFeature implements FileTransferManager.FileTransferRequ
 
 					String filename = FileTransferUtility.resolveFilename(context, uri, mimetype);
 					FileTransferManager ftManager = jaxmpp.get(FileTransferManager.class);
-					ftManager.sendFile(peerJid, filename, size, is, null);
+					FileTransfer ft = ftManager.sendFile(peerJid, filename, size, is, null);
+					ft.setData("file-uri", uri);
+					
+					updateChat(ft, FileTransferFeature.State.connecting);
 				} catch (Exception ex) {
 					Log.e(TAG, "problem with starting filetransfer", ex);
 				}
@@ -96,24 +104,28 @@ public class FileTransferFeature implements FileTransferManager.FileTransferRequ
 	public void onFileTransferRequest(SessionObject sessionObject,
 			FileTransfer fileTransfer) {
 		jaxmppService.notificationHelper.notifyFileTransferRequest(fileTransfer);
+		updateChat(fileTransfer, FileTransferFeature.State.negotiating);
 	}
 
 	@Override
 	public void onFileTransferSuccess(SessionObject sessionObject,
 			FileTransfer fileTransfer) {
 		jaxmppService.notificationHelper.notifyFileTransferProgress(fileTransfer, State.finished);
+		updateChat(fileTransfer, FileTransferFeature.State.finished);
 	}
 
 	@Override
 	public void onFileTransferRejected(SessionObject sessionObject,
 			FileTransfer fileTransfer) {
 		jaxmppService.notificationHelper.notifyFileTransferProgress(fileTransfer, State.error);
+		updateChat(fileTransfer, FileTransferFeature.State.error);
 	}
 
 	@Override
 	public void onFileTransferFailure(SessionObject sessionObject,
 			FileTransfer fileTransfer) {
 		jaxmppService.notificationHelper.notifyFileTransferProgress(fileTransfer, State.error);
+		updateChat(fileTransfer, FileTransferFeature.State.error);
 	}
 
 	@Override
@@ -156,6 +168,7 @@ public class FileTransferFeature implements FileTransferManager.FileTransferRequ
 			String store = intent.getStringExtra("store");
 			final File destination = FileTransferUtility.getPathToSave(filename, mimetype, store);
 			ft.setFile(destination);
+			ft.setData("file-uri", Uri.fromFile(destination));
 
 			new Thread() {
 				@Override
@@ -170,4 +183,47 @@ public class FileTransferFeature implements FileTransferManager.FileTransferRequ
 
 		}
 	}
+	
+	protected void updateChat(FileTransfer ft, State state) {
+		String jid = ft.getPeer().getBareJid().toString();
+		Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/" + Uri.encode(jid));
+		
+		ContentValues values = new ContentValues();
+		values.put(ChatTableMetaData.FIELD_ACCOUNT, ft.getSessionObject().getUserBareJid().toString());
+		values.put(ChatTableMetaData.FIELD_AUTHOR_JID, ft.isIncoming() ? jid : ft.getSessionObject().getUserBareJid().toString());
+		values.put(ChatTableMetaData.FIELD_JID, jid);
+		values.put(ChatTableMetaData.FIELD_TIMESTAMP, new Date().getTime());
+		values.put(ChatTableMetaData.FIELD_BODY, ft.getFilename());
+		String mimeType = ft.getFileMimeType();
+		int type = ChatTableMetaData.ITEM_TYPE_FILE;
+		if (mimeType != null) {
+			if (mimeType.startsWith("image/")) {
+				type = ChatTableMetaData.ITEM_TYPE_IMAGE;
+			}
+			else if (mimeType.startsWith("video/")) {
+				type = ChatTableMetaData.ITEM_TYPE_VIDEO;
+			}
+		}
+		if (ft.getData("file-uri") != null) {
+			values.put(ChatTableMetaData.FIELD_DATA, ft.getData("file-uri").toString());
+		}
+		values.put(ChatTableMetaData.FIELD_ITEM_TYPE, type);
+		int stateInt = ft.isIncoming() 
+				? ((state == State.finished || state == State.error) ? ChatTableMetaData.STATE_INCOMING : ChatTableMetaData.STATE_INCOMING_UNREAD)
+				: ((state == State.finished || state == State.error) ? ChatTableMetaData.STATE_OUT_SENT : ChatTableMetaData.STATE_OUT_NOT_SENT);
+		values.put(ChatTableMetaData.FIELD_STATE, ft.isIncoming() 
+				? ChatTableMetaData.STATE_OUT_SENT : ChatTableMetaData.STATE_INCOMING_UNREAD);	
+		
+		SQLiteDatabase db = jaxmppService.dbHelper.getWritableDatabase();
+		if (ft.getData("db-id") == null) {
+			long id = db.insert(ChatTableMetaData.TABLE_NAME, null, values);
+			ft.setData("db-id", id);
+			Log.v(TAG, "inserted message - id = " + id);
+		} else {
+			long id = (Long) ft.getData("db-id");
+			db.update(ChatTableMetaData.TABLE_NAME, values, ChatTableMetaData.FIELD_ID + "=?", new String[] { String.valueOf(id) });
+		}
+		jaxmppService.getContentResolver().notifyChange(uri, null);
+	}
+
 }

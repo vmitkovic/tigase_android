@@ -17,6 +17,7 @@
  */
 package org.tigase.messenger.phone.pro.chat;
 
+import java.io.File;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.net.URL;
@@ -75,6 +76,7 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.VideoView;
 
 public class ChatAdapter extends SimpleCursorAdapter {
 
@@ -92,6 +94,8 @@ public class ChatAdapter extends SimpleCursorAdapter {
 		TextView webview;
 		ImageButton actionButton;
 		ImageView map;
+		ImageView image;
+		VideoView video;
 	}
 	
 	class ImageDownloaderTask extends AsyncTask<String, Void, Bitmap> {
@@ -188,7 +192,7 @@ public class ChatAdapter extends SimpleCursorAdapter {
 	//---------------------------------
 	@Override
 	public int getViewTypeCount() {
-		return 2;
+		return 5;
 	}
 	
 	@Override
@@ -200,6 +204,18 @@ public class ChatAdapter extends SimpleCursorAdapter {
 		if (type != viewId) {
 			LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 			switch (type) {
+			case ChatTableMetaData.ITEM_TYPE_FILE:
+				convertView = inflater.inflate(R.layout.chat_item_file, parent, false);
+				convertView.setId(type);
+				break;
+			case ChatTableMetaData.ITEM_TYPE_IMAGE:
+				convertView = inflater.inflate(R.layout.chat_item_image, parent, false);
+				convertView.setId(type);
+				break;
+			case ChatTableMetaData.ITEM_TYPE_VIDEO:
+				convertView = inflater.inflate(R.layout.chat_item_video, parent, false);
+				convertView.setId(type);
+				break;
 			case ChatTableMetaData.ITEM_TYPE_LOCALITY:
 				convertView = inflater.inflate(R.layout.chat_item_map, parent, false);
 				convertView.setId(type);
@@ -229,10 +245,13 @@ public class ChatAdapter extends SimpleCursorAdapter {
 			holder.avatar = (ImageView) view.findViewById(R.id.user_avatar);
 			holder.msgStatus = (ImageView) view.findViewById(R.id.msgStatus);
 			holder.map = (ImageView) view.findViewById(R.id.map_image);
+			holder.image = (ImageView) view.findViewById(R.id.image);
+			holder.video = (VideoView) view.findViewById(R.id.video);
 		}
 
 		final int id = cursor.getInt(cursor.getColumnIndex(ChatTableMetaData.FIELD_ID));
 		final int state = cursor.getInt(cursor.getColumnIndex(ChatTableMetaData.FIELD_STATE));
+		final int type = cursor.getInt(cursor.getColumnIndex(ChatTableMetaData.FIELD_ITEM_TYPE));
 
 		if (state == ChatTableMetaData.STATE_INCOMING || state == ChatTableMetaData.STATE_INCOMING_UNREAD) {
 			final BareJID account = BareJID.bareJIDInstance(cursor.getString(cursor.getColumnIndex(ChatTableMetaData.FIELD_ACCOUNT)));
@@ -279,49 +298,104 @@ public class ChatAdapter extends SimpleCursorAdapter {
 
 		// webview.setMinimumHeight(webview.getMeasuredHeight());
 
-		OnClickListener mapOnClick = null;
+		OnClickListener actionOnClick = null;
 		
 		if (holder.actionButton != null) {
 			holder.actionButton.setClickable(true);
 			holder.actionButton.setFocusable(false);
 			holder.actionButton.setFocusableInTouchMode(false);
-			holder.actionButton.setImageResource(android.R.drawable.ic_menu_mapmode);
-			mapOnClick = new OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					Cursor c = mContext.getContentResolver().query(Uri.parse(ChatHistoryProvider.CHAT_URI + "/whatever/" + id),
-							null, null, null, null);
-					Log.v(TAG, "map action button clicked");
-					try {
-						c.moveToNext();
-						String dataStr = c.getString(c.getColumnIndex(ChatTableMetaData.FIELD_DATA));
-						Log.v(TAG, "loaded data = " + dataStr);
-						parseElement(dataStr, new ElementCallback() {
-							@Override
-							public void parsed(Element element) throws JaxmppException {
-								Address address = GeolocationFeature.fromElement(element);
-								double lat = address.getLatitude();
-								double lng = address.getLongitude();
-								String uriString = address.getUrl() == null ? ("geo:"+lat+","+lng+"?z=14") : address.getUrl();
-								Log.v(TAG, "calling intent for " + uriString);
-								Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uriString));
-								if (intent.resolveActivity(ChatAdapter.this.mContext.getPackageManager()) != null) {
-									ChatAdapter.this.mContext.startActivity(intent);
-								} else {
-									intent.setData(Uri.parse("http://maps.google.com/maps?q="+lat+","+lng+"&z=14"));
-									ChatAdapter.this.mContext.startActivity(intent);
-								}
-							}							
-						});
-					} catch (Exception ex) {
-						ex.printStackTrace();
-					}
-					finally {
-						c.close();
-					}
-				}			
-			};
-			holder.actionButton.setOnClickListener(mapOnClick);
+			switch (type) {
+			case ChatTableMetaData.ITEM_TYPE_LOCALITY:
+				holder.actionButton.setImageResource(android.R.drawable.ic_menu_mapmode);
+				actionOnClick = new OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						Cursor c = mContext.getContentResolver().query(Uri.parse(ChatHistoryProvider.CHAT_URI + "/whatever/" + id),
+								null, null, null, null);
+						Log.v(TAG, "map action button clicked");
+						try {
+							c.moveToNext();
+							String dataStr = c.getString(c.getColumnIndex(ChatTableMetaData.FIELD_DATA));
+							Log.v(TAG, "loaded data = " + dataStr);
+							parseElement(dataStr, new ElementCallback() {
+								@Override
+								public void parsed(Element element) throws JaxmppException {
+									Address address = GeolocationFeature.fromElement(element);
+									double lat = address.getLatitude();
+									double lng = address.getLongitude();
+									String uriString = address.getUrl() == null ? ("geo:"+lat+","+lng+"?z=14") : address.getUrl();
+									Log.v(TAG, "calling intent for " + uriString);
+									Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uriString));
+									if (intent.resolveActivity(ChatAdapter.this.mContext.getPackageManager()) != null) {
+										ChatAdapter.this.mContext.startActivity(intent);
+									} else {
+										intent.setData(Uri.parse("http://maps.google.com/maps?q="+lat+","+lng+"&z=14"));
+										ChatAdapter.this.mContext.startActivity(intent);
+									}
+								}							
+							});
+						} catch (Exception ex) {
+							ex.printStackTrace();
+						}
+						finally {
+							c.close();
+						}
+					}			
+				};
+				break;
+			case ChatTableMetaData.ITEM_TYPE_IMAGE:
+			case ChatTableMetaData.ITEM_TYPE_VIDEO:
+			case ChatTableMetaData.ITEM_TYPE_FILE:
+				String dataStr = cursor.getString(cursor.getColumnIndex(ChatTableMetaData.FIELD_DATA));
+				holder.actionButton.setVisibility(dataStr == null ? View.GONE : View.VISIBLE);
+				switch (type) {
+				case ChatTableMetaData.ITEM_TYPE_IMAGE:
+					holder.actionButton.setImageResource(android.R.drawable.ic_menu_gallery);
+					if (dataStr != null)
+						holder.image.setImageURI(Uri.parse(dataStr));
+					break;
+				case ChatTableMetaData.ITEM_TYPE_VIDEO:
+					holder.actionButton.setImageResource(android.R.drawable.ic_menu_slideshow);
+					if (dataStr != null)
+						holder.video.setVideoURI(Uri.parse(dataStr));
+					break;
+				case ChatTableMetaData.ITEM_TYPE_FILE:
+					if (dataStr != null)
+						holder.actionButton.setImageResource(android.R.drawable.ic_menu_save);
+					break;
+				}
+				actionOnClick = new OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						Cursor c = mContext.getContentResolver().query(Uri.parse(ChatHistoryProvider.CHAT_URI + "/whatever/" + id),
+								null, null, null, null);
+						Log.v(TAG, "map action button clicked");
+						try {
+							c.moveToNext();
+							String dataStr = c.getString(c.getColumnIndex(ChatTableMetaData.FIELD_DATA));
+							Intent intent = new Intent();
+							intent.setAction(android.content.Intent.ACTION_VIEW);
+							File file = new File(dataStr);
+							// do we need to detect mimetype?
+							intent.setDataAndType(Uri.fromFile(file), "*/*");
+							ChatAdapter.this.mContext.startActivity(intent); 
+						} catch (Exception ex) {
+							ex.printStackTrace();
+						}
+						finally {
+							c.close();
+						}
+					}		
+				};
+				break;
+			default:
+				// nothing to do
+				break;
+			}
+
+			if (actionOnClick != null) {
+				holder.actionButton.setOnClickListener(actionOnClick);
+			}
 		}
 		
 		if (holder.map != null) {
@@ -347,7 +421,7 @@ public class ChatAdapter extends SimpleCursorAdapter {
 						}
 					}
 				});
-				holder.map.setOnClickListener(mapOnClick);
+				holder.map.setOnClickListener(actionOnClick);
 			}
 		}
 				

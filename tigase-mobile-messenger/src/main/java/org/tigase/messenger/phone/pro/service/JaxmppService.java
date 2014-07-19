@@ -893,7 +893,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private AccountModifyReceiver accountModifyReceiver = new AccountModifyReceiver();
 	private ClientFocusReceiver clientFocusReceiver = new ClientFocusReceiver();
 	private CapabilitiesDBCache capsCache = null;
-	private DatabaseHelper dbHelper = null;
+	protected DatabaseHelper dbHelper = null;
 	private boolean focused = true;
 	private MessageHandler messageHandler = null;
 	private MobileModeFeature mobileModeFeature = null;

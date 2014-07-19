@@ -155,15 +155,15 @@ public class FileTransferUtility {
 			return "image/jpeg";
 		} else if (suffix.equals("avi")) {
 			return "video/avi";
-		} else if (suffix.equals(".mkv")) {
+		} else if (suffix.equals("mkv")) {
 			return "video/x-matroska";
-		} else if (suffix.equals(".mpg") || suffix.equals(".mp4")) {
+		} else if (suffix.equals("mpg") || suffix.equals("mp4")) {
 			return "video/mpeg";
-		} else if (suffix.equals(".mp3")) {
+		} else if (suffix.equals("mp3")) {
 			return "audio/mpeg3";
-		} else if (suffix.equals(".ogg")) {
+		} else if (suffix.equals("ogg")) {
 			return "audio/ogg";
-		} else if (suffix.equals(".pdf")) {
+		} else if (suffix.equals("pdf")) {
 			return "application/pdf";
 		} else {
 			return null;

@@ -42,6 +42,9 @@ public class ChatTableMetaData {
      * <ul>
      * <li><code>0</code> - message</li>
      * <li><code>1</code> - locality</li>
+     * <li><code>2</code> - file</li>
+     * <li><code>3</code> - image</li>
+     * <li><code>4</code> - video</li>
      * </ul>
      */
     public static final String FIELD_ITEM_TYPE = "item_type";
@@ -51,6 +54,12 @@ public class ChatTableMetaData {
     public final static int ITEM_TYPE_MESSAGE = 0;
     
     public final static int ITEM_TYPE_LOCALITY = 1;
+    
+    public final static int ITEM_TYPE_FILE = 2;
+    
+    public final static int ITEM_TYPE_IMAGE = 3;
+    
+    public final static int ITEM_TYPE_VIDEO = 4;
     
     public final static int STATE_INCOMING = 0;
 
