@@ -32,4 +32,6 @@
     <color name="message_panel_background">#808080</color>
     <color name="message_mine_background">#ffffff</color>
     <color name="message_his_background">#effbff</color>
+    <color name="message_mine_simple_background">#e0ffe0</color>
+    <color name="message_his_simple_background">#EAF0FB</color>
 </resources>

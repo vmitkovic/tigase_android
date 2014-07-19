@@ -50,7 +50,6 @@ public class AvatarHelper extends ImageHelper {
 
 	private static Context context;
 	private static int defaultAvatarSize = 50;
-	private static float density = 1;
 	public static Bitmap mPlaceHolderBitmap;
 	private static final String TAG = "AvatarHelper";
 

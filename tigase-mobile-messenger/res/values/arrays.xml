@@ -69,5 +69,12 @@
         <item>xa</item>
         <item>dnd</item>
     </string-array>
-
+    <string-array name="chat_layout_entries">
+        <item>Bubble</item>
+        <item>Simple</item>
+    </string-array>
+	<string-array name="chat_layout_values">
+	    <item>bubble</item>
+	    <item>simple</item>
+	</string-array>
 </resources>

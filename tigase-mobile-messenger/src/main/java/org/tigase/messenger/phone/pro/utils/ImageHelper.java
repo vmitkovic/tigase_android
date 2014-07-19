@@ -32,6 +32,7 @@ public class ImageHelper {
 	
 	private static final String TAG = "ImageHelper";
 
+	public static float density = 1;	
 	private static Set<Bitmap> placeHolders = new HashSet<Bitmap>();
 	
 	protected static LruCache<String,Bitmap> memCache = null;
@@ -74,6 +75,11 @@ public class ImageHelper {
 			BitmapDiskLruCache diskCache = new BitmapDiskLruCache();
 			diskCache.initialize(context, "maps", 10*1024*1024);
 			diskCaches.put("maps", diskCache);
+			
+			// images from files shared with or by us
+			diskCache = new BitmapDiskLruCache();
+			diskCache.initialize(context, "images-mini", 10*1024*1024);
+			diskCaches.put("images-mini", diskCache);
 		}
 	}
 	

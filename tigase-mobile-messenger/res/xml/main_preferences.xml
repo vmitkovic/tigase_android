@@ -43,6 +43,12 @@
             android:entryValues="@array/roster_sorting_options_values"
             android:key="roster_sorting"
             android:title="Roster sorting" />
+        <ListPreference 
+            android:defaultValue="bubble"
+            android:entries="@array/chat_layout_entries"
+            android:entryValues="@array/chat_layout_values"
+            android:key="chat_layout"
+            android:title="Chat layout" />
 <!-- 
         <CheckBoxPreference
             android:defaultValue="true"

@@ -18,6 +18,8 @@
 package org.tigase.messenger.phone.pro.chat;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.net.URL;
@@ -25,12 +27,15 @@ import java.net.URLConnection;
 import java.util.Map;
 
 import org.tigase.messenger.phone.pro.MessengerApplication;
+import org.tigase.messenger.phone.pro.Preferences;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.ChatTableMetaData;
 //import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 
 import org.tigase.messenger.phone.pro.db.providers.ChatHistoryProvider;
 import org.tigase.messenger.phone.pro.service.GeolocationFeature;
+import org.tigase.messenger.phone.pro.share.FileTransferUtility;
+import org.tigase.messenger.phone.pro.ui.Layouts;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 import org.tigase.messenger.phone.pro.utils.ImageHelper;
 
@@ -98,11 +103,39 @@ public class ChatAdapter extends SimpleCursorAdapter {
 		VideoView video;
 	}
 	
-	class ImageDownloaderTask extends AsyncTask<String, Void, Bitmap> {
-	    private final WeakReference<ImageView> imageViewReference;
+	abstract class ImageLoaderAbstractTask<T> extends AsyncTask<T, Void, Bitmap> {
+	    protected final WeakReference<ImageView> imageViewReference;
 	 
-	    public ImageDownloaderTask(ImageView imageView) {
+	    public ImageLoaderAbstractTask(ImageView imageView) {
 	        imageViewReference = new WeakReference<ImageView>(imageView);
+	    }
+	 
+	    @Override
+	    // Once the image is downloaded, associates it to the imageView
+	    protected void onPostExecute(Bitmap bitmap) {
+	        if (isCancelled()) {
+	            bitmap = null;
+	        }
+	 
+	        if (imageViewReference != null) {
+	            ImageView imageView = imageViewReference.get();
+	            if (imageView != null) {
+	 
+	                if (bitmap != null) {
+	                    imageView.setImageBitmap(bitmap);
+	                } else {
+	                    imageView.setVisibility(View.GONE);
+	                }
+	            }
+	 
+	        }
+	    } 
+	}
+
+	
+	class ImageDownloaderTask extends ImageLoaderAbstractTask<String> {
+	    public ImageDownloaderTask(ImageView imageView) {
+	        super(imageView);
 	    }
 	 
 		@Override
@@ -134,27 +167,69 @@ public class ChatAdapter extends SimpleCursorAdapter {
 			}
 			return null;
 		}
-	 
-	    @Override
-	    // Once the image is downloaded, associates it to the imageView
-	    protected void onPostExecute(Bitmap bitmap) {
-	        if (isCancelled()) {
-	            bitmap = null;
-	        }
-	 
-	        if (imageViewReference != null) {
-	            ImageView imageView = imageViewReference.get();
-	            if (imageView != null) {
-	 
-	                if (bitmap != null) {
-	                    imageView.setImageBitmap(bitmap);
-	                } else {
-	                    imageView.setVisibility(View.GONE);
-	                }
-	            }
-	 
-	        }
-	    } 
+	}
+	
+	class ImageLoaderTask extends ImageLoaderAbstractTask<String> {
+
+		public ImageLoaderTask(ImageView imageView) {
+			super(imageView);
+		}
+
+		@Override
+		protected Bitmap doInBackground(String... params) {
+			// TODO Auto-generated method stub
+			Bitmap bmp = ImageHelper.get("images-mini", params[0]);
+			if (bmp != null) {
+				Log.v(TAG, "for " + params[0] + " got image from cache");
+				return bmp;
+			}
+			Uri uri = Uri.parse(params[0]);
+			InputStream is = null;
+			try {
+				is = mContext.getContentResolver().openInputStream(uri);
+				BitmapFactory.Options options = new BitmapFactory.Options();
+				options.inJustDecodeBounds = true;
+				Bitmap bmp1 = BitmapFactory.decodeStream(is, null, options);
+				if (bmp1 != null) {
+					bmp1.recycle();
+				}
+				// options.inSampleSize = calculateSize(options, 96, 96);
+				options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+				int inSampleSize = (int)(options.outHeight / (250 * ImageHelper.density));
+				int scale = 1;
+				while (inSampleSize > scale) {
+					scale *= 2;
+				}
+				options.inSampleSize = scale;
+				options.inJustDecodeBounds = false;
+				is.close();
+				is = mContext.getContentResolver().openInputStream(uri);
+				bmp = BitmapFactory.decodeStream(is, null, options);
+				if (bmp != null) {
+					ImageHelper.put("images-mini", params[0], bmp);
+					Log.v(TAG, "loaded image from " + params[0] + " " + bmp.getWidth() + "x" + bmp.getHeight());
+				}
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				if (is != null) {
+					try {
+						is.close();
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+				}
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if (bmp == null) {
+				Log.v(TAG, "could not load image from " + params[0]);
+			}
+			return bmp;
+		}
+		
 	}
 	
 	private final static String[] cols = new String[] { ChatTableMetaData.FIELD_ID, 
@@ -180,49 +255,66 @@ public class ChatAdapter extends SimpleCursorAdapter {
 
 	private String nickname;
 	private String recipientName = null;
+	private Layouts.ChatLayout chatLayoutMine;
+	private Layouts.ChatLayout chatLayoutHis;
 
 	public ChatAdapter(Context context, int layout) {
 		super(context, layout, null, cols, names, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
 
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+		SharedPreferences prefs = Preferences.getDefaultSharedPreferences(context);
 		String tmp = null;// prefs.getString(Preferences.NICKNAME_KEY, null);
 		nickname = tmp == null || tmp.length() == 0 ? null : tmp;
+		String layoutType = prefs.getString(Preferences.CHAT_LAYOUT_KEY, "bubble");
+		Log.v(TAG, "got chat layout = " + layoutType);
+		if ("bubble".equals(layoutType)) {
+			chatLayoutMine = Layouts.CHAT_BUBBLE;
+			chatLayoutHis = Layouts.CHAT_BUBBLE;
+		} else {
+			chatLayoutMine = Layouts.CHAT_SIMPLE_MINE;
+			chatLayoutHis = Layouts.CHAT_SIMPLE_HIS;
+		}
 	}
 	
 	//---------------------------------
 	@Override
 	public int getViewTypeCount() {
-		return 5;
+		return (chatLayoutMine == chatLayoutHis) ? 5 : 10;
 	}
 	
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
 		Cursor c = getCursor();
 		c.moveToPosition(position);
+		String account = c.getString(c.getColumnIndex(ChatTableMetaData.FIELD_ACCOUNT));
+		String author = c.getString(c.getColumnIndex(ChatTableMetaData.FIELD_AUTHOR_JID));
+		boolean mine = account.equals(author);
+		Layouts.ChatLayout chatLayout = (mine) ? chatLayoutMine : chatLayoutHis;
 		int viewId = (convertView == null) ? -1 : convertView.getId();
 		int type = c.getInt(c.getColumnIndex(ChatTableMetaData.FIELD_ITEM_TYPE));
-		if (type != viewId) {
+		int maxViews = getViewTypeCount();
+		int expectedViewId = (chatLayoutMine == chatLayoutHis || mine) ? type : type + (maxViews/2);
+		if (expectedViewId != viewId) {
 			LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 			switch (type) {
 			case ChatTableMetaData.ITEM_TYPE_FILE:
-				convertView = inflater.inflate(R.layout.chat_item_file, parent, false);
+				convertView = inflater.inflate(chatLayout.file, parent, false);
 				convertView.setId(type);
 				break;
 			case ChatTableMetaData.ITEM_TYPE_IMAGE:
-				convertView = inflater.inflate(R.layout.chat_item_image, parent, false);
+				convertView = inflater.inflate(chatLayout.image, parent, false);
 				convertView.setId(type);
 				break;
 			case ChatTableMetaData.ITEM_TYPE_VIDEO:
-				convertView = inflater.inflate(R.layout.chat_item_video, parent, false);
+				convertView = inflater.inflate(chatLayout.video, parent, false);
 				convertView.setId(type);
 				break;
 			case ChatTableMetaData.ITEM_TYPE_LOCALITY:
-				convertView = inflater.inflate(R.layout.chat_item_map, parent, false);
+				convertView = inflater.inflate(chatLayout.locality, parent, false);
 				convertView.setId(type);
 				break;
 			default:
 			case ChatTableMetaData.ITEM_TYPE_MESSAGE:
-				convertView = inflater.inflate(R.layout.chat_item_his, parent, false);
+				convertView = inflater.inflate(chatLayout.message, parent, false);
 				convertView.setId(type);
 				break;
 			}
@@ -270,7 +362,8 @@ public class ChatAdapter extends SimpleCursorAdapter {
 			holder.timestamp.setTextColor(context.getResources().getColor(R.color.message_his_text));
 
 			// view.setBackgroundColor(context.getResources().getColor(R.color.message_his_background));
-			holder.webview.setBackgroundResource(R.drawable.bubble_5);
+			if ((chatLayoutMine == chatLayoutHis))
+				holder.webview.setBackgroundResource(R.drawable.bubble_5);
 			holder.msgStatus.setVisibility(View.GONE);
 		} else if (state == ChatTableMetaData.STATE_OUT_NOT_SENT || state == ChatTableMetaData.STATE_OUT_SENT) {
 			final BareJID jid = BareJID.bareJIDInstance(cursor.getString(cursor.getColumnIndex(ChatTableMetaData.FIELD_AUTHOR_JID)));
@@ -286,7 +379,8 @@ public class ChatAdapter extends SimpleCursorAdapter {
 			else if (state == ChatTableMetaData.STATE_OUT_NOT_SENT)
 				holder.msgStatus.setVisibility(View.VISIBLE);
 
-			holder.webview.setBackgroundResource(R.drawable.bubble_9);
+			if (chatLayoutMine == chatLayoutHis)
+				holder.webview.setBackgroundResource(R.drawable.bubble_9);
 			// view.setBackgroundColor(context.getResources().getColor(R.color.message_mine_background));
 		} else {
 			holder.msgStatus.setVisibility(View.GONE);
@@ -304,9 +398,10 @@ public class ChatAdapter extends SimpleCursorAdapter {
 			holder.actionButton.setClickable(true);
 			holder.actionButton.setFocusable(false);
 			holder.actionButton.setFocusableInTouchMode(false);
-			switch (type) {
+		}
+		switch (type) {
 			case ChatTableMetaData.ITEM_TYPE_LOCALITY:
-				holder.actionButton.setImageResource(android.R.drawable.ic_menu_mapmode);
+				//holder.actionButton.setImageResource(android.R.drawable.ic_menu_mapmode);
 				actionOnClick = new OnClickListener() {
 					@Override
 					public void onClick(View v) {
@@ -347,21 +442,26 @@ public class ChatAdapter extends SimpleCursorAdapter {
 			case ChatTableMetaData.ITEM_TYPE_VIDEO:
 			case ChatTableMetaData.ITEM_TYPE_FILE:
 				String dataStr = cursor.getString(cursor.getColumnIndex(ChatTableMetaData.FIELD_DATA));
-				holder.actionButton.setVisibility(dataStr == null ? View.GONE : View.VISIBLE);
+				if (holder.actionButton != null)
+					holder.actionButton.setVisibility(dataStr == null ? View.GONE : View.VISIBLE);
 				switch (type) {
 				case ChatTableMetaData.ITEM_TYPE_IMAGE:
-					holder.actionButton.setImageResource(android.R.drawable.ic_menu_gallery);
+					//holder.actionButton.setImageResource(android.R.drawable.ic_menu_gallery);
 					if (dataStr != null)
-						holder.image.setImageURI(Uri.parse(dataStr));
+						new ImageLoaderTask(holder.image).execute(dataStr);
 					break;
 				case ChatTableMetaData.ITEM_TYPE_VIDEO:
-					holder.actionButton.setImageResource(android.R.drawable.ic_menu_slideshow);
+					//holder.actionButton.setImageResource(android.R.drawable.ic_menu_slideshow);
+					if (holder.video == null) {
+						Log.v(TAG, "got video = null for type = " + type + "f for layout " + view.getId());
+						break;
+					}
 					if (dataStr != null)
 						holder.video.setVideoURI(Uri.parse(dataStr));
 					break;
 				case ChatTableMetaData.ITEM_TYPE_FILE:
-					if (dataStr != null)
-						holder.actionButton.setImageResource(android.R.drawable.ic_menu_save);
+					//if (dataStr != null)
+					//	holder.actionButton.setImageResource(android.R.drawable.ic_menu_save);
 					break;
 				}
 				actionOnClick = new OnClickListener() {
@@ -375,9 +475,21 @@ public class ChatAdapter extends SimpleCursorAdapter {
 							String dataStr = c.getString(c.getColumnIndex(ChatTableMetaData.FIELD_DATA));
 							Intent intent = new Intent();
 							intent.setAction(android.content.Intent.ACTION_VIEW);
-							File file = new File(dataStr);
+							Uri uri = Uri.parse(dataStr);
+							String mimeType = mContext.getContentResolver().getType(uri);
 							// do we need to detect mimetype?
-							intent.setDataAndType(Uri.fromFile(file), "*/*");
+							//String mimeType = FileTransferUtility.guessMimeType(file.getName());
+							if (mimeType == null) {
+								if (type == ChatTableMetaData.ITEM_TYPE_IMAGE) {
+									mimeType = "image/*";
+								}
+								else if  (type == ChatTableMetaData.ITEM_TYPE_FILE) {
+									mimeType = "video/*";
+								}
+								else
+									mimeType = "*/*";
+							}
+							intent.setDataAndType(uri, mimeType);
 							ChatAdapter.this.mContext.startActivity(intent); 
 						} catch (Exception ex) {
 							ex.printStackTrace();
@@ -391,11 +503,28 @@ public class ChatAdapter extends SimpleCursorAdapter {
 			default:
 				// nothing to do
 				break;
-			}
+		}
 
-			if (actionOnClick != null) {
-				holder.actionButton.setOnClickListener(actionOnClick);
-			}
+		if (actionOnClick != null && holder.actionButton != null) {
+			holder.actionButton.setOnClickListener(actionOnClick);
+		}
+
+		View actionView = null;
+		switch (type) {
+			case ChatTableMetaData.ITEM_TYPE_LOCALITY:
+				actionView = holder.map;
+				break;
+			case ChatTableMetaData.ITEM_TYPE_IMAGE:
+				actionView = holder.image;
+				break;
+			case ChatTableMetaData.ITEM_TYPE_VIDEO:
+				actionView = holder.video;
+				break;
+			default:
+				break;
+		}
+		if (actionView != null) {
+			actionView.setOnClickListener(actionOnClick);
 		}
 		
 		if (holder.map != null) {
@@ -421,7 +550,7 @@ public class ChatAdapter extends SimpleCursorAdapter {
 						}
 					}
 				});
-				holder.map.setOnClickListener(actionOnClick);
+				//holder.map.setOnClickListener(actionOnClick);
 			}
 		}
 				

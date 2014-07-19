@@ -15,6 +15,8 @@ public class Preferences {
 	
 	public static final String AWAY_PRIORITY_KEY = "away_priority";
 	
+	public static final String CHAT_LAYOUT_KEY = "chat_layout";
+	
 	public static final String DEFAULT_PRIORITY_KEY = "default_priority";
 	
 	public static final String ENABLE_CHAT_STATE_SUPPORT_KEY = "chat_state_enabled";
