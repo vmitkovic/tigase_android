@@ -29,6 +29,7 @@ import org.tigase.messenger.phone.pro.IJaxmppService;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
 import org.tigase.messenger.phone.pro.db.providers.RosterProviderExt;
+import org.tigase.messenger.phone.pro.service.AsyncXmppCallback;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 import org.tigase.messenger.phone.pro.MainActivity;
 
@@ -37,12 +38,16 @@ import tigase.jaxmpp.core.client.BareJID;
 //import tigase.jaxmpp.core.client.Connector;
 //import tigase.jaxmpp.core.client.Connector.ConnectorEvent;
 import tigase.jaxmpp.core.client.JID;
+import tigase.jaxmpp.core.client.XMPPException.ErrorCondition;
+import tigase.jaxmpp.core.client.exceptions.JaxmppException;
 import tigase.jaxmpp.core.client.xml.ElementWrapper;
 //import tigase.jaxmpp.core.client.exceptions.JaxmppException;
 //import tigase.jaxmpp.core.client.observer.Listener;
 import tigase.jaxmpp.core.client.xml.XMLException;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterCacheProvider;
 import tigase.jaxmpp.core.client.xmpp.modules.vcard.VCard;
+import tigase.jaxmpp.core.client.xmpp.modules.vcard.VCardModule;
+import tigase.jaxmpp.core.client.xmpp.stanzas.Stanza;
 //import tigase.jaxmpp.core.client.xmpp.modules.chat.Chat;
 //import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceModule;
 //import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceModule.PresenceEvent;
@@ -377,7 +382,7 @@ public class ContactFragment extends Fragment {
 		this.phoneListLayout.setAdapter(phoneListAdapter);
 		
 		this.emailsLayout = (View) layout.findViewById(R.id.email_layout);		
-		this.emailListLayout = (ListView) emailsLayout.findViewById(R.id.listLayout);
+		this.emailListLayout = (ListView) emailsLayout.findViewById(R.id.listLayout1);
 		this.emailListAdapter = new ArrayAdapter<Item>(getActivity(), R.layout.contact_fragment_item) {
 			public View getView (int position, View convertView, ViewGroup parent) {
 				View view;
@@ -403,7 +408,7 @@ public class ContactFragment extends Fragment {
 		this.emailListLayout.setAdapter(emailListAdapter);
 
 		this.addressesLayout = (View) layout.findViewById(R.id.locality_layout);	
-		this.addressListLayout = (ListView) addressesLayout.findViewById(R.id.listLayout);
+		this.addressListLayout = (ListView) addressesLayout.findViewById(R.id.listLayout2);
 		this.addressListAdapter = new ArrayAdapter<Item>(getActivity(), R.layout.contact_fragment_item) {
 			public View getView (int position, View convertView, ViewGroup parent) {
 				View view;
@@ -742,63 +747,45 @@ public class ContactFragment extends Fragment {
 				public void run() {
 					
 			try {
-				jaxmppService.retrieveVCard(account, jid.toString(), new RosterUpdateCallback.Stub() {
-
+				jaxmppService.retrieveVCard(account, jid.toString(), new AsyncXmppCallback(new VCardModule.VCardAsyncCallback() {
+					
 					@Override
-					public void onSuccess(final String msg) throws RemoteException {
-						// TODO Auto-generated method stub
+					public void onTimeout() throws JaxmppException {
 						layout.post(new Runnable() {
 							public void run() {
-								
-						try {
-							progressBar.setVisibility(View.INVISIBLE);
-							
-							XMPPDomBuilderHandler handler = new XMPPDomBuilderHandler(new StreamListener() {
-								@Override
-								public void nextElement(Element element) {
-									try {
-										VCard vcard = VCard.fromElement(new J2seElement(element));
-										refreshView(vcard);
-									} catch (XMLException ex) {
-										ex.printStackTrace();
-									}
+								try {
+									progressBar.setVisibility(View.INVISIBLE);
+								} catch (Exception ex) {
+									ex.printStackTrace();
 								}
-
-								@Override
-								public void xmppStreamClosed() {
-								}
-
-								@Override
-								public void xmppStreamOpened(Map<String, String> attribs) {
-								}
-								
-							});
-							SimpleParser parser = SingletonFactory.getParserInstance();
-							char[] data = msg.toCharArray();
-							parser.parse(handler, data, 0, data.length);
-							
-						} catch (Exception ex) {
-							ex.printStackTrace();
-						}
 							}
 						});
 					}
-
+					
 					@Override
-					public void onFailure(String msg) throws RemoteException {
-						// TODO Auto-generated method stub
+					public void onError(Stanza responseStanza, ErrorCondition error)
+							throws JaxmppException {
 						layout.post(new Runnable() {
 							public void run() {
-						try {
-							progressBar.setVisibility(View.INVISIBLE);
-						} catch (Exception ex) {
-							ex.printStackTrace();
-						}
-					}
-				});
+								try {
+									progressBar.setVisibility(View.INVISIBLE);
+								} catch (Exception ex) {
+									ex.printStackTrace();
+								}
+							}
+						});
 					}
 					
-				});
+					@Override
+					protected void onVCardReceived(final VCard vcard) throws XMLException {
+						layout.post(new Runnable() {
+							public void run() {
+								progressBar.setVisibility(View.INVISIBLE);
+								refreshView(vcard);
+							}
+						});
+					}
+				}));
 			} catch (RemoteException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

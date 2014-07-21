@@ -121,6 +121,15 @@
             android:name=".share.IncomingFileActivity"
             android:label="@string/incoming_file" >
         </activity>
+        <activity 
+            android:name=".vcard.VCardEditorActivity"
+            android:label="@string/vcard_editor_activity_title">
+        	<intent-filter>
+                <action android:name="org.tigase.messenger.phone.pro.account.personalInfo.EDIT" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
         <service
             android:name="org.tigase.messenger.phone.pro.service.JaxmppService"
             android:process=":JaxmppService" >

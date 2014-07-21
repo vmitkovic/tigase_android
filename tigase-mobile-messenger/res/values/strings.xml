@@ -148,4 +148,22 @@
     <string name="service_file_transfer_finished">transfer finished</string>     
     <string name="service_incoming_file_notification_title">Incoming file %1$s from %2$s</string>
     <string name="service_incoming_file_notification_text"></string>
+    
+    <!--  VCard -->
+	<string name="vcard_fullname">Full name</string>
+	<string name="vcard_email">Email</string>
+	<string name="vcard_homepage">Homepage</string>
+	<string name="vcard_nickname">Nickname</string>
+	<string name="vcard_birthday">Birthday</string>  
+	<string name="vcard_phone">Phone</string>  
+    <string name="vcard_editor_refresh">Refresh</string>
+    <string name="vcard_editor_publish">Publish</string>
+    <string name="vcard_published_toast">Informations published</string>
+    <string name="vcard_timeout_toast">Operation timed out</string>
+    <string name="vcard_error_toast">Operation failed</string>
+    <string name="vcard_retrieving">Loading. Please wait…</string>
+    <string name="vcard_publishing">Publishing. Please wait…</string>
+    <string name="vcard_editor_activity_title">Personal information</string>
+    <string name="accountVCard">Personal information</string>
+
 </resources>

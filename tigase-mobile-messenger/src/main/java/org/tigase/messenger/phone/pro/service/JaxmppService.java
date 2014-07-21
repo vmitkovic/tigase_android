@@ -569,52 +569,30 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		}
 
 		@Override
-		public void retrieveVCard(String accountJidStr, String jidStr, final RosterUpdateCallback callback) throws RemoteException {
+		public void retrieveVCard(String accountJidStr, String jidStr, final XmppCallback callback) throws RemoteException {
 			try {
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
 				JID jid = JID.jidInstance(jidStr);			
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
 				VCardModule vcardModule = jaxmpp.getModule(VCardModule.class);
-				vcardModule.retrieveVCard(jid, new tigase.jaxmpp.core.client.xmpp.modules.vcard.VCardModule.VCardAsyncCallback() {
-
-					@Override
-					public void onError(Stanza responseStanza,
-							ErrorCondition error) throws JaxmppException {
-						try {
-							callback.onFailure(error != null ? error.name() : "");
-						} catch (RemoteException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}
-
-					@Override
-					public void onTimeout() throws JaxmppException {
-						// TODO Auto-generated method stub
-						try {
-							callback.onFailure("");
-						} catch (RemoteException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}
-
-					@Override
-					protected void onVCardReceived(VCard vcard)
-							throws XMLException {
-						String vcardElem = vcard.makeElement().getAsString();
-						try {
-							callback.onSuccess(vcardElem);
-						} catch (RemoteException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}
-					
-				});
+				vcardModule.retrieveVCard(jid, new XmppCallbackWrapper(callback));
 			} catch (Exception e) {
 				Log.e(TAG, "EXCEPTION", e);
 			}
+		}
+		
+		@Override
+		public void publishVCard(String accountJidStr, final ParcelableElement vcardEl, final XmppCallback callback) throws RemoteException {
+			try {
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);	
+				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				final IQ iq = IQ.create();
+				iq.setType(StanzaType.set);
+				iq.addChild(vcardEl);
+				jaxmpp.send(iq, new XmppCallbackWrapper(callback));
+			} catch (Exception e) {
+				Log.e(TAG, "EXCEPTION", e);
+			}			
 		}
 		
 		@Override

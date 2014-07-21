@@ -185,7 +185,7 @@
             android:background="@android:color/darker_gray" />
 
         <ListView 
-            android:id="@+id/listLayout"
+            android:id="@+id/listLayout1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" ></ListView>
     </LinearLayout>
@@ -217,7 +217,7 @@
             android:background="@android:color/darker_gray" />
 
         <ListView 
-            android:id="@+id/listLayout"
+            android:id="@+id/listLayout2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" ></ListView>
     </LinearLayout>

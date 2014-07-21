@@ -7,14 +7,14 @@
                 android:action="org.tigase.messenger.phone.pro.account.preference.MAIN" 
                 android:targetClass="authenticator.AuthenticatorActivity.class" />
     </PreferenceScreen>    
-<!--     <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" 
+    <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" 
         android:title="@string/accountVCard" android:enabled="true" 
         android:key="vcard">
             <intent
                 android:action="org.tigase.messenger.phone.pro.account.personalInfo.EDIT" 
                 android:targetClass="vcard.VCardEditorActivity.class" />
     </PreferenceScreen>    
- -->
+ 
      <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" 
         android:title="@string/account_advanced_preferences" android:enabled="true" 
         android:key="advanced">

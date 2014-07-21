@@ -4,6 +4,7 @@ import org.tigase.messenger.phone.pro.muc.Occupant;
 import org.tigase.messenger.phone.pro.roster.CPresence;
 import org.tigase.messenger.phone.pro.roster.RosterUpdateCallback;
 import tigase.jaxmpp.android.xml.ParcelableElement;
+import org.tigase.messenger.phone.pro.service.XmppCallback;
 
 interface IJaxmppService {
 	
@@ -36,7 +37,8 @@ interface IJaxmppService {
 	Occupant[] getRoomOccupants(String accountJid, String roomJid);
 	
 	void updateRosterItem(String accountJid, String jid, String name, in List<String> groups, boolean requestAuth, RosterUpdateCallback callback);
-	void retrieveVCard(String accountJid, String jid, RosterUpdateCallback callback);
+	void publishVCard(String accountJid, in ParcelableElement vcardEl, in XmppCallback callback);
+	void retrieveVCard(String accountJid, String jid, in XmppCallback callback);
 	
 	// FileTransfer
 	boolean sendFile(String account, String jid, String fileUri, String mimetype);
