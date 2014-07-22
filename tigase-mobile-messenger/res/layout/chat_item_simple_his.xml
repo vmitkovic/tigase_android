@@ -6,8 +6,8 @@
 
     <ImageView
         android:id="@+id/user_avatar"
-        android:layout_width="50sp"
-        android:layout_height="50sp"
+        android:layout_width="@dimen/chat_item_layout_item_avatar_size"
+        android:layout_height="@dimen/chat_item_layout_item_avatar_size"
         android:layout_alignParentLeft="true"
         android:src="@drawable/user_avatar" />
     
