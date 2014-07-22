@@ -28,6 +28,7 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Debug;
 import android.os.IBinder;
 import android.os.Messenger;
 import android.os.RemoteException;
@@ -153,8 +154,10 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 				if (item.id == R.id.accounts_flipper) {
 					viewId = R.layout.main_left_drawer_item_account;
 				}
+				//MainActivity.this.getLayoutInflater();//
                 LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                View rowView = inflater.inflate(viewId, parent, false);
+                View rowView = (convertView == null || convertView.getId() != viewId) ? inflater.inflate(viewId, parent, false) : convertView;
+                rowView.setId(viewId);
                 TextView textView = (TextView) rowView.findViewById(R.id.main_left_drawer_item_text);
                 ImageView imageView = (ImageView) rowView.findViewById(R.id.main_left_drawer_item_icon);
 
@@ -207,7 +210,8 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 					viewId = R.layout.main_left_drawer_item_account;
 				}
                 LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                View rowView = inflater.inflate(viewId, parent, false);
+                View rowView = (convertView == null || convertView.getId() != viewId) ? inflater.inflate(viewId, parent, false) : convertView;
+                rowView.setId(viewId);
                 TextView textView = (TextView) rowView.findViewById(R.id.main_left_drawer_item_text);
                 ImageView imageView = (ImageView) rowView.findViewById(R.id.main_left_drawer_item_icon);
 
@@ -378,6 +382,7 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+//		Debug.startMethodTracing("tigase-MainActivity");
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main_activity);
 		
@@ -501,6 +506,7 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 		this.prefs.unregisterOnSharedPreferenceChangeListener(prefsChanged);
 		this.unregisterReceiver(mucRoomJoinedReceiver);
 		unbindService(jaxmppServiceConnection);
+		//Debug.stopMethodTracing();
 	}
 
 	public void onNewIntent(final Intent intent) {
