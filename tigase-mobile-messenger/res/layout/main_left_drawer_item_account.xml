@@ -19,7 +19,7 @@
         android:layout_marginTop="12dp"
         android:layout_marginBottom="10dp"
         android:layout_marginRight="0dp"
-        android:textColor="?android:attr/textColorPrimary"
+        android:textColor="#f0f0f0"
         android:layout_toRightOf="@+id/main_left_drawer_item_icon"
         android:layout_toLeftOf="@+id/main_left_drawer_item_switch"
         android:text="TextView" />

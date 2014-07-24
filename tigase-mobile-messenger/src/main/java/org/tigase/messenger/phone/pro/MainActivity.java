@@ -41,6 +41,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -63,10 +64,12 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 
     	private final Context context;
             private final List<DrawerMenuItem> items;
+            //private LayoutInflater mInflater;
 
             public DrawerMenuAdapter(Context context, int textViewResourceId, List<DrawerMenuItem> items) {
                     this.context = context;
                     this.items = items;
+                    //mInflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             }
 
             @Override
@@ -143,8 +146,30 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 			}
 
 			@Override
+			public int getChildType(int groupPosition, int childPosition) {
+				final DrawerMenuItem item = (DrawerMenuItem) getChild(groupPosition, childPosition);
+				return (item instanceof AccountDrawerMenuItem) ? 1 : 0;
+			}
+			
+			@Override
+			public int getChildTypeCount() {
+				return 2;
+			}
+
+			@Override
+			public int getGroupType(int groupPosition) {
+				final DrawerMenuItem item = (DrawerMenuItem) getGroup(groupPosition);
+				return (item.id == R.id.accounts_flipper) ? 1 : 0;
+			}			
+			
+			@Override
+			public int getGroupTypeCount() {
+				return 2;
+			}
+			
+			@Override
 			public boolean hasStableIds() {
-				return false;
+				return true;
 			}
 
 			@Override
@@ -155,9 +180,8 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 				if (item.id == R.id.accounts_flipper) {
 					viewId = R.layout.main_left_drawer_item_accounts;
 				}
-				//MainActivity.this.getLayoutInflater();//
-                LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                View rowView = (convertView == null || convertView.getId() != viewId) ? inflater.inflate(viewId, parent, false) : convertView;
+				LayoutInflater mInflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                View rowView = (convertView == null || convertView.getId() != viewId) ? mInflater.inflate(viewId, null) : convertView;
                 rowView.setId(viewId);
                 TextView textView = (TextView) rowView.findViewById(R.id.main_left_drawer_item_text);
                 ImageView imageView = (ImageView) rowView.findViewById(R.id.main_left_drawer_item_icon);
@@ -210,22 +234,15 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 				if (item instanceof AccountDrawerMenuItem) {
 					viewId = R.layout.main_left_drawer_item_account;
 				}
-                LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                View rowView = (convertView == null || convertView.getId() != viewId) ? inflater.inflate(viewId, parent, false) : convertView;
+				LayoutInflater mInflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                View rowView = (convertView == null || convertView.getId() != viewId) ? mInflater.inflate(viewId, null) : convertView;
                 rowView.setId(viewId);
                 TextView textView = (TextView) rowView.findViewById(R.id.main_left_drawer_item_text);
                 ImageView imageView = (ImageView) rowView.findViewById(R.id.main_left_drawer_item_icon);
-
-                if (item instanceof AccountDrawerMenuItem) {
-                	textView.setTextSize(12);
-                }
-                else {
-                	textView.setTextSize(14);
-                }
-                imageView.setImageResource(item.icon);
                 
                 if (item.text != 0) { 
                 	textView.setText(item.text);
+                    imageView.setImageResource(item.icon);
                 } else {
                 	textView.setText(item.textStr);
                 	AvatarHelper.setAvatarToImageView(BareJID.bareJIDInstance(item.textStr), imageView);
@@ -389,7 +406,7 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-//		Debug.startMethodTracing("tigase-MainActivity");
+		Debug.startMethodTracing("tigase-MainActivity");
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main_activity);
 		
@@ -513,7 +530,7 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 		this.prefs.unregisterOnSharedPreferenceChangeListener(prefsChanged);
 		this.unregisterReceiver(mucRoomJoinedReceiver);
 		unbindService(jaxmppServiceConnection);
-		//Debug.stopMethodTracing();
+		Debug.stopMethodTracing();
 	}
 
 	public void onNewIntent(final Intent intent) {

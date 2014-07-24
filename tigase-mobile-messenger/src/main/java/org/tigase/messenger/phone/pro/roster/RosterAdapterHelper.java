@@ -25,6 +25,8 @@ package org.tigase.messenger.phone.pro.roster;
 //import org.tigase.messenger.phone.pro.pubsub.GeolocationModule;
 //import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 
+import java.lang.ref.WeakReference;
+
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.GeolocationTableMetaData;
 import org.tigase.messenger.phone.pro.db.RosterTableMetaData;
@@ -39,7 +41,9 @@ import tigase.jaxmpp.j2se.Jaxmpp;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.text.Html;
 import android.text.method.SingleLineTransformationMethod;
 import android.util.Log;
@@ -68,6 +72,7 @@ public class RosterAdapterHelper {
 		TextView itemJid;
 		ImageView itemPresence;
 		View openChatNotifier;
+		WeakReference<AsyncTask> async;
 	}
 
 	private static final String TAG = "RosterAdapterHelper";
@@ -93,15 +98,19 @@ public class RosterAdapterHelper {
 			holder.itemPresence = (ImageView) view.findViewById(R.id.roster_item_precence);
 			holder.clientTypeIndicator = (ImageView) view.findViewById(R.id.client_type_indicator);
 		}
-
+		else {
+			if (holder.async != null) {
+				AsyncTask oldAsync = holder.async.get();
+				oldAsync.cancel(true);
+			}
+		}
+		
+		
 		holder.itemJid.setTransformationMethod(SingleLineTransformationMethod.getInstance());
 		String name = cursor.getString(cursor.getColumnIndex(RosterTableMetaData.FIELD_DISPLAY_NAME));
 		holder.itemJid.setText(name);
 
-		BareJID account = BareJID.bareJIDInstance(cursor.getString(cursor.getColumnIndex(RosterTableMetaData.FIELD_ACCOUNT)));
-
 		final BareJID jid = BareJID.bareJIDInstance(cursor.getString(cursor.getColumnIndex(RosterTableMetaData.FIELD_JID)));
-		//final Jaxmpp jaxmpp = ((MessengerApplication) context.getApplicationContext()).getMultiJaxmpp().get(account);
 
 		if (holder.clientTypeIndicator != null) {
 			holder.clientTypeIndicator.setVisibility(View.INVISIBLE);
@@ -154,29 +163,7 @@ public class RosterAdapterHelper {
 				holder.itemDescription.setText(Html.fromHtml(status));
 			} else {
 				status = "";
-				Cursor gc = null;
-				try {
-					gc = context.getContentResolver().query(Uri.parse(GeolocationProvider.CONTENT_URI), new String[] {
-						GeolocationTableMetaData.FIELD_COUNTRY, GeolocationTableMetaData.FIELD_LOCALITY,
-						GeolocationTableMetaData.FIELD_STREET
-					}, GeolocationTableMetaData.FIELD_JID + "=?", new String[] { jid.toString() }, null);
-					if (gc.moveToNext()) {
-						for (int i=0; i<3; i++) {
-							if (!gc.isNull(i)) {
-								if (status.length() > 0) {
-									status += ", ";
-								}
-								status += gc.getString(i);
-							}
-						}
-					}
-				} catch (Exception ex) {
-					Log.e(TAG, "Exception retrieving contact geolocation", ex);
-				} finally {
-					if (gc != null) {
-						gc.close();
-					}
-				}
+				holder.async = new WeakReference(new GeolocationStatusTask(context, holder.itemDescription).execute(jid.toString()));
 				
 //				// TODO: is it fast enough?
 //				GeolocationModule geoModule = jaxmpp.getModule(GeolocationModule.class);
@@ -196,7 +183,7 @@ public class RosterAdapterHelper {
 //						}
 //					}
 //				}
-				holder.itemDescription.setText(status);
+				//holder.itemDescription.setText(status);
 			}
 		}
 		AvatarHelper.setAvatarToImageView(jid, holder.itemAvatar);
@@ -234,5 +221,54 @@ public class RosterAdapterHelper {
 			break;
 		}
 		return result;
+	}
+	
+	private static class GeolocationStatusTask extends AsyncTask<String,Void,String> {
+
+		final WeakReference<TextView> descRef;
+		final Context context;
+		
+		GeolocationStatusTask(Context context, TextView desc) {
+			descRef  = new WeakReference<TextView>(desc);
+			this.context = context;
+		}
+		
+		@Override
+		protected String doInBackground(String... params) {
+			String status = "";
+			String jid = params[0];
+			Cursor gc = null;
+			try {
+				gc = context.getContentResolver().query(Uri.parse(GeolocationProvider.CONTENT_URI), new String[] {
+					GeolocationTableMetaData.FIELD_COUNTRY, GeolocationTableMetaData.FIELD_LOCALITY,
+					GeolocationTableMetaData.FIELD_STREET
+				}, GeolocationTableMetaData.FIELD_JID + "=?", new String[] { jid }, null);
+				if (gc.moveToNext()) {
+					for (int i=0; i<3; i++) {
+						if (!gc.isNull(i)) {
+							if (status.length() > 0) {
+								status += ", ";
+							}
+							status += gc.getString(i);
+						}
+					}
+				}
+			} catch (Exception ex) {
+				Log.e(TAG, "Exception retrieving contact geolocation", ex);
+			} finally {
+				if (gc != null) {
+					gc.close();
+				}
+			}
+			return status;
+		}
+		
+		@Override
+		protected void onPostExecute(String status) {
+			final TextView desc = descRef.get();
+			if (desc == null)
+				return;
+			desc.setText(status);
+		}
 	}
 }

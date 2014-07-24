@@ -973,48 +973,48 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		
 	}
 	
-	private class IncomingHandler extends Handler {
-		
-		public void handleMessage(Message msg) {
-			switch (msg.what) {
-				case SEND_MESSAGE:					
-					Bundle data = msg.getData();
-					BareJID account = BareJID.bareJIDInstance(data.getString("account"));
-					JID to = JID.jidInstance(data.getString("to"));
-					final String body = data.getString("message");
-					JaxmppCore jaxmpp = multiJaxmpp.get(account);
-					Log.v(TAG, "for account " + account.toString() + " got " + (jaxmpp == null ? "null" : jaxmpp.toString()));
-					final MessageModule messageModule = jaxmpp.getModule(MessageModule.class);
-					Chat chat = chats.get(to.getBareJid());
-					if (chat == null) {
-						try {
-							chat = messageModule.createChat(to);
-							chats.put(to.getBareJid(), chat);
-						} catch (JaxmppException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						
-					}
-					final Chat ch = chat;
-					new Thread() {
-						@Override
-						public void run() {
-							try {
-								messageModule.sendMessage(ch, body);
-							} catch (JaxmppException e) {
-								e.printStackTrace();
-							}							
-						}
-					}.start();
-
-					break;
-				default:
-					super.handleMessage(msg);
-			}
-		}
-		
-	}
+//	private class IncomingHandler extends Handler {
+//		
+//		public void handleMessage(Message msg) {
+//			switch (msg.what) {
+//				case SEND_MESSAGE:					
+//					Bundle data = msg.getData();
+//					BareJID account = BareJID.bareJIDInstance(data.getString("account"));
+//					JID to = JID.jidInstance(data.getString("to"));
+//					final String body = data.getString("message");
+//					JaxmppCore jaxmpp = multiJaxmpp.get(account);
+//					Log.v(TAG, "for account " + account.toString() + " got " + (jaxmpp == null ? "null" : jaxmpp.toString()));
+//					final MessageModule messageModule = jaxmpp.getModule(MessageModule.class);
+//					Chat chat = chats.get(to.getBareJid());
+//					if (chat == null) {
+//						try {
+//							chat = messageModule.createChat(to);
+//							chats.put(to.getBareJid(), chat);
+//						} catch (JaxmppException e) {
+//							// TODO Auto-generated catch block
+//							e.printStackTrace();
+//						}
+//						
+//					}
+//					final Chat ch = chat;
+//					new Thread() {
+//						@Override
+//						public void run() {
+//							try {
+//								messageModule.sendMessage(ch, body);
+//							} catch (JaxmppException e) {
+//								e.printStackTrace();
+//							}							
+//						}
+//					}.start();
+//
+//					break;
+//				default:
+//					super.handleMessage(msg);
+//			}
+//		}
+//		
+//	}
 	
 	private class ScreenStateReceiver extends BroadcastReceiver {
 		@Override
@@ -1031,7 +1031,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		}
 	}
 	
-	final Messenger messenger = new Messenger(new IncomingHandler());
+//	final Messenger messenger = new Messenger(new IncomingHandler());
 
 	private ActivityFeature activityFeature;
 	private ConnReceiver connReceiver;
@@ -1201,10 +1201,10 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	@Override
 	public IBinder onBind(Intent intent) {
 		// TODO Auto-generated method stub
-		if ("AIDL".equals(intent.getStringExtra("ID"))) {
+//		if ("AIDL".equals(intent.getStringExtra("ID"))) {
 			return new Stub();
-		}
-		return messenger.getBinder();
+//		}
+//		return messenger.getBinder();
 	}
 
 	@Override
