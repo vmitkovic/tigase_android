@@ -64,6 +64,7 @@ import tigase.jaxmpp.core.client.exceptions.JaxmppException;
 import tigase.jaxmpp.core.client.factory.UniversalFactory;
 import tigase.jaxmpp.core.client.xml.Element;
 import tigase.jaxmpp.core.client.xml.XMLException;
+import tigase.jaxmpp.core.client.xmpp.modules.BookmarksModule;
 import tigase.jaxmpp.core.client.xmpp.modules.ResourceBinderModule;
 import tigase.jaxmpp.core.client.xmpp.modules.SoftwareVersionModule;
 import tigase.jaxmpp.core.client.xmpp.modules.StreamFeaturesModule;
@@ -141,6 +142,17 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		@Override
 		public void updateConfiguration() throws RemoteException {
 			JaxmppService.this.updateJaxmppInstances();
+		}
+		
+		@Override
+		public List<String> getAccounts(boolean connectedOnly) {
+			List<String> accounts = new ArrayList<String>();
+			for (JaxmppCore jaxmpp : multiJaxmpp.get()) {
+				if (jaxmpp.isConnected() || !connectedOnly) {
+					accounts.add(jaxmpp.getSessionObject().getUserBareJid().toString());
+				}
+			}
+			return accounts;
 		}
 		
 		@Override
@@ -622,6 +634,36 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				Log.e(TAG, "EXCEPTION", e);
 				return false;
 			}		
+		}
+		
+		@Override
+		public void publishBookmarks(String accountJidStr, List<ParcelableElement> items, XmppCallback callback) {
+			try {
+				Log.v(TAG, "publishing bookmarks for account = " + accountJidStr);
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				BookmarksModule bookmarksModule = jaxmpp.getModule(BookmarksModule.class);
+				bookmarksModule.publishBookmarks(items, new XmppCallbackWrapper(callback));
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "EXCEPTION", e);
+			}
+		}
+		
+		@Override
+		public void retrieveBookmarks(String accountJidStr, XmppCallback callback) {
+			try {
+				Log.v(TAG, "retrieving bookmarks for account = " + accountJidStr);
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
+				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
+				BookmarksModule bookmarksModule = jaxmpp.getModule(BookmarksModule.class);
+				bookmarksModule.retrieveBookmarks(new XmppCallbackWrapper(callback));
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "EXCEPTION", e);
+			}			
 		}
 	}
 	
@@ -1343,6 +1385,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     			
     			jaxmpp.getModulesManager().register(new MucModule(new AndroidRoomsManager(this.chatProvider)));
     			jaxmpp.getModulesManager().register(new VCardModule());
+    			jaxmpp.getModulesManager().register(new BookmarksModule());
     			CapabilitiesModule capsModule = new CapabilitiesModule();
     			capsModule.setCache(capsCache);
     			jaxmpp.getModulesManager().register(capsModule);

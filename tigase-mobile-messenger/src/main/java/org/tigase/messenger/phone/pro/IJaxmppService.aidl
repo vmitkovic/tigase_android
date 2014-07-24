@@ -10,6 +10,7 @@ interface IJaxmppService {
 	
 	void updateConfiguration();
 	void preferenceChanged(String key);
+	List<String> getAccounts(boolean connectedOnly);
 	
 	boolean connect(String accountJid);
 	boolean disconnect(String accountJid);
@@ -42,4 +43,8 @@ interface IJaxmppService {
 	
 	// FileTransfer
 	boolean sendFile(String account, String jid, String fileUri, String mimetype);
+	
+	// Bookmarks
+	void retrieveBookmarks(String accountJid, in XmppCallback callback);
+	void publishBookmarks(String accountJid, in List<ParcelableElement> items, in XmppCallback callback);
 }

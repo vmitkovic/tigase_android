@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.tigase.messenger.phone.pro.account.AccountAuthenticator;
+import org.tigase.messenger.phone.pro.bookmarks.BookmarksFragment;
 import org.tigase.messenger.phone.pro.chat.ChatActivity;
 import org.tigase.messenger.phone.pro.chat.ChatHistoryFragment;
 import org.tigase.messenger.phone.pro.chat.ChatsListFragment;
@@ -152,7 +153,7 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
                 DrawerMenuItem item = (DrawerMenuItem) getGroup(groupPosition);
 				int viewId = R.layout.main_left_drawer_item;
 				if (item.id == R.id.accounts_flipper) {
-					viewId = R.layout.main_left_drawer_item_account;
+					viewId = R.layout.main_left_drawer_item_accounts;
 				}
 				//MainActivity.this.getLayoutInflater();//
                 LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -215,6 +216,12 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
                 TextView textView = (TextView) rowView.findViewById(R.id.main_left_drawer_item_text);
                 ImageView imageView = (ImageView) rowView.findViewById(R.id.main_left_drawer_item_icon);
 
+                if (item instanceof AccountDrawerMenuItem) {
+                	textView.setTextSize(12);
+                }
+                else {
+                	textView.setTextSize(14);
+                }
                 imageView.setImageResource(item.icon);
                 
                 if (item.text != 0) { 
@@ -407,7 +414,7 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
         }
 //        drawerMenuItems.add(new DrawerMenuItem(R.id.accountsList, R.string.accounts, R.drawable.ic_menu_account_list));
 //        drawerMenuItems.add(new DrawerMenuItem(R.id.joinMucRoom, R.string.join_muc_room, R.drawable.group_chat, true));
-//        drawerMenuItems.add(new DrawerMenuItem(R.id.bookmarksShow, R.string.bookmarks_show, android.R.drawable.star_off, true));
+        drawerMenuItems.add(new DrawerMenuItem(R.id.bookmarksList, R.string.bookmarks, android.R.drawable.star_off, true));
         drawerMenuItems.add(new DrawerMenuItem(R.id.action_settings, R.string.propertiesButton,
                         android.R.drawable.ic_menu_preferences));
 //        drawerMenuItems.add(new DrawerMenuItem(R.id.aboutButton, R.string.aboutButton, android.R.drawable.ic_menu_info_details));
@@ -535,6 +542,10 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 		if (itemId == R.id.rosterList) {
 			Fragment frag = new RosterFragment();
 			switchFragments(frag, RosterFragment.FRAG_TAG);
+		}
+		else if (itemId == R.id.bookmarksList) {
+			Fragment frag = new BookmarksFragment();
+			switchFragments(frag, BookmarksFragment.FRAG_TAG);
 		}
 		else if (itemId == R.id.action_settings) {
 			Intent intent = new Intent().setClass(this, MessengerPreferenceActivity.class);

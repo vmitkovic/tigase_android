@@ -166,4 +166,6 @@
     <string name="vcard_editor_activity_title">Personal information</string>
     <string name="accountVCard">Personal information</string>
 
+    <!-- Bookmarks -->
+    <string name="bookmarks">Bookmarks</string>
 </resources>
