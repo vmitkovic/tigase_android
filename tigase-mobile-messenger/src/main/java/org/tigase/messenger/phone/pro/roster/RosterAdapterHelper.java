@@ -101,7 +101,10 @@ public class RosterAdapterHelper {
 		else {
 			if (holder.async != null) {
 				AsyncTask oldAsync = holder.async.get();
-				oldAsync.cancel(true);
+				if (oldAsync != null) {
+					oldAsync.cancel(true);
+				}
+				holder.async = null;				
 			}
 		}
 		
