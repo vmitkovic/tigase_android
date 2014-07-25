@@ -1493,6 +1493,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     				Log.v(TAG, "cancelling connect for " + jaxmpp.getSessionObject().getUserBareJid() + " because it is disabled");
     				return;
     			}
+    			if (jaxmpp.isConnected())
+    				return;
     			
     			lock(jaxmpp.getSessionObject(), false);
     			setUsedNetworkType(getActiveNetworkType());
@@ -1503,7 +1505,10 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     						@Override
     						public void run() {
     							try {
-    								jaxmpp.getSessionObject().setProperty("messenger#error", null);
+    				    			if (jaxmpp.isConnected())
+    				    				return;
+
+    				    			jaxmpp.getSessionObject().setProperty("messenger#error", null);
     								jaxmpp.login();
     							}
     							catch (Exception e) {
