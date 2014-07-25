@@ -74,13 +74,12 @@ public class OccupantsListFragment extends Fragment {
 
 			// try {
 			nicknameTextView.setText(occupant.getNickname());
-			// int colorRes =
-			// MucAdapter.getOccupantColor(occupant.getNickname());
+			int colorRes = MucAdapter.getOccupantColor(occupant.getNickname());
 
 			// looks like enabled text is still gray but darker than
 			// disabled item
 			// but setting color in code fixes color of displayed text
-			// nicknameTextView.setTextColor(getResources().getColor(colorRes));
+			nicknameTextView.setTextColor(getResources().getColor(colorRes));
 			statusTextView.setTextColor(getResources().getColor(android.R.color.primary_text_light));
 
 			String status = occupant.getPresence().getDescription();
