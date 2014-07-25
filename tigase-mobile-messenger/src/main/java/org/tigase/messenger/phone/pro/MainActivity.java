@@ -406,7 +406,7 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		Debug.startMethodTracing("tigase-MainActivity");
+		//Debug.startMethodTracing("tigase-MainActivity");
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main_activity);
 		
@@ -530,7 +530,7 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 		this.prefs.unregisterOnSharedPreferenceChangeListener(prefsChanged);
 		this.unregisterReceiver(mucRoomJoinedReceiver);
 		unbindService(jaxmppServiceConnection);
-		Debug.stopMethodTracing();
+		//Debug.stopMethodTracing();
 	}
 
 	public void onNewIntent(final Intent intent) {
