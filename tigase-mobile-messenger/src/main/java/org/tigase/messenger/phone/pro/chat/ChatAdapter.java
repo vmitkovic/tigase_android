@@ -298,24 +298,24 @@ public class ChatAdapter extends SimpleCursorAdapter {
 			switch (type) {
 			case ChatTableMetaData.ITEM_TYPE_FILE:
 				convertView = inflater.inflate(chatLayout.file, parent, false);
-				convertView.setId(type);
+				convertView.setId(expectedViewId);
 				break;
 			case ChatTableMetaData.ITEM_TYPE_IMAGE:
 				convertView = inflater.inflate(chatLayout.image, parent, false);
-				convertView.setId(type);
+				convertView.setId(expectedViewId);
 				break;
 			case ChatTableMetaData.ITEM_TYPE_VIDEO:
 				convertView = inflater.inflate(chatLayout.video, parent, false);
-				convertView.setId(type);
+				convertView.setId(expectedViewId);
 				break;
 			case ChatTableMetaData.ITEM_TYPE_LOCALITY:
 				convertView = inflater.inflate(chatLayout.locality, parent, false);
-				convertView.setId(type);
+				convertView.setId(expectedViewId);
 				break;
 			default:
 			case ChatTableMetaData.ITEM_TYPE_MESSAGE:
 				convertView = inflater.inflate(chatLayout.message, parent, false);
-				convertView.setId(type);
+				convertView.setId(expectedViewId);
 				break;
 			}
 		}
