@@ -12,7 +12,7 @@
         android:showAsAction="ifRoom"
         android:icon="@android:drawable/ic_menu_share"        
         android:title="@string/shareButton">
-        <menu>
+<!--         <menu>
     		<item
         		android:id="@+id/shareImageButton"
         		android:icon="@android:drawable/ic_menu_gallery"
@@ -29,7 +29,7 @@
     		    android:title="@string/shareLocationButton"> 
     		</item>
     	</menu>
-    </item> 
+ -->    </item> 
     <item
         android:id="@+id/showContact"
         android:icon="@android:drawable/ic_menu_info_details"

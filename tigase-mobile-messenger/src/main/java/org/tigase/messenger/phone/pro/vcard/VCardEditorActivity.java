@@ -36,6 +36,7 @@ import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
 import org.tigase.messenger.phone.pro.roster.RosterUpdateCallback;
 import org.tigase.messenger.phone.pro.service.AsyncXmppCallback;
 import org.tigase.messenger.phone.pro.service.JaxmppService;
+import org.tigase.messenger.phone.pro.utils.CameraHelper;
 
 import tigase.jaxmpp.android.xml.ParcelableElement;
 import tigase.jaxmpp.core.client.AsyncCallback;
@@ -799,38 +800,7 @@ public class VCardEditorActivity extends Activity {
 		}		
 	}
 	
-	private File createImageFile() throws IOException {
-		// Create an image file name
-	    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-	    String imageFileName = "JPEG_" + timeStamp + "_";
-	    File storageDir = Environment.getExternalStoragePublicDirectory(
-	            Environment.DIRECTORY_PICTURES);
-	    File image = File.createTempFile(
-	        imageFileName,  /* prefix */
-	        ".jpg",         /* suffix */
-	        storageDir      /* directory */
-	    );
-
-	    return image;		
-	}
-	
 	private void takePictureForAvatar() {
-	    Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-	    // Ensure that there's a camera activity to handle the intent
-	    if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-	        // Create the File where the photo should go
-	        capturedPhotoFile = null;
-	        try {
-	        	capturedPhotoFile = createImageFile();
-	        } catch (IOException ex) {
-	            ex.printStackTrace();
-	        }
-	        // Continue only if the File was successfully created
-	        if (capturedPhotoFile != null) {
-	            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
-	                    Uri.fromFile(capturedPhotoFile));
-	            startActivityForResult(takePictureIntent, TAKE_PHOTO);
-	        }
-	    }		
+		capturedPhotoFile = CameraHelper.takePhoto(this, null, TAKE_PHOTO);
 	}
 }

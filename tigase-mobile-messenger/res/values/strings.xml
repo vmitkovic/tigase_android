@@ -169,4 +169,11 @@
 
     <!-- Bookmarks -->
     <string name="bookmarks">Bookmarks</string>
+    
+    <!-- Share action names -->
+    <string name="share_takePhoto">Take photo</string>
+    <string name="share_pickPhoto">Pick photo</string>
+    <string name="share_takeVideo">Take video</string>
+    <string name="share_pickVideo">Pick video</string>
+    <string name="share_location">Location</string>
 </resources>

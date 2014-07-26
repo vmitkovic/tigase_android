@@ -192,13 +192,15 @@ public class FileTransferUtility {
 		try {
 			String[] proj = { MediaStore.MediaColumns.DISPLAY_NAME };
 			cursor = activity.getContentResolver().query(uri, proj, null, null, null);//activity.managedQuery(uri, proj, null, null, null);
-			int columnIndex = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME);
-			if (cursor.moveToFirst()) {
-				filename = cursor.getString(columnIndex);
-				Log.v(TAG, "for uri = " + uri.toString() + " found name = " + filename);
-			} else {
-				// it should not happen
-				Log.v(TAG, "no file for uri = " + uri.toString());
+			if (cursor != null) {
+				int columnIndex = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME);
+				if (cursor.moveToFirst()) {
+					filename = cursor.getString(columnIndex);
+					Log.v(TAG, "for uri = " + uri.toString() + " found name = " + filename);
+				} else {
+					// it should not happen
+					Log.v(TAG, "no file for uri = " + uri.toString());
+				}
 			}
 			// we are using managedQuery so we are not allowed to close this
 			// cursor!

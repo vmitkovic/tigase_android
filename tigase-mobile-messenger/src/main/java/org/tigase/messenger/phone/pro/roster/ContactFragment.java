@@ -30,6 +30,7 @@ import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.providers.RosterProvider;
 import org.tigase.messenger.phone.pro.db.providers.RosterProviderExt;
 import org.tigase.messenger.phone.pro.service.AsyncXmppCallback;
+import org.tigase.messenger.phone.pro.ui.ShareDialog;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 import org.tigase.messenger.phone.pro.MainActivity;
 
@@ -65,6 +66,7 @@ import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -253,6 +255,8 @@ public class ContactFragment extends Fragment {
 	private ListView emailListLayout;
 
 	private ArrayAdapter<Item> emailListAdapter;
+
+	protected ShareDialog shareDialog = null;
 	
 //	private Listener<Connector.ConnectorEvent> accountStatusListener;
 	
@@ -298,9 +302,13 @@ public class ContactFragment extends Fragment {
 //		getJaxmpp().addListener(Connector.StateChanged, accountStatusListener);
 	}
 	
-//	@Override
-//	public void onActivityResult(int requestCode, int resultCode, Intent data) {
-//		if (requestCode == TigaseMobileMessengerActivity.SELECT_FOR_SHARE && resultCode == Activity.RESULT_OK) {
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (requestCode == MainActivity.SELECT_FOR_SHARE && resultCode == Activity.RESULT_OK) {
+			if (shareDialog != null) {
+				shareDialog.onActivityResult(data);
+				shareDialog = null;
+			}
 //			Uri selected = data.getData();
 //			String mimetype = data.getType();
 //			
@@ -312,8 +320,8 @@ public class ContactFragment extends Fragment {
 //			if (jid != null) {
 //				FileTransferUtility.startFileTransfer(getActivity(), jaxmpp, jid, selected, mimetype);
 //			}			
-//		}
-//	}
+		}
+	}
 
 	@Override
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
@@ -352,7 +360,7 @@ public class ContactFragment extends Fragment {
 		
 		this.chatBtn = (Button) layout.findViewById(R.id.chat_btn);
 		chatBtn.setOnClickListener(chatClickListener);
-
+		
 		this.phonesLayout = (View) layout.findViewById(R.id.phone_layout);
 		this.phoneListLayout = (ListView) phonesLayout.findViewById(R.id.listLayout);
 		this.phoneListAdapter = new ArrayAdapter<Item>(this.getActivity(), R.layout.contact_fragment_phone_item) {
@@ -477,21 +485,28 @@ public class ContactFragment extends Fragment {
 			}
 		};
 		
-//		this.shareClickListener = new OnClickListener() {
-//
-//			@Override
-//			public void onClick(View view) {
-////				shareWithResource = (String) view.getTag();
-//				Intent pickerIntent = new Intent(Intent.ACTION_PICK);
-//				pickerIntent.setType("video/*, images/*");
-//				pickerIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);				
-//				getActivity().startActivityForResult(pickerIntent, TigaseMobileMessengerActivity.SELECT_FOR_SHARE);
-//			}
-//			
-//		};
-//		
-//		this.shareBtn = (Button) layout.findViewById(R.id.share_btn);
-//		shareBtn.setOnClickListener(shareClickListener);
+		this.shareClickListener = new OnClickListener() {
+
+			@Override
+			public void onClick(View view) {
+				shareDialog  = ShareDialog.newInstance((MainActivity) getActivity(), ContactFragment.this, MainActivity.SELECT_FOR_SHARE, account, JID.jidInstance(jid), null);
+				shareDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {		
+					@Override
+					public void onDismiss(DialogInterface dialog) {
+						Log.v(TAG, "dialog dismissed");
+						if (shareDialog != null && shareDialog.isFinished()) {
+							Log.v(TAG, "releasing shareDialog instance");
+							shareDialog = null;
+						}
+					}
+				});
+				shareDialog.show();
+			}
+			
+		};
+		
+		this.shareBtn = (Button) layout.findViewById(R.id.share_btn);
+		shareBtn.setOnClickListener(shareClickListener);
 		
 		return layout;
 	}

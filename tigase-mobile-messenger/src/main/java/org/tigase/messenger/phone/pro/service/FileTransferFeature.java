@@ -189,17 +189,17 @@ public class FileTransferFeature implements FileTransferManager.FileTransferRequ
 		Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/" + Uri.encode(jid));
 		
 		ContentValues values = new ContentValues();
+		values.put(ChatTableMetaData.FIELD_TIMESTAMP, new Date().getTime());
 		values.put(ChatTableMetaData.FIELD_ACCOUNT, ft.getSessionObject().getUserBareJid().toString());
 		values.put(ChatTableMetaData.FIELD_AUTHOR_JID, ft.isIncoming() ? jid : ft.getSessionObject().getUserBareJid().toString());
 		values.put(ChatTableMetaData.FIELD_JID, jid);
-		values.put(ChatTableMetaData.FIELD_TIMESTAMP, new Date().getTime());
 		if (ft.getData("file-uri") != null) {
 			values.put(ChatTableMetaData.FIELD_DATA, ft.getData("file-uri").toString());
 		}
 		int stateInt = ft.isIncoming() 
 				? ((state == State.finished || state == State.error) ? ChatTableMetaData.STATE_INCOMING : ChatTableMetaData.STATE_INCOMING_UNREAD)
 				: ((state == State.finished || state == State.error) ? ChatTableMetaData.STATE_OUT_SENT : ChatTableMetaData.STATE_OUT_NOT_SENT);
-		values.put(ChatTableMetaData.FIELD_STATE, ft.isIncoming() 
+		values.put(ChatTableMetaData.FIELD_STATE, !ft.isIncoming() 
 				? ChatTableMetaData.STATE_OUT_SENT : ChatTableMetaData.STATE_INCOMING_UNREAD);	
 
 		if (ft.getData("db-id") == null) {
