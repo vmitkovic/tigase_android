@@ -14,6 +14,7 @@ import org.tigase.messenger.phone.pro.preferences.MessengerPreferenceActivity;
 import org.tigase.messenger.phone.pro.roster.ContactFragment;
 import org.tigase.messenger.phone.pro.roster.RosterFragment;
 import org.tigase.messenger.phone.pro.service.JaxmppService;
+import org.tigase.messenger.phone.pro.ui.ErrorDialog;
 import org.tigase.messenger.phone.pro.ui.MainTabsFragment;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 
@@ -374,6 +375,7 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 		
 	};
 	
+	public static final String ERROR_ACTION = "org.tigase.messenger.phone.pro.ERROR_MESSAGE";
 	public static final String NEW_MESSAGE_ACTION = "org.tigase.messenger.phone.pro.NEW_MESSAGE_ACTION";
 	
 	public static final int SELECT_FOR_SHARE = 2;
@@ -399,6 +401,8 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 
 	private SharedPreferences prefs;
 	private SharedPreferences.OnSharedPreferenceChangeListener prefsChanged;
+
+	private BroadcastReceiver errorReceiver;
 	
 	public IJaxmppService getJaxmppService() {
 		return jaxmppService;
@@ -505,6 +509,16 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 			
 		};
 		this.registerReceiver(mucRoomJoinedReceiver, filter);
+		filter = new IntentFilter();
+		filter.addAction("org.tigase.messenger.phone.pro.ERROR_MESSAGE");
+		errorReceiver = new BroadcastReceiver() {
+
+			@Override
+			public void onReceive(Context context, Intent intent) {
+				showError(intent.getExtras());
+			}
+			
+		};
 		
 		this.prefsChanged = new SharedPreferences.OnSharedPreferenceChangeListener() {
 			@Override
@@ -682,4 +696,17 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 			}
 		});
 	}
+	
+	private void showError(final Bundle bundle) {
+		String msgPrefix = "";
+		if ("muc".equals(bundle.getString("type")))
+			msgPrefix += "Room: " + bundle.getString("jid");
+		if (msgPrefix.length() > 0)
+			msgPrefix += "\n\n";
+		String message = bundle.getString("errorMessage");
+		String account = bundle.getString("account");
+
+		ErrorDialog newFragment = ErrorDialog.newInstance("Event", account, msgPrefix + message);
+		newFragment.show(getSupportFragmentManager(), "dialog");
+	}	
 }

@@ -50,22 +50,22 @@ public class NotificationHelperBase extends NotificationHelper {
 		return notification;
 	}
 
-//	@Override
-//	protected Notification prepareChatNotification(int ico, String title, String text, PendingIntent pendingIntent,
-//			MucEvent event) throws XMLException {
-//		long whenNotify = System.currentTimeMillis();
-//		Notification notification = new Notification(ico, title, whenNotify);
-//		notification.flags = Notification.FLAG_AUTO_CANCEL;
-//		// notification.flags |= Notification.FLAG_ONGOING_EVENT;
-//
-//		updateSound(notification, Preferences.NOTIFICATION_MUC_MENTIONED_KEY);
-//		updateLight(notification, Preferences.NOTIFICATION_MUC_MENTIONED_KEY);
-//		updateVibrate(notification, Preferences.NOTIFICATION_MUC_MENTIONED_KEY);
-//
-//		notification.setLatestEventInfo(context, title, text, pendingIntent);
-//
-//		return notification;
-//	}
+	@Override
+	protected Notification prepareChatMucNotification(int ico, String title, String text, PendingIntent pendingIntent,
+			SessionObject sessionObject, tigase.jaxmpp.core.client.xmpp.stanzas.Message msg) throws XMLException {
+		long whenNotify = System.currentTimeMillis();
+		Notification notification = new Notification(ico, title, whenNotify);
+		notification.flags = Notification.FLAG_AUTO_CANCEL;
+		// notification.flags |= Notification.FLAG_ONGOING_EVENT;
+
+		updateSound(notification, Preferences.NOTIFICATION_MUC_MENTIONED_KEY);
+		updateLight(notification, Preferences.NOTIFICATION_MUC_MENTIONED_KEY);
+		updateVibrate(notification, Preferences.NOTIFICATION_MUC_MENTIONED_KEY);
+
+		notification.setLatestEventInfo(context, title, text, pendingIntent);
+
+		return notification;
+	}
 
 	@Override
 	protected Notification prepareFileTransferProgressNotification(int ico, String title, String text, FileTransfer ft,

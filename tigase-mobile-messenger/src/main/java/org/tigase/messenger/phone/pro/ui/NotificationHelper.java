@@ -363,7 +363,7 @@ public abstract class NotificationHelper {
 
 		PendingIntent pendingIntent = PendingIntent.getActivity(context, (int) System.currentTimeMillis(), intent, 0);
 
-		Notification notification = prepareChatNotification(ico, notificationTitle, notificationText, pendingIntent, sessionObject, msg);
+		Notification notification = prepareChatMucNotification(ico, notificationTitle, notificationText, pendingIntent, sessionObject, msg);
 
 		notificationManager.notify("roomId:" + msg.getFrom().getBareJid().hashCode(), CHAT_NOTIFICATION_ID, notification);
 
@@ -406,8 +406,8 @@ public abstract class NotificationHelper {
 	protected abstract Notification prepareChatNotification(int ico, String title, String text, PendingIntent pendingIntent,
 			SessionObject sessionObject, tigase.jaxmpp.core.client.xmpp.stanzas.Message msg) throws XMLException;
 
-//	protected abstract Notification prepareChatNotification(int ico, String title, String text, PendingIntent pendingIntent,
-//			MucEvent event) throws XMLException;
+	protected abstract Notification prepareChatMucNotification(int ico, String title, String text, PendingIntent pendingIntent,
+			SessionObject sessionObject, tigase.jaxmpp.core.client.xmpp.stanzas.Message msg) throws XMLException;
 
 	protected abstract Notification prepareFileTransferProgressNotification(int ico, String title, String text,
 			FileTransfer ft, FileTransferFeature.State state);
@@ -415,29 +415,29 @@ public abstract class NotificationHelper {
 	protected abstract Notification prepareFileTransferRequestNotification(int ico, String title, String text, FileTransfer ft,
 			String tag);
 
-//	public void showMucError(String room, Intent intent) {
-//		String notiticationTitle = context.getResources().getString(R.string.service_error_notification_title);
-//		String expandedNotificationText = "Error in MUC";
-//
-//		Notification notification = new Notification(R.drawable.ic_stat_warning, notiticationTitle, System.currentTimeMillis());
-//		notification.flags = Notification.FLAG_AUTO_CANCEL;
-//		// notification.flags |= Notification.FLAG_ONGOING_EVENT;
-//		// notification.flags |= Notification.FLAG_FOREGROUND_SERVICE;
-//
-//		updateSound(notification, Preferences.NOTIFICATION_MUC_ERROR_KEY);
-//		updateLight(notification, Preferences.NOTIFICATION_MUC_ERROR_KEY);
-//		updateVibrate(notification, Preferences.NOTIFICATION_MUC_ERROR_KEY);
-//
-//		final Context context = this.context.getApplicationContext();
-//
-//		String expandedNotificationTitle = context.getResources().getString(R.string.app_name);
-//
-//		PendingIntent pendingIntent = PendingIntent.getActivity(context, (int) System.currentTimeMillis(), intent, 0);
-//		notification.setLatestEventInfo(context, expandedNotificationTitle, expandedNotificationText, pendingIntent);
-//
-//		notificationManager.notify("error:" + room, ERROR_NOTIFICATION_ID, notification);
-//
-//	}
+	public void showMucError(String room, Intent intent) {
+		String notiticationTitle = context.getResources().getString(R.string.service_error_notification_title);
+		String expandedNotificationText = "Error in MUC";
+
+		Notification notification = new Notification(R.drawable.ic_stat_warning, notiticationTitle, System.currentTimeMillis());
+		notification.flags = Notification.FLAG_AUTO_CANCEL;
+		// notification.flags |= Notification.FLAG_ONGOING_EVENT;
+		// notification.flags |= Notification.FLAG_FOREGROUND_SERVICE;
+
+		updateSound(notification, Preferences.NOTIFICATION_MUC_ERROR_KEY);
+		updateLight(notification, Preferences.NOTIFICATION_MUC_ERROR_KEY);
+		updateVibrate(notification, Preferences.NOTIFICATION_MUC_ERROR_KEY);
+
+		final Context context = this.context.getApplicationContext();
+
+		String expandedNotificationTitle = context.getResources().getString(R.string.app_name);
+
+		PendingIntent pendingIntent = PendingIntent.getActivity(context, (int) System.currentTimeMillis(), intent, 0);
+		notification.setLatestEventInfo(context, expandedNotificationTitle, expandedNotificationText, pendingIntent);
+
+		notificationManager.notify("error:" + room, ERROR_NOTIFICATION_ID, notification);
+
+	}
 
 	public void showWarning(String id, String message, Intent intent) {
 		String notiticationTitle = context.getResources().getString(R.string.service_warning_notification_title);

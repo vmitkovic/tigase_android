@@ -54,14 +54,14 @@ public class NotificationHelperHoneycomb extends NotificationHelper {
 		return notification;
 	}
 
-//	@Override
-//	protected Notification prepareChatNotification(int ico, String title, String text, PendingIntent pendingIntent,
-//			MucEvent event) throws XMLException {
-//		Notification.Builder builder = prepareChatNotificationInt(ico, title, text, pendingIntent, event);
-//		Notification notification = builder.getNotification();
-//		notification.flags |= Notification.FLAG_SHOW_LIGHTS;
-//		return notification;
-//	}
+	@Override
+	protected Notification prepareChatMucNotification(int ico, String title, String text, PendingIntent pendingIntent,
+			SessionObject sessionObject, tigase.jaxmpp.core.client.xmpp.stanzas.Message msg) throws XMLException {
+		Notification.Builder builder = prepareChatMucNotificationInt(ico, title, text, pendingIntent, sessionObject, msg);
+		Notification notification = builder.getNotification();
+		notification.flags |= Notification.FLAG_SHOW_LIGHTS;
+		return notification;
+	}
 
 	protected Notification.Builder prepareChatNotificationInt(int ico, String title, String text, PendingIntent pendingIntent,
 			SessionObject sessionObject, tigase.jaxmpp.core.client.xmpp.stanzas.Message msg) throws XMLException {
@@ -93,17 +93,17 @@ public class NotificationHelperHoneycomb extends NotificationHelper {
 		return builder;
 	}
 
-//	protected Notification.Builder prepareChatNotificationInt(int ico, String title, String text, PendingIntent pendingIntent,
-//			MucEvent event) throws XMLException {
-//		Notification.Builder builder = new Notification.Builder(context);
-//		builder.setContentTitle(title).setContentText(text);
-//		updateSound(builder, Preferences.NOTIFICATION_MUC_MENTIONED_KEY);
-//		updateLight(builder, Preferences.NOTIFICATION_MUC_MENTIONED_KEY);
-//		updateVibrate(builder, Preferences.NOTIFICATION_MUC_MENTIONED_KEY);
-//		builder.setSmallIcon(ico).setContentIntent(pendingIntent).setAutoCancel(true);
-//
-//		return builder;
-//	}
+	protected Notification.Builder prepareChatMucNotificationInt(int ico, String title, String text, PendingIntent pendingIntent,
+			SessionObject sessionObject, tigase.jaxmpp.core.client.xmpp.stanzas.Message msg) throws XMLException {
+		Notification.Builder builder = new Notification.Builder(context);
+		builder.setContentTitle(title).setContentText(text);
+		updateSound(builder, Preferences.NOTIFICATION_MUC_MENTIONED_KEY);
+		updateLight(builder, Preferences.NOTIFICATION_MUC_MENTIONED_KEY);
+		updateVibrate(builder, Preferences.NOTIFICATION_MUC_MENTIONED_KEY);
+		builder.setSmallIcon(ico).setContentIntent(pendingIntent).setAutoCancel(true);
+
+		return builder;
+	}
 
 	protected void prepareChatNotificationUnreadMessages(Notification.Builder builder, Cursor c) {
 

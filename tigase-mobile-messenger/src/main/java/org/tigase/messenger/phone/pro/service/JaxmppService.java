@@ -15,6 +15,7 @@ import java.util.TimerTask;
 import javax.net.ssl.SSLSocketFactory;
 
 import org.tigase.messenger.phone.pro.IJaxmppService;
+import org.tigase.messenger.phone.pro.MainActivity;
 import org.tigase.messenger.phone.pro.MessengerApplication;
 import org.tigase.messenger.phone.pro.Preferences;
 import org.tigase.messenger.phone.pro.R;
@@ -710,7 +711,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	}
 	
 	private class MucHandler implements MucModule.MucMessageReceivedHandler, MucModule.YouJoinedHandler, 
-			MucModule.MessageErrorHandler, MucModule.StateChangeHandler {
+			MucModule.MessageErrorHandler, MucModule.StateChangeHandler, MucModule.PresenceErrorHandler {
 
 		@Override
 		public void onMucMessageReceived(SessionObject sessionObject,
@@ -755,6 +756,40 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			}
 		}
 
+		@Override
+		public void onPresenceError(SessionObject sessionObject, Room room, Presence presence, String nickname) {
+			Intent intent = new Intent();
+
+			// intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			// intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+			intent.setAction(MainActivity.ERROR_ACTION);
+			intent.putExtra("account", sessionObject.getUserBareJid().toString());
+			intent.putExtra("jid", "" + room.getRoomJid().toString());
+			intent.putExtra("type", "muc");
+
+			try {
+				ErrorCondition c = presence.getErrorCondition();
+				if (c != null) {
+					intent.putExtra("errorCondition", c.name());
+					intent.putExtra("errorMessage", c.name());
+				} else {
+					intent.putExtra("errorCondition", "-");
+					intent.putExtra("errorMessage", "-");
+				}
+			} catch (XMLException ex) {
+				ex.printStackTrace();
+			}
+
+			if (focused) {
+				intent.setAction(ERROR_MESSAGE);
+				sendBroadcast(intent);
+			} else {
+				intent.setClass(getApplicationContext(), MainActivity.class);
+				notificationHelper.showMucError(room.getRoomJid().toString(), intent);
+			}			
+		}
+		
 		@Override
 		public void onYouJoined(SessionObject sessionObject, Room room,
 				String asNickname) {
@@ -890,6 +925,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	
 	public static final int SEND_MESSAGE = 1;
 	public static final String CLIENT_FOCUS = "org.tigase.messenger.phone.pro.CLIENT_FOCUS";
+	public static final String ERROR_MESSAGE = "org.tigase.messenger.phone.pro.ERROR_MESSAGE";
 
 	public static final String ACTION_FILETRANSFER = "org.tigase.messenger.phone.pro.service.JaxmppService.FILE_TRANSFER";
 	private static final String ACTION_KEEPALIVE = "org.tigase.messenger.phone.pro.service.JaxmppService.KEEP_ALIVE";
@@ -1172,6 +1208,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		multiJaxmpp.addHandler(MucModule.MessageErrorHandler.MessageErrorEvent.class, mucHandler);
 		multiJaxmpp.addHandler(MucModule.YouJoinedHandler.YouJoinedEvent.class, mucHandler);
 		multiJaxmpp.addHandler(MucModule.StateChangeHandler.StateChangeEvent.class, mucHandler);
+		multiJaxmpp.addHandler(MucModule.PresenceErrorHandler.PresenceErrorEvent.class, mucHandler);
 		
 		multiJaxmpp.addHandler(Connector.StanzaSendingHandler.StanzaSendingEvent.class, new Connector.StanzaSendingHandler() {
 			@Override

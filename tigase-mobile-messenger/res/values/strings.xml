@@ -79,6 +79,7 @@
     <string name="contact_edit_group">Group</string>
     <string name="contact_edit_request_authorization">Request authorization</string>
     <string name="contact_remove">Remove</string>
+    <string name="service_error_notification_title">Error</string>
     <string name="service_mentioned_you_in_message">%s mentioned you</string>
     <string name="service_new_message">New message</string>
     <string name="service_warning_notification_title">Warning</string>
