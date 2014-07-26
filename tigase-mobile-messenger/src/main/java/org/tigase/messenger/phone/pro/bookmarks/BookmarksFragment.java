@@ -330,7 +330,7 @@ public class BookmarksFragment extends Fragment {
 							jaxmppService.joinRoom(bookmark.accountJid.toString(), bookmark.jid.toString(),
 									bookmark.nick, bookmark.password, "org.tigase.messenger.phone.pro.MUC_ROOM_JOINED");
 
-							getActivity().getSupportFragmentManager().popBackStack(RosterFragment.FRAG_TAG, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+							getActivity().getSupportFragmentManager().popBackStack();
 						} catch (RemoteException e) {
 							Log.e(TAG, "exception while trying to join room");
 						}

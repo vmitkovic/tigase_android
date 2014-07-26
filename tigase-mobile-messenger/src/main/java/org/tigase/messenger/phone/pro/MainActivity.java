@@ -663,11 +663,15 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 	}
 	
 	public void switchFragments(Fragment newFragment, String tag, FragmentTransaction ft) {
+		if (newFragment instanceof MucRoomFragment || newFragment instanceof ChatHistoryFragment) {
+			removePreviousMucOrChatFragments();
+		}
+
 		//ft.setCustomAnimations(R.animator.slide_in_right, R.animator.slide_out_left);
 		ft.setCustomAnimations(R.animator.slide_in_left, R.animator.slide_out_right, R.animator.slide_out_left, R.animator.slide_in_right);
 		
 		ft.replace(R.id.content_frame, newFragment, tag);
-		ft.addToBackStack(RosterFragment.FRAG_TAG);
+		ft.addToBackStack(tag);
 		ft.commit();		
 	}
 	
@@ -681,6 +685,7 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 				if (NEW_MESSAGE_ACTION.equals(intent.getAction())) {
 					String type = intent.getStringExtra("type");
 					if ("chat".equals(type)) {
+						getSupportFragmentManager().popBackStack(RosterFragment.FRAG_TAG, FragmentManager.POP_BACK_STACK_INCLUSIVE);
 						Fragment chatFragment = new ChatHistoryFragment();
 						chatFragment.setArguments(intent.getExtras());
 						switchFragments(chatFragment, ChatHistoryFragment.FRAG_TAG);	
@@ -695,6 +700,11 @@ public class MainActivity extends ActionBarActivity implements RosterFragment.On
 				}
 			}
 		});
+	}
+	
+	private void removePreviousMucOrChatFragments() {
+		getSupportFragmentManager().popBackStack(ChatHistoryFragment.FRAG_TAG, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+		getSupportFragmentManager().popBackStack(MucRoomFragment.FRAG_TAG, FragmentManager.POP_BACK_STACK_INCLUSIVE);
 	}
 	
 	private void showError(final Bundle bundle) {
