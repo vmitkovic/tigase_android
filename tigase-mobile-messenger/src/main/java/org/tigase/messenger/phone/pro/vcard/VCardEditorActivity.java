@@ -18,8 +18,12 @@
 package org.tigase.messenger.phone.pro.vcard;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -75,9 +79,11 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.provider.ContactsContract;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -100,6 +106,7 @@ public class VCardEditorActivity extends Activity {
 
 	private static final int PICK_ACCOUNT = 2;
 	private static final int PICK_IMAGE = 1;
+	private static final int TAKE_PHOTO = 3;
 
 	private static final int PUBLISHED_TOAST = 1;
 	private static final String TAG = "VCardEditorActivity";
@@ -215,6 +222,7 @@ public class VCardEditorActivity extends Activity {
 	private ImageView avatar;
 
 	private Bitmap bitmap = null;
+	private File capturedPhotoFile = null;
 	
 	private IJaxmppService jaxmppService = null;
 	private ServiceConnection jaxmppServiceConnection = new ServiceConnection() {
@@ -384,20 +392,8 @@ public class VCardEditorActivity extends Activity {
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (requestCode == PICK_IMAGE && data != null && data.getData() != null) {
-			Uri _uri = data.getData();
-
-			if (_uri != null) {
-				// Link to the image
-				Bitmap bmp = getScaledImage(_uri);
-				avatar.setImageBitmap(bmp);
-
-				byte[] buffer = bitmapToByteArray(bmp);
-				bitmap = bmp;
-				ContentValues values = new ContentValues();
-				values.put(VCardsCacheTableMetaData.FIELD_DATA, buffer);
-				getContentResolver().insert(
-						Uri.parse(RosterProvider.VCARD_URI + "/" + Uri.encode(jid.getBareJid().toString())), values);
-			}
+			Uri uri = data.getData();
+			setAvatarFromUri(uri);
 		} else if (requestCode == PICK_ACCOUNT) {
 			if (data == null || data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME) == null) {
 				this.finish();
@@ -406,6 +402,11 @@ public class VCardEditorActivity extends Activity {
 			String accName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
 			setAccountJid(JID.jidInstance(accName));
 			this.invalidateOptionsMenu();
+		} else if (requestCode == TAKE_PHOTO) {
+			if (capturedPhotoFile != null && capturedPhotoFile.exists()) {
+				Uri uri = Uri.fromFile(capturedPhotoFile);
+				setAvatarFromUri(uri);
+			}
 		}
 		super.onActivityResult(requestCode, resultCode, data);
 	}
@@ -420,7 +421,7 @@ public class VCardEditorActivity extends Activity {
 
 			@Override
 			public void onClick(View v) {
-				chooseAvatar();
+				showAvatarActionDialog();
 			}
 		});
 			
@@ -726,6 +727,25 @@ public class VCardEditorActivity extends Activity {
 		((TextView) findViewById(R.id.email)).setEnabled(enabled);
 	}
 
+	protected void showAvatarActionDialog() {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setItems(R.array.vcard_avatar_action,
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						switch (which) {
+						case 0:
+							takePictureForAvatar();
+							break;
+						case 1:
+						default:
+							chooseAvatar();
+							break;
+						}
+					}
+				});
+		builder.create().show();
+	}
+	
 	/**
 	 * Show toast based on type
 	 * 
@@ -762,5 +782,55 @@ public class VCardEditorActivity extends Activity {
 		Intent intentChooser = AccountManager.newChooseAccountIntent(account, null, new String[] { AccountAuthenticator.ACCOUNT_TYPE },
 				false, null, null, null, null);
 		this.startActivityForResult(intentChooser, PICK_ACCOUNT);
+	}
+	
+	private void setAvatarFromUri(Uri uri) {
+		if (uri != null) {
+			// Link to the image
+			Bitmap bmp = getScaledImage(uri);
+			avatar.setImageBitmap(bmp);
+
+			byte[] buffer = bitmapToByteArray(bmp);
+			bitmap = bmp;
+			ContentValues values = new ContentValues();
+			values.put(VCardsCacheTableMetaData.FIELD_DATA, buffer);
+			getContentResolver().insert(
+					Uri.parse(RosterProvider.VCARD_URI + "/" + Uri.encode(jid.getBareJid().toString())), values);
+		}		
+	}
+	
+	private File createImageFile() throws IOException {
+		// Create an image file name
+	    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+	    String imageFileName = "JPEG_" + timeStamp + "_";
+	    File storageDir = Environment.getExternalStoragePublicDirectory(
+	            Environment.DIRECTORY_PICTURES);
+	    File image = File.createTempFile(
+	        imageFileName,  /* prefix */
+	        ".jpg",         /* suffix */
+	        storageDir      /* directory */
+	    );
+
+	    return image;		
+	}
+	
+	private void takePictureForAvatar() {
+	    Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+	    // Ensure that there's a camera activity to handle the intent
+	    if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+	        // Create the File where the photo should go
+	        capturedPhotoFile = null;
+	        try {
+	        	capturedPhotoFile = createImageFile();
+	        } catch (IOException ex) {
+	            ex.printStackTrace();
+	        }
+	        // Continue only if the File was successfully created
+	        if (capturedPhotoFile != null) {
+	            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
+	                    Uri.fromFile(capturedPhotoFile));
+	            startActivityForResult(takePictureIntent, TAKE_PHOTO);
+	        }
+	    }		
 	}
 }
