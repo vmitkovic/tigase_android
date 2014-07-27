@@ -1526,14 +1526,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     	final Runnable r = new Runnable() {
     		@Override
     		public void run() {
+    			lock(jaxmpp.getSessionObject(), false);
     			if (isDisabled(jaxmpp.getSessionObject())) {
     				Log.v(TAG, "cancelling connect for " + jaxmpp.getSessionObject().getUserBareJid() + " because it is disabled");
     				return;
     			}
-    			if (jaxmpp.isConnected())
-    				return;
-    			
-    			lock(jaxmpp.getSessionObject(), false);
     			setUsedNetworkType(getActiveNetworkType());
     			if (getUsedNetworkType() != -1) {
     				final State state = jaxmpp.getSessionObject().getProperty(Connector.CONNECTOR_STAGE_KEY);
@@ -1558,6 +1555,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     			}
     		}
     	};
+    	lock(jaxmpp.getSessionObject(), true);	
     	
     	if (date == null) {
     		r.run();
