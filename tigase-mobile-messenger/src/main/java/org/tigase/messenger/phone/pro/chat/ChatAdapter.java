@@ -178,7 +178,8 @@ public class ChatAdapter extends SimpleCursorAdapter {
 		@Override
 		protected Bitmap doInBackground(String... params) {
 			// TODO Auto-generated method stub
-			Bitmap bmp = ImageHelper.get("images-mini", params[0]);
+			final String key = ImageHelper.hashKey(params[0]);
+			Bitmap bmp = ImageHelper.get("images-mini", key);
 			if (bmp != null) {
 				Log.v(TAG, "for " + params[0] + " got image from cache");
 				return bmp;
@@ -206,7 +207,7 @@ public class ChatAdapter extends SimpleCursorAdapter {
 				is = mContext.getContentResolver().openInputStream(uri);
 				bmp = BitmapFactory.decodeStream(is, null, options);
 				if (bmp != null) {
-					ImageHelper.put("images-mini", params[0], bmp);
+					ImageHelper.put("images-mini", key, bmp);
 					Log.v(TAG, "loaded image from " + params[0] + " " + bmp.getWidth() + "x" + bmp.getHeight());
 				}
 			} catch (FileNotFoundException e) {
