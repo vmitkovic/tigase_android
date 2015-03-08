@@ -1,0 +1,37 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 19
+    buildToolsVersion "21.1.2"
+
+    defaultConfig {
+        applicationId "org.tigase.messenger.phone.pro"
+        minSdkVersion 10
+        targetSdkVersion 19
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+
+    packagingOptions {
+        exclude 'LICENSE.txt'
+    }
+}
+
+//repositories {
+//    maven {
+//        url "http://build.xmpp-test.net/maven/"
+//    }
+//}
+
+dependencies {
+    compile project(':tigase-mobile-commons')
+    compile 'com.android.support:support-v4:19.1.0'
+    compile 'com.android.support:appcompat-v7:19.1.0'
+    compile 'com.google.android.gms:play-services:+'
+}
+

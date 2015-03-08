@@ -24,11 +24,13 @@ import tigase.jaxmpp.core.client.xmpp.stanzas.Presence;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Presence.Show;
 
 import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.android.gms.location.ActivityRecognitionClient;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.ActivityRecognition;
+import com.google.android.gms.location.ActivityRecognitionApi;
 import com.google.android.gms.location.ActivityRecognitionResult;
 import com.google.android.gms.location.DetectedActivity;
+import com.google.android.gms.location.LocationServices;
 
 import android.app.PendingIntent;
 import android.content.Context;
@@ -37,12 +39,12 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 
-public class ActivityFeature implements GooglePlayServicesClient.ConnectionCallbacks, GooglePlayServicesClient.OnConnectionFailedListener,
+public class ActivityFeature implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
 		SharedPreferences.OnSharedPreferenceChangeListener {
 	
 	private static final String TAG = "ActivityFeature";
 	
-	private ActivityRecognitionClient client;
+	private GoogleApiClient client;
 	private DetectedActivity activity = null;
 	private JaxmppService jaxmppService;
 	
@@ -104,8 +106,9 @@ public class ActivityFeature implements GooglePlayServicesClient.ConnectionCallb
 		
 		if (client != null)
 			return;
-		
-		client = new ActivityRecognitionClient(jaxmppService, this, this);
+
+        client = new GoogleApiClient.Builder(jaxmppService).addApi(ActivityRecognition.API)
+                .addConnectionCallbacks(this).addOnConnectionFailedListener(this).build();
 		client.connect();
 	}
 	
@@ -113,7 +116,7 @@ public class ActivityFeature implements GooglePlayServicesClient.ConnectionCallb
 		if (client == null)
 			return;
 		
-		ActivityRecognitionClient tmp = client;
+		GoogleApiClient tmp = client;
 		client = null;
 		tmp.disconnect();
 		if (activity != null) {
@@ -132,17 +135,22 @@ public class ActivityFeature implements GooglePlayServicesClient.ConnectionCallb
 	public void onConnected(Bundle connectionHint) {
 		Log.v(TAG, "Connection to activity recognition established");
 		Intent intent = new Intent(jaxmppService, JaxmppService.class);
-	    PendingIntent callbackIntent = PendingIntent.getService(jaxmppService, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);		
-		client.requestActivityUpdates(30000, callbackIntent);
+	    PendingIntent callbackIntent = PendingIntent.getService(jaxmppService, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        ActivityRecognition.ActivityRecognitionApi.requestActivityUpdates(client, 30000, callbackIntent);
 	}
 
-	@Override
-	public void onDisconnected() {
-		Log.v(TAG, "Connecton to activity recognition broken");
-		if (client != null) {
-			client.connect();
-		}
-	}
+    @Override
+    public void onConnectionSuspended(int i) {
+        Log.v(TAG, "Connection to activity recognition suspended, cause = " + i);
+    }
+
+//    @Override
+//	public void onDisconnected() {
+//		Log.v(TAG, "Connecton to activity recognition broken");
+//		if (client != null) {
+//			client.connect();
+//		}
+//	}
 
 	@Override
 	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,

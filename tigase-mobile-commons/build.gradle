@@ -1,0 +1,44 @@
+apply plugin: 'com.android.library'
+
+def jaxmppVersion = '3.1.0-SNAPSHOT'
+
+android {
+    compileSdkVersion 19
+    buildToolsVersion "21.1.2"
+
+    defaultConfig {
+        minSdkVersion 10
+        targetSdkVersion 18
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+}
+
+//repositories {
+//    maven {
+//        url "http://build.xmpp-test.net/maven/"
+//    }
+//}
+
+dependencies {
+    compile group: 'tigase', name: 'jaxmpp-android', version: jaxmppVersion
+    compile group: 'tigase', name: 'jaxmpp-muc', version: jaxmppVersion
+    compile group: 'tigase', name: 'jaxmpp-chat', version: jaxmppVersion
+    compile group: 'tigase', name: 'jaxmpp-presence', version: jaxmppVersion
+    compile group: 'tigase', name: 'jaxmpp-roster', version: jaxmppVersion
+    compile group: 'tigase', name: 'jaxmpp-registration', version: jaxmppVersion
+    compile group: 'tigase', name: 'jaxmpp-vcard', version: jaxmppVersion
+    compile group: 'tigase', name: 'jaxmpp-filetransfer', version: jaxmppVersion
+    compile group: 'tigase', name: 'jaxmpp-jingle', version: jaxmppVersion
+    compile group: 'tigase', name: 'jaxmpp-socks5', version: jaxmppVersion
+    compile group: 'tigase', name: 'jaxmpp-pubsub', version: jaxmppVersion
+    compile group: 'tigase', name: 'jaxmpp-im', version: jaxmppVersion
+    compile group: 'tigase', name: 'jaxmpp-core', version: jaxmppVersion
+    compile group: 'tigase', name: 'jaxmpp-j2se', version: jaxmppVersion
+    compile group: 'tigase', name: 'tigase-xmltools', version: '3.5.0-SNAPSHOT'
+}

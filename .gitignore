@@ -1,7 +1,16 @@
+tigase-mobile-commons/.idea
 tigase-mobile-commons/bin
+tigase-mobile-commons/build
 tigase-mobile-commons/gen
 tigase-mobile-commons/target
+tigase-mobile-messenger/.idea
 tigase-mobile-messenger/bin
+tigase-mobile-messenger/build
 tigase-mobile-messenger/gen
 tigase-mobile-messenger/target
 keystore.properties
+.idea
+.gradle
+build
+*.iml
+local.properties

@@ -1,0 +1,2 @@
+include ':tigase-mobile-commons'
+include ':tigase-mobile-messenger'

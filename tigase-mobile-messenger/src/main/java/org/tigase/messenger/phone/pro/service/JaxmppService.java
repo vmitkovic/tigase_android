@@ -91,6 +91,7 @@ import tigase.jaxmpp.core.client.xmpp.stanzas.Presence;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Presence.Show;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Stanza;
 import tigase.jaxmpp.core.client.xmpp.stanzas.StanzaType;
+import tigase.jaxmpp.core.client.xmpp.stanzas.StreamPacket;
 import tigase.jaxmpp.core.client.xmpp.utils.delay.XmppDelay;
 import tigase.jaxmpp.j2se.J2SEPresenceStore;
 import tigase.jaxmpp.j2se.J2SESessionObject;
@@ -1220,7 +1221,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		multiJaxmpp.addHandler(StanzaReceivedHandler.StanzaReceivedEvent.class, new Connector.StanzaReceivedHandler() {
 			@Override
 			public void onStanzaReceived(SessionObject sessionObject,
-					Element stanza) {
+                                         StreamPacket stanza) {
 				try {
 					Log.v("STREAM", "received stanza = " + stanza.getAsString());
 				} catch (XMLException e) {

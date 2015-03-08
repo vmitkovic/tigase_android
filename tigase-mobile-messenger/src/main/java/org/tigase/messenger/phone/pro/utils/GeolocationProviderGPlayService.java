@@ -26,20 +26,20 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesClient;
-import com.google.android.gms.location.LocationClient;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 
 public class GeolocationProviderGPlayService extends GeolocationProvider 
-		implements GooglePlayServicesClient.ConnectionCallbacks,
-			GooglePlayServicesClient.OnConnectionFailedListener {
+		implements GoogleApiClient.ConnectionCallbacks,
+			GoogleApiClient.OnConnectionFailedListener {
 
 	private static final String TAG = "GeolocationProviderGPlayService";
 	
 	private Context context;
 	private Map<LocationListener,LocationRequest> listeners = new HashMap<LocationListener,LocationRequest>();
-	private LocationClient locationClient;
+	private GoogleApiClient locationClient;
 	private LocationListener currentLocationListener;
 	
 	protected GeolocationProviderGPlayService(Context context) {
@@ -53,7 +53,7 @@ public class GeolocationProviderGPlayService extends GeolocationProvider
 		listeners.put(listener, request);
 		if (locationClient != null && locationClient.isConnected()) {
 			Log.v(TAG, "registering location listener = " + listener);
-			locationClient.requestLocationUpdates(request, listener);
+            LocationServices.FusedLocationApi.requestLocationUpdates(locationClient, request, listener);
 		}
 	}
 
@@ -63,14 +63,14 @@ public class GeolocationProviderGPlayService extends GeolocationProvider
 		listeners.remove(listener);
 		if (locationClient.isConnected()) {
 			Log.v(TAG, "unregistering location listener = " + listener);
-			locationClient.removeLocationUpdates(listener);
+            LocationServices.FusedLocationApi.removeLocationUpdates(locationClient, listener);
 		}
 	}
 
 	@Override
 	public void getCurrentLocation(LocationListener listener) {	
 		if (locationClient.isConnected()) {
-			Location location = locationClient.getLastLocation();
+			Location location = LocationServices.FusedLocationApi.getLastLocation(locationClient);
 			listener.onLocationChanged(location);
 		} else {
 			currentLocationListener = listener;
@@ -81,7 +81,8 @@ public class GeolocationProviderGPlayService extends GeolocationProvider
 
 	@Override
 	public void onStart() {
-		locationClient = new LocationClient(context, this, this);
+        locationClient = new GoogleApiClient.Builder(context).addApi(LocationServices.API).addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this).build();
 		locationClient.connect();
 	}
 
@@ -89,7 +90,7 @@ public class GeolocationProviderGPlayService extends GeolocationProvider
 
 	@Override
 	public void onStop() {
-		LocationClient tmp = locationClient;
+		GoogleApiClient tmp = locationClient;
 		locationClient = null;
 		tmp.disconnect();
 	}
@@ -108,23 +109,27 @@ public class GeolocationProviderGPlayService extends GeolocationProvider
 		Log.v(TAG, "Connection to geolocation provider established, registering " + listeners.size() + " listeners");
 		for (Map.Entry<LocationListener,LocationRequest> e : listeners.entrySet()) {
 			Log.v(TAG, "registering location listener = " + e.getKey());
-			locationClient.requestLocationUpdates(e.getValue(), e.getKey());
+            LocationServices.FusedLocationApi.requestLocationUpdates(locationClient, e.getValue(), e.getKey());
 		}
 		if (currentLocationListener != null) {
-			Location location = locationClient.getLastLocation();
+			Location location = LocationServices.FusedLocationApi.getLastLocation(locationClient);
 			currentLocationListener.onLocationChanged(location);
 			currentLocationListener = null;
 		}
 	}
 
+    @Override
+    public void onConnectionSuspended(int i) {
+        Log.v(TAG, "Connection to geolocation provider suspended = " + i);
+    }
 
 
-	@Override
-	public void onDisconnected() {
-		Log.v(TAG, "Connection to geolocation provider broken");
-		if (locationClient != null) {
-			locationClient.connect();
-		}
-	}
+//	@Override
+//	public void onDisconnected() {
+//		Log.v(TAG, "Connection to geolocation provider broken");
+//		if (locationClient != null) {
+//			locationClient.connect();
+//		}
+//	}
 
 }
